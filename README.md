@@ -29,6 +29,7 @@ Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only k
 - [Security and quality](#security-and-quality)
 - [Database](#database)
 - [Community standards](#community-standards)
+- [Acknowledgments](#acknowledgments)
 - [License](#license)
 
 ## Features
@@ -400,6 +401,12 @@ SQLite path comes from `GGHSTATS_DB`. Main tables: `repos`, `views`, `clones`, `
 - CODEOWNERS: `.github/CODEOWNERS`
 
 Thanks for using and contributing to `gghstats`.
+
+[Back to top](#gghstats)
+
+## Acknowledgments
+
+Hats off to **[ghstats](https://github.com/vladkens/ghstats)** by [vladkens](https://github.com/vladkens): a self-hosted GitHub traffic dashboard in **Rust** that also keeps historical traffic beyond GitHub’s short default window, with SQLite and a small deployment story. `gghstats` is a separate **Go** implementation and design, but that project deserves credit as important prior work in the same problem space.
 
 [Back to top](#gghstats)
 
