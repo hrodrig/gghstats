@@ -71,13 +71,30 @@
       </div>
 
       <footer class="app-brutal-footer border-top border-3 border-dark py-3 px-4 mt-auto">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 small app-brutal-muted">
-          <span class="fw-semibold">gghstats v{{.Version}}</span>
-          <span class="text-center text-uppercase fw-semibold">
-            UI: <span class="app-brutal-accent">Brutalist</span>
-            <span class="text-body-secondary"> · Bootstrap {{.BootstrapVersion}} grid</span>
-          </span>
-          <a href="https://github.com/hrodrig/gghstats" class="link-dark link-underline-dark fw-semibold" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <div class="app-brutal-console-footer" role="contentinfo" aria-label="System footer">
+          <div class="app-brutal-console-prompt" aria-hidden="true"><span class="app-brutal-console-gt">&gt;</span></div>
+          <div class="app-brutal-console-body flex-grow-1 min-w-0">
+            <p class="app-brutal-console-manifest mb-2 mb-md-3">Repository metrics without noise. Neobrutalist stack. Raw data only—no soft shadows.</p>
+            <dl class="app-brutal-console-spec mb-3 mb-md-0">
+              <div class="app-brutal-console-spec-row">
+                <dt>System</dt>
+                <dd>GGHSTATS v{{.Version}}</dd>
+              </div>
+              <div class="app-brutal-console-spec-row">
+                <dt>Engine</dt>
+                <dd>Bootstrap {{.BootstrapVersion}} grid</dd>
+              </div>
+              <div class="app-brutal-console-spec-row">
+                <dt>Aesthetic</dt>
+                <dd>Neobrutalist</dd>
+              </div>
+              <div class="app-brutal-console-spec-row">
+                <dt>Status</dt>
+                <dd class="app-brutal-console-ok">Operational</dd>
+              </div>
+            </dl>
+            <a href="https://github.com/hrodrig/gghstats" class="app-brutal-console-github link-dark link-underline-dark d-inline-block text-uppercase fw-bold small" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+          </div>
         </div>
       </footer>
     </div>

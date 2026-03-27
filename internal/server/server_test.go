@@ -77,8 +77,8 @@ func TestIndexPage(t *testing.T) {
 	if !strings.Contains(body, `/static/bootstrap.min.css`) {
 		t.Error("expected embedded Bootstrap stylesheet link in HTML")
 	}
-	if !strings.Contains(body, "Brutalist") {
-		t.Error("expected brutalist UI label in footer")
+	if !strings.Contains(body, "Neobrutalist") {
+		t.Error("expected neobrutalist UI label in footer")
 	}
 	if !strings.Contains(body, `offcanvas-lg`) || !strings.Contains(body, "Repositories") {
 		t.Error("expected app shell layout (sidebar + title)")

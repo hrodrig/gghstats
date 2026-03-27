@@ -39,13 +39,13 @@
 </div>
 
 <div class="card shadow-sm border-0">
-  <div class="card-body border-bottom bg-white">
+  <div class="card-body border-bottom app-brutal-search-panel">
     <form method="get" class="row g-3 align-items-end" id="repo-search-form">
       <input type="hidden" name="sort" value="{{.Sort}}">
       <input type="hidden" name="dir" value="{{.Dir}}">
       <input type="hidden" name="per_page" value="{{.PerPage}}">
       <div class="col-md-8 col-lg-6">
-        <label for="q" class="form-label mb-1 fw-medium">Search repositories</label>
+        <label for="q" class="form-label app-brutal-search-label mb-1 fw-semibold text-uppercase small letter-spacing-tight">Search repositories</label>
         <input id="q" name="q" type="search" class="form-control" placeholder="owner/repo" value="{{.Query}}" autocomplete="off">
       </div>
       <div class="col-md-4 col-lg-3">

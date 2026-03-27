@@ -279,6 +279,16 @@ html[data-bs-theme="dark"] .app-brutalist .app-brutal-chart-well {
   line-height: 1.5;
 }
 
+/* Index search strip: theme-aware background (avoid bg-white + dark label contrast bug) */
+.app-brutalist .app-brutal-search-panel {
+  background: var(--brutal-surface) !important;
+}
+
+.app-brutalist .app-brutal-search-label,
+.app-brutalist #repo-search-form .form-label {
+  color: var(--brutal-text) !important;
+}
+
 /* Primary CTA: 2px frame + hard shadow; hover/active “press” */
 .app-brutalist .btn-primary {
   border-radius: 0 !important;
@@ -361,6 +371,88 @@ html[data-bs-theme="dark"] .app-brutalist .pagination .page-item.active .page-li
 
 .app-brutalist footer a:hover {
   color: var(--brutal-accent) !important;
+}
+
+/* Footer: engineering-console block */
+.app-brutal-console-footer {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  max-width: 52rem;
+  padding: 1rem 1.15rem;
+  border: 2px solid var(--brutal-border-ink);
+  background: var(--brutal-elevated);
+  box-shadow: 4px 4px 0 var(--brutal-shadow-core);
+}
+
+.app-brutal-console-prompt {
+  flex-shrink: 0;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.4;
+  user-select: none;
+}
+
+.app-brutal-console-gt {
+  color: var(--brutal-accent);
+}
+
+.app-brutal-console-manifest {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--brutal-text);
+  border-left: 3px solid var(--brutal-border-ink);
+  padding-left: 0.65rem;
+}
+
+.app-brutal-console-spec {
+  margin: 0;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.app-brutal-console-spec-row {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: 0.35rem 0.75rem;
+  margin-bottom: 0.2rem;
+}
+
+.app-brutal-console-spec dt {
+  margin: 0;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--brutal-muted);
+}
+
+.app-brutal-console-spec dd {
+  margin: 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--brutal-text);
+}
+
+.app-brutal-console-ok {
+  color: var(--brutal-accent) !important;
+}
+
+.app-brutal-console-github {
+  letter-spacing: 0.1em;
+}
+
+@media (max-width: 575.98px) {
+  .app-brutal-console-spec-row {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+  }
 }
 
 .chart-canvas {
