@@ -1,0 +1,47 @@
+# Deny-all by default
+*
+.*
+
+# Allowlist: repository metadata and top-level project files
+!.gitignore
+!.env.example
+!.dockerignore
+!.goreleaser
+!.goreleaser.yml
+!.goreleaser.yaml
+!.github/
+!.github/**
+!Dockerfile
+!Makefile
+!README.md
+!VERSION
+!LICENSE
+!CHANGELOG.md
+!CONTRIBUTING.md
+!CODE_OF_CONDUCT.md
+!SECURITY.md
+!docker-compose.yml
+!go.mod
+!go.sum
+
+# Allowlist: source trees
+!cmd/
+!cmd/**
+!internal/
+!internal/**
+!web/
+!web/**
+!charts/
+!charts/**
+# Persist data/ in repo (placeholder only); never commit the SQLite DB.
+!data/
+!.keep
+!**/.keep
+
+# Keep common generated/local artifacts ignored
+.DS_Store
+*.db
+data/*.db
+*.db-shm
+*.db-wal
+/gghstats

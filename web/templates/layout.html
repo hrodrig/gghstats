@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}} · gghstats</title>
+  <script>
+    (() => {
+      const saved = localStorage.getItem('gghstats-theme');
+      if (saved === 'light' || saved === 'dark') {
+        document.documentElement.setAttribute('data-bs-theme', saved);
+      }
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/{{.StylesheetFile}}?v={{.Version}}">
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="https://unpkg.com/chart.js@4.4"></script>
+  <script src="https://unpkg.com/luxon@3.5/build/global/luxon.min.js"></script>
+  <script src="https://unpkg.com/chartjs-adapter-luxon@1.3"></script>
+</head>
+<body class="app-brutalist">
+  <div class="app-shell d-lg-flex min-vh-100">
+    <nav class="navbar app-brutal-topbar d-lg-none border-bottom border-3 border-dark">
+      <div class="container-fluid">
+        <span class="navbar-brand fw-bold mb-0 text-uppercase ls-tight">gghstats</span>
+        <button class="navbar-toggler app-brutal-toggler border-3 border-dark rounded-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#brutalSidebar" aria-controls="brutalSidebar" aria-label="Open navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
+    </nav>
+
+    <div class="offcanvas-lg offcanvas-start app-brutal-sidebar border-end border-3 border-dark" tabindex="-1" id="brutalSidebar" aria-labelledby="brutalSidebarLabel">
+      <div class="offcanvas-header border-bottom border-3 border-dark d-lg-none py-3">
+        <span id="brutalSidebarLabel" class="offcanvas-title fw-bold text-uppercase">Menu</span>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body d-flex flex-column p-0">
+        <div class="d-none d-lg-flex align-items-center px-3 py-4 border-bottom border-3 border-dark">
+          <span class="fs-4 fw-bold text-uppercase ls-tight">gghstats</span>
+        </div>
+        <nav class="nav flex-column px-2 py-4 gap-1 flex-grow-1" aria-label="Main navigation">
+          <a class="nav-link app-brutal-nav px-3 py-2 text-uppercase fw-semibold small{{if not .Breadcrumbs}} active{{end}}" href="/">Repositories</a>
+        </nav>
+        <div class="p-3 border-top border-3 border-dark mt-auto">
+          <button id="theme-toggle" type="button" class="btn app-brutal-btn btn-sm w-100 mb-2 text-uppercase fw-bold" aria-label="Toggle color theme">Theme</button>
+          <div class="small app-brutal-muted">v{{.Version}}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-brutal-main flex-grow-1 d-flex flex-column min-vh-100">
+      <header class="app-brutal-header border-bottom border-3 border-dark px-4 py-3">
+        <h1 class="h3 mb-0 fw-bold text-uppercase ls-tight">{{.Title}}</h1>
+        {{if .Breadcrumbs}}
+        <nav class="mt-2" aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0 small app-brutal-breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Repositories</a></li>
+            {{range .Breadcrumbs}}
+            <li class="breadcrumb-item active" aria-current="page">{{.Label}}</li>
+            {{end}}
+          </ol>
+        </nav>
+        {{end}}
+      </header>
+
+      <div class="flex-grow-1 p-4 app-brutal-content">
+        {{.Content}}
+      </div>
+
+      <footer class="app-brutal-footer border-top border-3 border-dark py-3 px-4 mt-auto">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 small app-brutal-muted">
+          <span class="fw-semibold">gghstats v{{.Version}}</span>
+          <span class="text-center text-uppercase fw-semibold">
+            UI: <span class="app-brutal-accent">Brutalist</span>
+            <span class="text-body-secondary"> · Bootstrap {{.BootstrapVersion}} grid</span>
+          </span>
+          <a href="https://github.com/hrodrig/gghstats" class="link-dark link-underline-dark fw-semibold" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@{{.BootstrapVersion}}/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

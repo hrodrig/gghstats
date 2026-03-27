@@ -1,0 +1,18 @@
+{{define "not_found"}}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-9 col-xl-7">
+    <div class="app-brutal-error-panel">
+      <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+        <div class="app-brutal-error-code text-uppercase" aria-hidden="true">404</div>
+        <div class="text-end small app-brutal-muted font-monospace text-break">ERR_NOT_FOUND</div>
+      </div>
+      <h2 class="h4 fw-bold text-uppercase ls-tight mb-3">{{.Heading}}</h2>
+      <p class="mb-3 text-body-secondary">{{.Detail}}</p>
+      {{if .Path}}
+      <p class="small font-monospace mb-4 p-2 border border-2 border-dark bg-body-secondary text-break">{{.Path}}</p>
+      {{end}}
+      <a href="/" class="btn btn-primary app-repo-search-submit text-uppercase fw-bold px-4">Back to repositories</a>
+    </div>
+  </div>
+</div>
+{{end}}

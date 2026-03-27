@@ -1,0 +1,62 @@
+version: 2
+
+project_name: gghstats
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - id: gghstats
+    main: ./cmd/gghstats
+    binary: gghstats
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/hrodrig/gghstats/internal/version.Version={{.Version}}
+      - -X github.com/hrodrig/gghstats/internal/version.Commit={{.ShortCommit}}
+      - -X github.com/hrodrig/gghstats/internal/version.BuildDate={{.Date}}
+
+archives:
+  - id: default
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: git
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+dockers:
+  - image_templates:
+      - "ghcr.io/hrodrig/gghstats:{{ .Version }}"
+      - "ghcr.io/hrodrig/gghstats:latest"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--build-arg=VERSION={{ .Version }}"
+      - "--build-arg=COMMIT={{ .ShortCommit }}"
+      - "--build-arg=BUILDDATE={{ .Date }}"
+
+release:
+  header: |
+    ## gghstats {{ .Tag }}

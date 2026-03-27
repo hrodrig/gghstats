@@ -1,0 +1,14 @@
+services:
+  gghstats:
+    image: ghcr.io/hrodrig/gghstats:${GGHSTATS_VERSION:-0.1.0}
+    container_name: gghstats
+    restart: unless-stopped
+    environment:
+      - GGHSTATS_GITHUB_TOKEN=${GGHSTATS_GITHUB_TOKEN}
+      - GGHSTATS_PORT=${GGHSTATS_PORT:-8080}
+      - GGHSTATS_FILTER=${GGHSTATS_FILTER:-*}
+      - GGHSTATS_SYNC_INTERVAL=${GGHSTATS_SYNC_INTERVAL:-1h}
+    ports:
+      - "${GGHSTATS_PORT:-8080}:${GGHSTATS_PORT:-8080}"
+    volumes:
+      - ./data:/data

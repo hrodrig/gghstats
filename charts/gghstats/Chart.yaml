@@ -1,0 +1,6 @@
+apiVersion: v2
+name: gghstats
+description: Self-hosted GitHub repository traffic dashboard and CLI
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

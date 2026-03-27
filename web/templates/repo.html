@@ -1,0 +1,124 @@
+{{define "repo"}}
+<div class="row g-4 mb-4">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <h1 class="h3 card-title mb-2">
+          <a href="https://github.com/{{.Repo.Name}}" class="link-primary text-decoration-none" target="_blank" rel="noopener noreferrer">{{.Repo.Name}}</a>
+        </h1>
+        {{if and .Repo.Fork .Repo.ParentFullName}}
+        <p class="text-muted small mb-2 fork-of">Forked from <a href="https://github.com/{{.Repo.ParentFullName}}" target="_blank" rel="noopener noreferrer">{{.Repo.ParentFullName}}</a></p>
+        {{end}}
+        {{if .Repo.Description}}<p class="text-secondary mb-4">{{.Repo.Description}}</p>{{end}}
+        <div class="row g-3">
+          <div class="col-6 col-md-3">
+            <div class="app-brutal-stat p-3 text-center h-100">
+              <div class="text-muted text-uppercase small fw-semibold letter-spacing-tight">Total clones</div>
+              <div class="fs-4 fw-bold text-primary mt-1">{{.Repo.CloneUniques}} <span class="text-muted fw-normal fs-6">/</span> {{.Repo.TotalClones}}</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="app-brutal-stat p-3 text-center h-100">
+              <div class="text-muted text-uppercase small fw-semibold letter-spacing-tight">Total views</div>
+              <div class="fs-4 fw-bold text-primary mt-1">{{.Repo.TotalUniques}} <span class="text-muted fw-normal fs-6">/</span> {{.Repo.TotalViews}}</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="app-brutal-stat p-3 text-center h-100">
+              <div class="text-muted text-uppercase small fw-semibold letter-spacing-tight">Stars</div>
+              <div class="fs-4 fw-bold mt-1">{{.Repo.Stars}}</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="app-brutal-stat p-3 text-center h-100">
+              <div class="text-muted text-uppercase small fw-semibold letter-spacing-tight">Forks</div>
+              <div class="fs-4 fw-bold mt-1">{{.Repo.Forks}}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm border-0 h-100 app-brutal-chart-card">
+      <div class="card-header fw-semibold bg-body-secondary border-bottom">Clones</div>
+      <div class="card-body app-brutal-chart-well">
+        <canvas id="chart_clones" class="chart-canvas"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm border-0 h-100 app-brutal-chart-card">
+      <div class="card-header fw-semibold bg-body-secondary border-bottom">Views</div>
+      <div class="card-body app-brutal-chart-well">
+        <canvas id="chart_views" class="chart-canvas"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{if .StarsJSON}}
+<div class="row g-4 mb-4">
+  <div class="col-12">
+    <div class="card shadow-sm border-0 app-brutal-chart-card">
+      <div class="card-header fw-semibold bg-body-secondary border-bottom">Stars over time</div>
+      <div class="card-body chart-card-stars app-brutal-chart-well">
+        <canvas id="chart_stars" class="chart-canvas chart-canvas-stars"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header fw-semibold">Top referrers</div>
+      <div class="card-body p-0">
+        {{if .Referrers}}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light"><tr><th>Referrer</th><th class="text-end">Views</th><th class="text-end">Unique</th></tr></thead>
+            <tbody>
+              {{range .Referrers}}
+              <tr><td>{{.Name}}</td><td class="text-end">{{.Count}}</td><td class="text-end">{{.Uniques}}</td></tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}<p class="text-muted p-3 mb-0">No data</p>{{end}}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header fw-semibold">Popular paths</div>
+      <div class="card-body p-0">
+        {{if .Paths}}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light"><tr><th>Path</th><th class="text-end">Views</th><th class="text-end">Unique</th></tr></thead>
+            <tbody>
+              {{range .Paths}}
+              <tr><td class="text-break">{{.Name}}</td><td class="text-end">{{.Count}}</td><td class="text-end">{{.Uniques}}</td></tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}<p class="text-muted p-3 mb-0">No data</p>{{end}}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.gghstatsChartData = {
+    clones: {{.ClonesJSON}},
+    views: {{.ViewsJSON}},
+    stars: {{.StarsJSON}}
+  };
+</script>
+{{end}}

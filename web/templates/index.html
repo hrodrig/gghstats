@@ -1,0 +1,125 @@
+{{define "index"}}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-uppercase text-muted small fw-semibold mb-1 letter-spacing-tight">Repositories</div>
+        <div class="fs-3 fw-bold text-body">{{.Total}}</div>
+        <div class="small text-muted">in current list / filter</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-uppercase text-muted small fw-semibold mb-1 letter-spacing-tight">Stars</div>
+        <div class="fs-3 fw-bold text-body">{{.KPIStars}}</div>
+        <div class="small text-muted">total across list</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-uppercase text-muted small fw-semibold mb-1 letter-spacing-tight">Clones</div>
+        <div class="fs-3 fw-bold text-body">{{.KPIClones}}</div>
+        <div class="small text-muted">total across list</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-uppercase text-muted small fw-semibold mb-1 letter-spacing-tight">Views</div>
+        <div class="fs-3 fw-bold text-body">{{.KPIViews}}</div>
+        <div class="small text-muted">total across list</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body border-bottom bg-white">
+    <form method="get" class="row g-3 align-items-end" id="repo-search-form">
+      <input type="hidden" name="sort" value="{{.Sort}}">
+      <input type="hidden" name="dir" value="{{.Dir}}">
+      <input type="hidden" name="per_page" value="{{.PerPage}}">
+      <div class="col-md-8 col-lg-6">
+        <label for="q" class="form-label mb-1 fw-medium">Search repositories</label>
+        <input id="q" name="q" type="search" class="form-control" placeholder="owner/repo" value="{{.Query}}" autocomplete="off">
+      </div>
+      <div class="col-md-4 col-lg-3">
+        <button type="submit" class="btn btn-primary app-repo-search-submit w-100">Search</button>
+      </div>
+    </form>
+  </div>
+  {{if and .Repos (gt .Total .PerPage)}}
+  <div class="card-body border-bottom py-2 app-repo-pagination-bar">
+    <div class="d-flex flex-wrap align-items-center gap-3 justify-content-start">
+      <nav aria-label="Repository list pagination (top)">
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item{{if not .PrevURL}} disabled{{end}}">
+            {{if .PrevURL}}<a class="page-link" href="{{.PrevURL}}">Previous</a>{{else}}<span class="page-link">Previous</span>{{end}}
+          </li>
+          <li class="page-item disabled"><span class="page-link">Page {{.Page}}</span></li>
+          <li class="page-item{{if not .NextURL}} disabled{{end}}">
+            {{if .NextURL}}<a class="page-link" href="{{.NextURL}}">Next</a>{{else}}<span class="page-link">Next</span>{{end}}
+          </li>
+        </ul>
+      </nav>
+      <p class="text-muted small mb-0">Showing <strong>{{.From}}</strong>–<strong>{{.To}}</strong> of <strong>{{.Total}}</strong> repositories</p>
+    </div>
+  </div>
+  {{end}}
+  <div class="table-responsive">
+    <table class="table table-hover table-striped table-bordered mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th scope="col" class="fw-semibold"><a href="{{.SortNameURL}}" class="text-decoration-none text-body">Name{{if eq .Sort "name"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
+          <th scope="col" class="text-end fw-semibold"><a href="{{.SortStarsURL}}" class="text-decoration-none text-body">Stars{{if eq .Sort "stars"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
+          <th scope="col" class="text-end fw-semibold"><a href="{{.SortForksURL}}" class="text-decoration-none text-body">Forks{{if eq .Sort "forks"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
+          <th scope="col" class="text-end fw-semibold"><a href="{{.SortClonesURL}}" class="text-decoration-none text-body">Clones{{if eq .Sort "total_clones"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
+          <th scope="col" class="text-end fw-semibold"><a href="{{.SortViewsURL}}" class="text-decoration-none text-body">Views{{if eq .Sort "total_views"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Repos}}
+        <tr>
+          <td><a href="/{{.Name}}" class="fw-medium">{{.Name}}</a></td>
+          <td class="text-end">{{.Stars}}</td>
+          <td class="text-end">{{.Forks}}</td>
+          <td class="text-end">{{.TotalClones}}</td>
+          <td class="text-end">{{.TotalViews}}</td>
+        </tr>
+        {{else}}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-5">
+            <p class="mb-2">No repositories yet.</p>
+            <p class="small mb-0">Sync one repository with:</p>
+            <code class="d-inline-block mt-2 p-2 bg-body-secondary rounded small text-start">gghstats fetch --repo owner/repo --db ./data/gghstats.db --token $GGHSTATS_GITHUB_TOKEN</code>
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+  {{if and .Repos (gt .Total .PerPage)}}
+  <div class="card-body border-top py-2 app-repo-pagination-bar">
+    <div class="d-flex flex-wrap align-items-center gap-3 justify-content-start">
+      <nav aria-label="Repository list pagination (bottom)">
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item{{if not .PrevURL}} disabled{{end}}">
+            {{if .PrevURL}}<a class="page-link" href="{{.PrevURL}}">Previous</a>{{else}}<span class="page-link">Previous</span>{{end}}
+          </li>
+          <li class="page-item disabled"><span class="page-link">Page {{.Page}}</span></li>
+          <li class="page-item{{if not .NextURL}} disabled{{end}}">
+            {{if .NextURL}}<a class="page-link" href="{{.NextURL}}">Next</a>{{else}}<span class="page-link">Next</span>{{end}}
+          </li>
+        </ul>
+      </nav>
+      <p class="text-muted small mb-0">Showing <strong>{{.From}}</strong>–<strong>{{.To}}</strong> of <strong>{{.Total}}</strong> repositories</p>
+    </div>
+  </div>
+  {{end}}
+</div>
+{{end}}

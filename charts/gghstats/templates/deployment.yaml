@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gghstats.fullname" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "gghstats.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "gghstats.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: gghstats
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /api/v1/healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /api/v1/healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          env:
+            - name: GGHSTATS_GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default .Values.githubToken.secretName .Values.githubToken.existingSecret }}
+                  key: {{ .Values.githubToken.secretKey }}
+            - name: GGHSTATS_HOST
+              value: {{ .Values.env.host | quote }}
+            - name: GGHSTATS_PORT
+              value: {{ .Values.env.port | quote }}
+            - name: GGHSTATS_FILTER
+              value: {{ .Values.env.filter | quote }}
+            - name: GGHSTATS_INCLUDE_PRIVATE
+              value: {{ .Values.env.includePrivate | quote }}
+            - name: GGHSTATS_SYNC_INTERVAL
+              value: {{ .Values.env.syncInterval | quote }}
+            {{- if .Values.env.apiToken }}
+            - name: GGHSTATS_API_TOKEN
+              value: {{ .Values.env.apiToken | quote }}
+            {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "gghstats.fullname" . }}-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}

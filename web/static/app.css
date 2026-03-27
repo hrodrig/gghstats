@@ -1,0 +1,379 @@
+/* gghstats — neo-brutalist technical: JetBrains Mono, hard shadows, blueprint frames */
+
+body.app-brutalist {
+  font-family: "JetBrains Mono", ui-monospace, "Cascadia Code", "Roboto Mono", Menlo, monospace;
+  letter-spacing: -0.01em;
+  line-height: 1.5;
+}
+
+.ls-tight {
+  letter-spacing: 0.08em;
+}
+
+/* Page titles: terminal / engineering emphasis */
+.app-brutal-header h1 {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+}
+
+/*
+ * Light: cement + near-black structure.
+ * Dark: #121212 field + graphite wells + neon rim.
+ */
+body.app-brutalist {
+  --brutal-text: #1a1a1b;
+  --brutal-paper: #e0e0e0;
+  --brutal-surface: #ecece8;
+  --brutal-elevated: #ffffff;
+  --brutal-border-ink: #121212;
+  --brutal-shadow-core: #121212;
+  --brutal-accent: #e63946;
+  --brutal-accent-2: #1d3557;
+  --brutal-muted: #5c5c58;
+  --brutal-chart-well: #f4f4f0;
+  --brutal-chart-rim: #121212;
+  --brutal-nav-active-bg: #121212;
+  --brutal-nav-active-fg: #f7f7f2;
+  --brutal-ink: var(--brutal-text);
+  --brutal-border: 3px solid var(--brutal-border-ink);
+  --brutal-shadow: 6px 6px 0 var(--brutal-shadow-core);
+  --brutal-primary-shadow: #2a0a0e;
+  --brutal-btn-shift-hover: 2px;
+  --brutal-btn-shift-active: 4px;
+  --brutal-success: #00a86b;
+  --brutal-warning: #ffd700;
+  background-color: var(--brutal-paper) !important;
+  color: var(--brutal-text);
+  --bs-primary: var(--brutal-accent);
+  --bs-info: var(--brutal-accent-2);
+  --bs-body-bg: var(--brutal-paper);
+  --bs-body-color: var(--brutal-text);
+}
+
+html[data-bs-theme="dark"] body.app-brutalist {
+  --brutal-text: #e8e8e3;
+  --brutal-paper: #121212;
+  --brutal-surface: #1a1a1b;
+  --brutal-elevated: #1e1e22;
+  --brutal-border-ink: #eaeae5;
+  --brutal-shadow-core: #000000;
+  --brutal-accent: #7cfc00;
+  --brutal-accent-2: #00e5ff;
+  --brutal-muted: #9a9a95;
+  --brutal-chart-well: #2d2d32;
+  --brutal-chart-rim: #7cfc00;
+  --brutal-nav-active-bg: #7cfc00;
+  --brutal-nav-active-fg: #121212;
+  --brutal-ink: var(--brutal-border-ink);
+  --brutal-border: 3px solid var(--brutal-border-ink);
+  --brutal-shadow: 8px 8px 0 var(--brutal-shadow-core);
+  --brutal-primary-shadow: #000000;
+  background-color: var(--brutal-paper) !important;
+  color: var(--brutal-text);
+  --bs-primary: var(--brutal-accent);
+  --bs-info: var(--brutal-accent-2);
+  --bs-body-bg: var(--brutal-paper);
+  --bs-body-color: var(--brutal-text);
+}
+
+.app-brutalist .border-dark {
+  border-color: var(--brutal-border-ink) !important;
+}
+
+.app-brutal-topbar {
+  background: var(--brutal-surface) !important;
+}
+
+.app-brutal-toggler {
+  box-shadow: var(--brutal-shadow);
+}
+
+.app-brutalist .navbar-toggler-icon {
+  filter: none;
+}
+
+html[data-bs-theme="dark"] .app-brutalist .navbar-toggler-icon {
+  filter: invert(1);
+}
+
+.app-brutal-sidebar {
+  background: var(--brutal-surface) !important;
+  box-shadow: none !important;
+}
+
+@media (min-width: 992px) {
+  .app-brutal-sidebar.offcanvas-lg {
+    width: 260px;
+    max-width: 100%;
+    flex-shrink: 0;
+  }
+}
+
+.app-brutal-nav {
+  color: var(--brutal-muted) !important;
+  border: 2px solid transparent;
+  border-radius: 0 !important;
+}
+
+.app-brutal-nav:hover {
+  color: var(--brutal-text) !important;
+  background: transparent !important;
+  border-color: var(--brutal-border-ink);
+}
+
+.app-brutal-nav.active {
+  color: var(--brutal-nav-active-fg) !important;
+  background: var(--brutal-nav-active-bg) !important;
+  border-color: var(--brutal-nav-active-bg) !important;
+}
+
+/* Theme toggle: hard shadow + tactile press */
+.app-brutal-btn {
+  border: 2px solid var(--brutal-border-ink) !important;
+  border-radius: 0 !important;
+  background: var(--brutal-elevated) !important;
+  color: var(--brutal-text) !important;
+  box-shadow: 4px 4px 0 var(--brutal-shadow-core);
+  transition: transform 0.07s ease, box-shadow 0.07s ease;
+}
+
+html[data-bs-theme="dark"] .app-brutal-btn {
+  background: var(--brutal-surface) !important;
+  color: var(--brutal-text) !important;
+}
+
+.app-brutal-btn:hover {
+  transform: translate(var(--brutal-btn-shift-hover), var(--brutal-btn-shift-hover));
+  box-shadow: 2px 2px 0 var(--brutal-shadow-core);
+}
+
+.app-brutal-btn:active {
+  transform: translate(var(--brutal-btn-shift-active), var(--brutal-btn-shift-active));
+  box-shadow: none !important;
+}
+
+.app-brutal-muted {
+  color: var(--brutal-muted) !important;
+}
+
+.app-brutal-header,
+.app-brutal-footer,
+.app-brutal-main {
+  background: var(--brutal-surface) !important;
+}
+
+.app-brutal-content {
+  background: var(--brutal-paper) !important;
+}
+
+.app-brutal-accent {
+  color: var(--brutal-accent) !important;
+}
+
+/* Error pages (404): same frame language as cards */
+.app-brutal-error-panel {
+  border-radius: 0 !important;
+  border: 3px solid var(--brutal-border-ink) !important;
+  background: var(--brutal-elevated) !important;
+  box-shadow: var(--brutal-shadow) !important;
+  padding: 1.75rem 1.5rem;
+}
+
+.app-brutal-error-code {
+  font-size: clamp(2.75rem, 10vw, 5.5rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  color: var(--brutal-accent);
+  text-shadow: 3px 3px 0 var(--brutal-shadow-core);
+}
+
+html[data-bs-theme="dark"] .app-brutalist .app-brutal-error-code {
+  text-shadow: 4px 4px 0 #000;
+}
+
+.app-brutal-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
+  color: var(--brutal-muted);
+  content: ">";
+  font-weight: 700;
+}
+
+.app-brutal-stat {
+  border-radius: 0 !important;
+  background: var(--brutal-elevated) !important;
+  border: 3px solid var(--brutal-border-ink) !important;
+  box-shadow: 4px 4px 0 var(--brutal-shadow-core);
+}
+
+html[data-bs-theme="dark"] .app-brutal-stat {
+  background: var(--brutal-elevated) !important;
+}
+
+/* Main containers: stronger blueprint frame */
+.app-brutalist .card {
+  border-radius: 0 !important;
+  border: 3px solid var(--brutal-border-ink) !important;
+  box-shadow: var(--brutal-shadow) !important;
+  background: var(--brutal-elevated) !important;
+}
+
+/* Chart cards: extra rigid drop shadow (stacked window) */
+.app-brutalist .app-brutal-chart-card {
+  overflow: hidden;
+  box-shadow: var(--brutal-shadow), 4px 4px 0 var(--brutal-shadow-core) !important;
+}
+
+html[data-bs-theme="dark"] .app-brutalist .app-brutal-chart-card {
+  box-shadow: 8px 8px 0 #000, 4px 4px 0 rgba(0, 0, 0, 0.6) !important;
+}
+
+.app-brutalist .app-brutal-chart-well {
+  background: var(--brutal-chart-well) !important;
+  border: 2px solid var(--brutal-chart-rim) !important;
+  margin: 0.75rem !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+html[data-bs-theme="dark"] .app-brutalist .app-brutal-chart-well {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* Tables: micro-typography for dense data */
+.app-brutalist .table {
+  border: var(--brutal-border) !important;
+  --bs-table-border-color: var(--brutal-border-ink);
+  font-size: 0.875rem;
+  line-height: 1.58;
+}
+
+.app-brutalist .table td,
+.app-brutalist .table th {
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+  vertical-align: middle;
+}
+
+.app-brutalist .table-bordered > :not(caption) > * > * {
+  border-width: 2px;
+}
+
+.app-brutalist .table-light {
+  --bs-table-bg: var(--brutal-paper);
+  color: var(--brutal-text);
+}
+
+.app-brutalist small,
+.app-brutalist .small,
+.app-brutalist .text-muted {
+  line-height: 1.55;
+}
+
+.app-brutalist .form-control,
+.app-brutalist .form-select {
+  border-radius: 0 !important;
+  border: 2px solid var(--brutal-border-ink) !important;
+  background: var(--brutal-elevated);
+  font-family: inherit;
+  color: var(--brutal-text);
+  line-height: 1.5;
+}
+
+/* Primary CTA: 2px frame + hard shadow; hover/active “press” */
+.app-brutalist .btn-primary {
+  border-radius: 0 !important;
+  border: 2px solid var(--brutal-border-ink) !important;
+  background: var(--brutal-accent) !important;
+  color: #fff !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  box-shadow: 4px 4px 0 var(--brutal-primary-shadow);
+  transition: transform 0.07s ease, box-shadow 0.07s ease, filter 0.07s ease;
+}
+
+html[data-bs-theme="dark"] .app-brutalist .btn-primary {
+  color: #121212 !important;
+}
+
+/* Index search: same intense orange in light and dark (high-visibility CTA) */
+.app-brutalist .app-repo-search-submit.btn-primary {
+  --brutal-primary-shadow: #1a0d06;
+  background: #ff5c1a !important;
+  color: #fff !important;
+}
+
+html[data-bs-theme="dark"] .app-brutalist .app-repo-search-submit.btn-primary {
+  color: #fff !important;
+}
+
+.app-brutalist .btn-primary:hover {
+  transform: translate(var(--brutal-btn-shift-hover), var(--brutal-btn-shift-hover));
+  box-shadow: 2px 2px 0 var(--brutal-primary-shadow);
+  filter: brightness(1.04);
+}
+
+.app-brutalist .btn-primary:active {
+  transform: translate(var(--brutal-btn-shift-active), var(--brutal-btn-shift-active));
+  box-shadow: none !important;
+  filter: brightness(0.98);
+}
+
+.app-brutalist .btn-primary:focus-visible {
+  outline: 3px solid var(--brutal-accent-2);
+  outline-offset: 2px;
+}
+
+.app-brutalist .pagination .page-link {
+  border-radius: 0 !important;
+  border: 2px solid var(--brutal-border-ink) !important;
+  color: var(--brutal-text);
+  font-weight: 600;
+  background: var(--brutal-elevated);
+  line-height: 1.4;
+}
+
+.app-brutalist .pagination .page-item.active .page-link {
+  background: var(--brutal-border-ink);
+  color: var(--brutal-paper);
+  border-color: var(--brutal-border-ink) !important;
+}
+
+html[data-bs-theme="dark"] .app-brutalist .pagination .page-item.active .page-link {
+  color: #121212;
+}
+
+.app-brutalist .pagination .page-item.disabled .page-link {
+  opacity: 0.45;
+}
+
+.app-brutalist .card-header {
+  border-radius: 0 !important;
+  border-bottom: 3px solid var(--brutal-border-ink) !important;
+  background: var(--brutal-surface) !important;
+  color: var(--brutal-text);
+  font-weight: 600;
+}
+
+.letter-spacing-tight {
+  letter-spacing: 0.06em;
+}
+
+.app-brutalist footer a:hover {
+  color: var(--brutal-accent) !important;
+}
+
+.chart-canvas {
+  display: block;
+  width: 100% !important;
+  min-height: 220px;
+}
+
+.chart-card-stars {
+  min-height: 300px;
+}
+
+.chart-canvas-stars {
+  min-height: 260px;
+  max-height: 320px;
+}
