@@ -62,7 +62,7 @@ The template [`.env.example`](.env.example) lists every variable the server and 
 ```bash
 docker run -d \
   -e GGHSTATS_GITHUB_TOKEN=ghp_xxx \
-  -e GGHSTATS_FILTER="hrodrig/*" \
+  -e GGHSTATS_FILTER="your-github-user/*" \
   -p 8080:8080 \
   -v ./data:/data \
   --name gghstats \
@@ -111,9 +111,9 @@ Server behavior:
 ### CLI mode
 
 ```bash
-gghstats fetch --repo hrodrig/pgwd --token "$GGHSTATS_GITHUB_TOKEN"
-gghstats report --repo hrodrig/pgwd --token "$GGHSTATS_GITHUB_TOKEN"
-gghstats export --repo hrodrig/pgwd --token "$GGHSTATS_GITHUB_TOKEN" --output traffic.csv
+gghstats fetch --repo your-github-user/my-app --token "$GGHSTATS_GITHUB_TOKEN"
+gghstats report --repo your-github-user/my-app --token "$GGHSTATS_GITHUB_TOKEN"
+gghstats export --repo your-github-user/my-app --token "$GGHSTATS_GITHUB_TOKEN" --output traffic.csv
 ```
 
 [Back to top](#gghstats)
@@ -131,10 +131,12 @@ gghstats serve
 
 ### Fetch/report/export for one repository
 
+Use your repository as `owner/repo` (example below uses a placeholder).
+
 ```bash
-gghstats fetch --repo hrodrig/pgwd --token "$GGHSTATS_GITHUB_TOKEN"
-gghstats report --repo hrodrig/pgwd --token "$GGHSTATS_GITHUB_TOKEN" --days 14
-gghstats export --repo hrodrig/pgwd --token "$GGHSTATS_GITHUB_TOKEN" --days 30 --output traffic-30d.csv
+gghstats fetch --repo your-github-user/my-app --token "$GGHSTATS_GITHUB_TOKEN"
+gghstats report --repo your-github-user/my-app --token "$GGHSTATS_GITHUB_TOKEN" --days 14
+gghstats export --repo your-github-user/my-app --token "$GGHSTATS_GITHUB_TOKEN" --days 30 --output traffic-30d.csv
 ```
 
 ### Run strict pre-release checks (includes container scan)
@@ -183,13 +185,15 @@ All runtime configuration uses env vars (`serve`) or flags (`fetch/report/export
 
 ### Filter examples
 
+Replace `your-github-user` with your GitHub username or organization, and `my-app` / `other-repo` / `legacy-repo` with your real repository names.
+
 ```bash
-GGHSTATS_FILTER="hrodrig/*"
-GGHSTATS_FILTER="hrodrig/pgwd,hrodrig/gghstats"
+GGHSTATS_FILTER="your-github-user/*"
+GGHSTATS_FILTER="your-github-user/my-app,your-github-user/other-repo"
 GGHSTATS_FILTER="*,!fork"
 GGHSTATS_FILTER="*,!archived"
-GGHSTATS_FILTER="hrodrig/*,!fork,!archived"
-GGHSTATS_FILTER="*,!hrodrig/old-project"
+GGHSTATS_FILTER="your-github-user/*,!fork,!archived"
+GGHSTATS_FILTER="*,!your-github-user/legacy-repo"
 ```
 
 ### API
@@ -207,14 +211,14 @@ curl -H "x-api-token: your-token" http://localhost:8080/api/repos
 ### Track all repositories for one owner
 
 ```bash
-export GGHSTATS_FILTER="hrodrig/*"
+export GGHSTATS_FILTER="your-github-user/*"
 gghstats serve
 ```
 
 ### Exclude forks and archived repositories
 
 ```bash
-export GGHSTATS_FILTER="hrodrig/*,!fork,!archived"
+export GGHSTATS_FILTER="your-github-user/*,!fork,!archived"
 gghstats serve
 ```
 
@@ -229,7 +233,7 @@ curl -H "x-api-token: my-api-token" http://localhost:8080/api/repos
 ### Generate periodic CSV report
 
 ```bash
-gghstats export --repo hrodrig/pgwd --days 30 --output traffic-30d.csv
+gghstats export --repo your-github-user/my-app --days 30 --output traffic-30d.csv
 ```
 
 [Back to top](#gghstats)
@@ -246,12 +250,26 @@ services:
     environment:
       - GGHSTATS_GITHUB_TOKEN=${GGHSTATS_GITHUB_TOKEN}
       - GGHSTATS_PORT=${GGHSTATS_PORT:-8080}
-      - GGHSTATS_FILTER=hrodrig/*
+      - GGHSTATS_FILTER=your-github-user/*
     ports:
       - "${GGHSTATS_PORT:-8080}:${GGHSTATS_PORT:-8080}"
     volumes:
       - ./data:/data
 ```
+
+### Docker Compose + Traefik (production VPS)
+
+Use [`docker-compose.prod.yml`](docker-compose.prod.yml) for **HTTPS** (Let's Encrypt), **HTTP→HTTPS redirect**, and **no host port** on gghstats (only Traefik listens on 80/443).
+
+1. Point **DNS** `A`/`AAAA` for your hostname to the VPS public IP.
+2. In `.env`, set at least: `GGHSTATS_GITHUB_TOKEN`, `GGHSTATS_HOSTNAME` (FQDN, e.g. `stats.example.com`), `ACME_EMAIL` (Let's Encrypt).
+3. Start:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Traefik keeps certificates in the volume `traefik_letsencrypt`. Other `GGHSTATS_*` variables work like the simple Compose file.
 
 ### Helm (Kubernetes)
 
