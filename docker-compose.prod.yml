@@ -39,6 +39,9 @@ services:
       - no-new-privileges:true
     command:
       - --log.level=INFO
+      # Opt-in: anonymous usage stats (version, hashed static config). Disable with false if you prefer no telemetry.
+      - --global.sendAnonymousUsage=true
+      - --accesslog=true
       - --api.dashboard=false
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
