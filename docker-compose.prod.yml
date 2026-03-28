@@ -14,6 +14,14 @@
 # Typical Linux user gghstats is 1001:1001 when UID 1000 is taken by the admin account.
 #
 # Traefik needs a recent image for Docker Engine 28+ / 29+ (minimum API 1.40+); see traefik:v3.6.1+.
+#
+# Log rotation (json-file driver): caps disk use per container; tune max-size/max-file if access logs are heavy.
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
 
 networks:
   edge:
@@ -51,6 +59,7 @@ services:
       - traefik_letsencrypt:/letsencrypt
     networks:
       - edge
+    logging: *default-logging
 
   gghstats:
     image: ghcr.io/hrodrig/gghstats:${GGHSTATS_VERSION:-0.1.0}
@@ -86,3 +95,4 @@ services:
       - traefik.http.routers.gghstats.tls.certresolver=le
       - traefik.http.routers.gghstats.middlewares=gghstats-hdr
       - traefik.http.services.gghstats.loadbalancer.server.port=8080
+    logging: *default-logging

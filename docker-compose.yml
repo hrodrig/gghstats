@@ -1,3 +1,10 @@
+# json-file log rotation (avoids unbounded container log growth on disk).
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   gghstats:
     image: ghcr.io/hrodrig/gghstats:${GGHSTATS_VERSION:-0.1.0}
@@ -12,3 +19,4 @@ services:
       - "${GGHSTATS_PORT:-8080}:${GGHSTATS_PORT:-8080}"
     volumes:
       - ./data:/data
+    logging: *default-logging

@@ -15,6 +15,8 @@
 
 Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only keeps traffic for 14 days; `gghstats` keeps historical data indefinitely in SQLite.
 
+> **Pre-release:** Active development is on the `develop` branch. There are no GitHub Releases or published release artifacts yet; those are produced when the project is merged to `main` and tagged (see [Release workflow](#release-workflow)).
+
 ## Demo
 
 **Live:** [gghstats.hermesrodriguez.com](https://gghstats.hermesrodriguez.com)
