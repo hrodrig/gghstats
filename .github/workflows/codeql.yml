@@ -4,16 +4,16 @@
 
 name: CodeQL
 
+permissions:
+  security-events: write
+  actions: read
+  contents: read
+
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
-
-permissions:
-  security-events: write
-  actions: read
-  contents: read
 
 jobs:
   analyze:

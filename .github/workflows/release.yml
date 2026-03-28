@@ -3,17 +3,20 @@
 # Requires: release-check passed before tagging (make release-check).
 name: Release
 
+permissions:
+  contents: write
+  packages: write
+
 on:
   push:
     tags:
       - 'v*'
 
-permissions:
-  contents: write
-  packages: write
-
 jobs:
   release:
+    permissions:
+      contents: write
+      packages: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

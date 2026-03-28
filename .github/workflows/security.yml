@@ -3,14 +3,14 @@
 
 name: Security
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
-
-permissions:
-  contents: read
 
 jobs:
   govulncheck:
