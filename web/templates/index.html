@@ -85,7 +85,7 @@
       <tbody>
         {{range .Repos}}
         <tr>
-          <td><a href="/{{.Name}}" class="fw-medium">{{.Name}}</a></td>
+          <td><a href="/{{.Name}}" class="fw-medium" title="View traffic stats for {{.Name}} in gghstats">{{.Name}}</a></td>
           <td class="text-end">{{.Stars}}</td>
           <td class="text-end">{{.Forks}}</td>
           <td class="text-end">{{.TotalClones}}</td>

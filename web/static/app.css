@@ -10,6 +10,13 @@ body.app-brutalist {
   letter-spacing: 0.08em;
 }
 
+/* External / new-tab hint (box-arrow-up-right), inherits link color */
+.app-external-link-icon {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+}
+
 /* Page titles: terminal / engineering emphasis */
 .app-brutal-header h1 {
   font-family: "JetBrains Mono", ui-monospace, monospace;
@@ -100,6 +107,21 @@ html[data-bs-theme="dark"] .app-brutalist .navbar-toggler-icon {
 .app-brutal-sidebar {
   background: var(--brutal-surface) !important;
   box-shadow: none !important;
+}
+
+/* Site title in sidebar / mobile bar: home link, same look as static text */
+a.app-brutal-site-brand {
+  color: inherit !important;
+}
+
+a.app-brutal-site-brand:hover {
+  color: var(--brutal-text) !important;
+  opacity: 0.9;
+}
+
+a.app-brutal-site-brand:focus-visible {
+  outline: 2px solid var(--brutal-border-ink);
+  outline-offset: 3px;
 }
 
 @media (min-width: 992px) {

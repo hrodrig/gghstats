@@ -25,7 +25,7 @@
   <div class="app-shell d-lg-flex min-vh-100">
     <nav class="navbar app-brutal-topbar d-lg-none border-bottom border-3 border-dark">
       <div class="container-fluid">
-        <span class="navbar-brand fw-bold mb-0 text-uppercase ls-tight">gghstats</span>
+        <a href="/" class="navbar-brand fw-bold mb-0 text-uppercase ls-tight text-decoration-none app-brutal-site-brand" title="Back to home" aria-label="gghstats — back to home">gghstats</a>
         <button class="navbar-toggler app-brutal-toggler border-3 border-dark rounded-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#brutalSidebar" aria-controls="brutalSidebar" aria-label="Open navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
@@ -39,10 +39,10 @@
       </div>
       <div class="offcanvas-body d-flex flex-column p-0">
         <div class="d-none d-lg-flex align-items-center px-3 py-4 border-bottom border-3 border-dark">
-          <span class="fs-4 fw-bold text-uppercase ls-tight">gghstats</span>
+          <a href="/" class="fs-4 fw-bold text-uppercase ls-tight text-decoration-none app-brutal-site-brand" title="Back to home" aria-label="gghstats — back to home">gghstats</a>
         </div>
         <nav class="nav flex-column px-2 py-4 gap-1 flex-grow-1" aria-label="Main navigation">
-          <a class="nav-link app-brutal-nav px-3 py-2 text-uppercase fw-semibold small{{if not .Breadcrumbs}} active{{end}}" href="/">Repositories</a>
+          <a class="nav-link app-brutal-nav px-3 py-2 text-uppercase fw-semibold small{{if not .Breadcrumbs}} active{{end}}" href="/" title="Back to repository list">Repositories</a>
         </nav>
         <div class="p-3 border-top border-3 border-dark mt-auto">
           <button id="theme-toggle" type="button" class="btn app-brutal-btn btn-sm w-100 mb-2 text-uppercase fw-bold" aria-label="Toggle color theme">Theme</button>
@@ -57,7 +57,7 @@
         {{if .Breadcrumbs}}
         <nav class="mt-2" aria-label="breadcrumb">
           <ol class="breadcrumb mb-0 small app-brutal-breadcrumb">
-            <li class="breadcrumb-item"><a href="/">Repositories</a></li>
+            <li class="breadcrumb-item"><a href="/" title="Back to repository list">Repositories</a></li>
             {{range .Breadcrumbs}}
             <li class="breadcrumb-item active" aria-current="page">{{.Label}}</li>
             {{end}}
@@ -93,7 +93,7 @@
                 <dd class="app-brutal-console-ok">Operational</dd>
               </div>
             </dl>
-            <a href="https://github.com/hrodrig/gghstats" class="app-brutal-console-github d-inline-block text-uppercase fw-bold small" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+            <a href="https://github.com/hrodrig/gghstats" class="app-brutal-console-github d-inline-block text-uppercase fw-bold small" target="_blank" rel="noopener noreferrer" title="Open the gghstats project on GitHub in a new tab">View on GitHub</a>
           </div>
         </div>
       </footer>

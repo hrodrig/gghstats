@@ -4,10 +4,14 @@
     <div class="card shadow-sm border-0">
       <div class="card-body">
         <h1 class="h3 card-title mb-2">
-          <a href="https://github.com/{{.Repo.Name}}" class="link-primary text-decoration-none" target="_blank" rel="noopener noreferrer">{{.Repo.Name}}</a>
+          <a href="https://github.com/{{.Repo.Name}}" class="link-primary text-decoration-none d-inline-flex align-items-center gap-2" target="_blank" rel="noopener noreferrer" title="Open {{.Repo.Name}} on GitHub in a new tab">
+            <span>{{.Repo.Name}}</span>
+            <span class="visually-hidden"> (opens in new tab)</span>
+            {{template "icon-external-link" .}}
+          </a>
         </h1>
         {{if and .Repo.Fork .Repo.ParentFullName}}
-        <p class="text-muted small mb-2 fork-of">Forked from <a href="https://github.com/{{.Repo.ParentFullName}}" target="_blank" rel="noopener noreferrer">{{.Repo.ParentFullName}}</a></p>
+        <p class="text-muted small mb-2 fork-of">Forked from <a href="https://github.com/{{.Repo.ParentFullName}}" target="_blank" rel="noopener noreferrer" title="Open {{.Repo.ParentFullName}} on GitHub in a new tab">{{.Repo.ParentFullName}}</a></p>
         {{end}}
         {{if .Repo.Description}}<p class="text-secondary mb-4">{{.Repo.Description}}</p>{{end}}
         <div class="row g-3">
