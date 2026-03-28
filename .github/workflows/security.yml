@@ -1,3 +1,6 @@
+# Security scans before merging to main: run on PR/push to develop and main.
+# Fix or acknowledge any reported vulnerabilities before merging develop → main.
+
 name: Security
 
 on:
@@ -6,33 +9,56 @@ on:
   pull_request:
     branches: [main, develop]
 
+permissions:
+  contents: read
+
 jobs:
   govulncheck:
+    name: Go vulnerabilities
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Go
+      - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
 
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
       - name: Run govulncheck
-        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+        run: govulncheck ./...
 
   grype:
+    name: Grype (container image)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build timestamp
+        id: ts
+        run: echo "b=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
       - name: Build image
-        run: docker build --build-arg VERSION=ci --build-arg COMMIT=${{ github.sha }} --build-arg BUILDDATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) -t gghstats:ci .
-
-      - name: Scan image with Grype
-        uses: anchore/scan-action@v6
+        uses: docker/build-push-action@v6
         with:
-          image: gghstats:ci
-          fail-build: true
-          severity-cutoff: high
+          context: .
+          load: true
+          push: false
+          tags: gghstats:scan
+          file: ./Dockerfile
+          build-args: |
+            VERSION=ci
+            COMMIT=${{ github.sha }}
+            BUILDDATE=${{ steps.ts.outputs.b }}
+
+      - name: Install Grype
+        run: |
+          curl -sSfL https://get.anchore.io/grype | sh -s -- -b /usr/local/bin
+
+      - name: Run Grype on image
+        run: grype gghstats:scan --fail-on high
