@@ -10,6 +10,8 @@ COMMIT      := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 BUILDDATE   := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 STRICT_RELEASE ?= 0
 GRYPE_FAIL_ON  ?= high
+# Empty = native arch. Set linux/amd64 when building on Apple Silicon (or arm64) for a typical VPS.
+DOCKER_PLATFORM ?=
 LDFLAGS     := -s -w \
 	-X '$(MODULE)/internal/version.Version=$(VERSION)' \
 	-X '$(MODULE)/internal/version.Commit=$(COMMIT)' \
@@ -17,7 +19,7 @@ LDFLAGS     := -s -w \
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build install server compose-up compose-down test lint lint-fix clean docker-build docker-scan docker-run tools govulncheck gocyclo grype security release-check snapshot test-release release
+.PHONY: help build install server compose-up compose-down test lint lint-fix clean docker-build docker-build-amd64 docker-export-amd64 docker-scan docker-run tools govulncheck gocyclo grype security release-check snapshot test-release release
 
 help:
 	@echo "gghstats — GitHub traffic dashboard and CLI"
@@ -40,8 +42,10 @@ help:
 	@echo "  security           Run govulncheck, gocyclo and grype"
 	@echo ""
 	@echo "Docker:"
-	@echo "  docker-build       Build Docker image gghstats:$(VERSION)"
-	@echo "  docker-scan        Build and scan image with Grype"
+	@echo "  docker-build       Build image gghstats:$(VERSION) (optional: DOCKER_PLATFORM=linux/amd64)"
+	@echo "  docker-build-amd64 Same, forced linux/amd64 (VPS / x86_64 validation)"
+	@echo "  docker-export-amd64 Build amd64 image and write dist/gghstats-$(VERSION)-linux-amd64.tar.gz for docker load on VPS"
+	@echo "  docker-scan        Build and scan image with Grype (pass DOCKER_PLATFORM=... to match target arch)"
 	@echo "  docker-run         Run local Docker image"
 	@echo ""
 	@echo "Release:"
@@ -84,7 +88,21 @@ clean:
 	rm -rf $(DIST)
 
 docker-build:
-	docker build --build-arg VERSION=$(VERSION) --build-arg COMMIT=$(COMMIT) --build-arg BUILDDATE=$(BUILDDATE) -t gghstats:$(VERSION) .
+	@set -e; \
+	opts=""; \
+	if [ -n "$(strip $(DOCKER_PLATFORM))" ]; then opts="--platform $(DOCKER_PLATFORM)"; fi; \
+	DOCKER_BUILDKIT=1 docker build $$opts \
+		--build-arg VERSION=$(VERSION) --build-arg COMMIT=$(COMMIT) --build-arg BUILDDATE=$(BUILDDATE) \
+		-t gghstats:$(VERSION) .
+
+docker-build-amd64:
+	$(MAKE) docker-build DOCKER_PLATFORM=linux/amd64
+
+docker-export-amd64: docker-build-amd64
+	@mkdir -p $(DIST)
+	docker save gghstats:$(VERSION) | gzip -c > $(DIST)/gghstats-$(VERSION)-linux-amd64.tar.gz
+	@echo "Wrote $(DIST)/gghstats-$(VERSION)-linux-amd64.tar.gz"
+	@echo "On VPS: gunzip -c gghstats-$(VERSION)-linux-amd64.tar.gz | docker load"
 
 docker-scan: docker-build
 	@if command -v grype >/dev/null 2>&1; then \

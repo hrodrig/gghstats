@@ -18,7 +18,8 @@ RUN go build -ldflags "-s -w \
 # Use Alpine 3.21 to avoid OpenSSL 3.5.x high CVEs present in 3.23.
 FROM alpine:3.21
 RUN apk add --no-cache ca-certificates && \
-    adduser -D -h /data gghstats
+    addgroup -g 1000 gghstats && \
+    adduser -D -u 1000 -G gghstats -h /data gghstats
 COPY --from=builder /app/gghstats /usr/local/bin/gghstats
 
 USER gghstats

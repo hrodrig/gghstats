@@ -13,8 +13,15 @@
 
 Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only keeps traffic for 14 days; `gghstats` keeps historical data indefinitely in SQLite.
 
+## Demo
+
+**Live:** [gghstats.hermesrodriguez.com](https://gghstats.hermesrodriguez.com)
+
+![GGHSTATS dashboard — repository metrics and neobrutalist UI](assets/gghstats-main.png)
+
 ## Table of contents
 
+- [Demo](#demo)
 - [Features](#features)
 - [Quick start](#quick-start)
 - [Install](#install)

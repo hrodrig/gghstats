@@ -21,6 +21,7 @@
 !CODE_OF_CONDUCT.md
 !SECURITY.md
 !docker-compose.yml
+!docker-compose.prod.yml
 !go.mod
 !go.sum
 
@@ -31,6 +32,8 @@
 !internal/**
 !web/
 !web/**
+!assets/
+!assets/**
 !charts/
 !charts/**
 # Persist data/ in repo (placeholder only); never commit the SQLite DB.
