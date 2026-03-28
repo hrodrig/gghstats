@@ -444,52 +444,70 @@ const (
 	listReposOrderTotalClonesDesc = `ORDER BY COALESCE(c.total_clones, 0) DESC`
 )
 
-// listReposQueryTable: row = sort key (name, stars, forks, total_views, total_clones); col 0 = asc, 1 = desc.
-var listReposQueryTable = [5][2]string{
-	{
-		listReposSQLBase + listReposOrderNameAsc,
-		listReposSQLBase + listReposOrderNameDesc,
-	},
-	{
-		listReposSQLBase + listReposOrderStarsAsc,
-		listReposSQLBase + listReposOrderStarsDesc,
-	},
-	{
-		listReposSQLBase + listReposOrderForksAsc,
-		listReposSQLBase + listReposOrderForksDesc,
-	},
-	{
-		listReposSQLBase + listReposOrderTotalViewsAsc,
-		listReposSQLBase + listReposOrderTotalViewsDesc,
-	},
-	{
-		listReposSQLBase + listReposOrderTotalClonesAsc,
-		listReposSQLBase + listReposOrderTotalClonesDesc,
-	},
+// Each queryListRepos* method passes only compile-time constant SQL to db.Query (no query string
+// built from request parameters). The dispatcher below selects a method by whitelisted sort keys.
+func (s *Store) queryListReposNameAsc() (*sql.Rows, error) {
+	return s.db.Query(listReposSQLBase + listReposOrderNameAsc)
+}
+func (s *Store) queryListReposNameDesc() (*sql.Rows, error) {
+	return s.db.Query(listReposSQLBase + listReposOrderNameDesc)
+}
+func (s *Store) queryListReposStarsAsc() (*sql.Rows, error) {
+	return s.db.Query(listReposSQLBase + listReposOrderStarsAsc)
+}
+func (s *Store) queryListReposStarsDesc() (*sql.Rows, error) {
+	return s.db.Query(listReposSQLBase + listReposOrderStarsDesc)
+}
+func (s *Store) queryListReposForksAsc() (*sql.Rows, error) {
+	return s.db.Query(listReposSQLBase + listReposOrderForksAsc)
+}
+func (s *Store) queryListReposForksDesc() (*sql.Rows, error) {
+	return s.db.Query(listReposSQLBase + listReposOrderForksDesc)
+}
+func (s *Store) queryListReposTotalViewsAsc() (*sql.Rows, error) {
+	return s.db.Query(listReposSQLBase + listReposOrderTotalViewsAsc)
+}
+func (s *Store) queryListReposTotalViewsDesc() (*sql.Rows, error) {
+	return s.db.Query(listReposSQLBase + listReposOrderTotalViewsDesc)
+}
+func (s *Store) queryListReposTotalClonesAsc() (*sql.Rows, error) {
+	return s.db.Query(listReposSQLBase + listReposOrderTotalClonesAsc)
+}
+func (s *Store) queryListReposTotalClonesDesc() (*sql.Rows, error) {
+	return s.db.Query(listReposSQLBase + listReposOrderTotalClonesDesc)
 }
 
-func listReposSortIndex(sort string) int {
+func (s *Store) queryListReposRows(sort, direction string) (*sql.Rows, error) {
+	asc := direction == "asc"
 	switch sort {
 	case "name":
-		return 0
+		if asc {
+			return s.queryListReposNameAsc()
+		}
+		return s.queryListReposNameDesc()
 	case "stars":
-		return 1
+		if asc {
+			return s.queryListReposStarsAsc()
+		}
+		return s.queryListReposStarsDesc()
 	case "forks":
-		return 2
+		if asc {
+			return s.queryListReposForksAsc()
+		}
+		return s.queryListReposForksDesc()
 	case "total_views":
-		return 3
+		if asc {
+			return s.queryListReposTotalViewsAsc()
+		}
+		return s.queryListReposTotalViewsDesc()
 	case "total_clones":
-		return 4
+		if asc {
+			return s.queryListReposTotalClonesAsc()
+		}
+		return s.queryListReposTotalClonesDesc()
 	default:
-		return 3
+		return s.queryListReposTotalViewsDesc()
 	}
-}
-
-func listReposDirIndex(direction string) int {
-	if direction == "asc" {
-		return 0
-	}
-	return 1
 }
 
 // ListRepos returns all non-hidden repos with their aggregated traffic totals.
@@ -505,8 +523,7 @@ func (s *Store) ListRepos(sort, direction string) ([]RepoSummary, error) {
 		direction = "desc"
 	}
 
-	query := listReposQueryTable[listReposSortIndex(sort)][listReposDirIndex(direction)]
-	rows, err := s.db.Query(query)
+	rows, err := s.queryListReposRows(sort, direction)
 	if err != nil {
 		return nil, err
 	}
