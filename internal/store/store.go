@@ -412,54 +412,8 @@ type RepoSummary struct {
 	CloneUniques   int    `json:"clone_uniques"`
 }
 
-// listReposOrderClause returns a fixed ORDER BY fragment; sort and direction must be normalized by ListRepos.
-func listReposOrderClause(sort, direction string) string {
-	asc := direction == "asc"
-	switch sort {
-	case "name":
-		if asc {
-			return "ORDER BY r.name ASC"
-		}
-		return "ORDER BY r.name DESC"
-	case "stars":
-		if asc {
-			return "ORDER BY r.stars ASC"
-		}
-		return "ORDER BY r.stars DESC"
-	case "forks":
-		if asc {
-			return "ORDER BY r.forks ASC"
-		}
-		return "ORDER BY r.forks DESC"
-	case "total_clones":
-		if asc {
-			return "ORDER BY COALESCE(c.total_clones, 0) ASC"
-		}
-		return "ORDER BY COALESCE(c.total_clones, 0) DESC"
-	case "total_views":
-		if asc {
-			return "ORDER BY COALESCE(v.total_views, 0) ASC"
-		}
-		return "ORDER BY COALESCE(v.total_views, 0) DESC"
-	default:
-		return "ORDER BY COALESCE(v.total_views, 0) DESC"
-	}
-}
-
-// ListRepos returns all non-hidden repos with their aggregated traffic totals.
-func (s *Store) ListRepos(sort, direction string) ([]RepoSummary, error) {
-	allowed := map[string]bool{
-		"name": true, "stars": true, "forks": true,
-		"total_views": true, "total_clones": true,
-	}
-	if !allowed[sort] {
-		sort = "total_views"
-	}
-	if direction != "asc" {
-		direction = "desc"
-	}
-
-	query := `
+// Fixed SQL fragments for ListRepos: no dynamic string building from sort/direction reaches the DB (CodeQL-safe).
+const listReposSQLBase = `
 		SELECT
 			r.name, r.description, r.stars, r.forks, r.watchers, r.issues, r.prs,
 			r.fork, r.parent_full_name, r.archived,
@@ -475,8 +429,83 @@ func (s *Store) ListRepos(sort, direction string) ([]RepoSummary, error) {
 			FROM clones GROUP BY repo
 		) c ON c.repo = r.name
 		WHERE r.hidden = 0
-		` + listReposOrderClause(sort, direction)
+`
 
+const (
+	listReposOrderNameAsc         = `ORDER BY r.name ASC`
+	listReposOrderNameDesc        = `ORDER BY r.name DESC`
+	listReposOrderStarsAsc        = `ORDER BY r.stars ASC`
+	listReposOrderStarsDesc       = `ORDER BY r.stars DESC`
+	listReposOrderForksAsc        = `ORDER BY r.forks ASC`
+	listReposOrderForksDesc       = `ORDER BY r.forks DESC`
+	listReposOrderTotalViewsAsc   = `ORDER BY COALESCE(v.total_views, 0) ASC`
+	listReposOrderTotalViewsDesc  = `ORDER BY COALESCE(v.total_views, 0) DESC`
+	listReposOrderTotalClonesAsc  = `ORDER BY COALESCE(c.total_clones, 0) ASC`
+	listReposOrderTotalClonesDesc = `ORDER BY COALESCE(c.total_clones, 0) DESC`
+)
+
+// listReposQueryTable: row = sort key (name, stars, forks, total_views, total_clones); col 0 = asc, 1 = desc.
+var listReposQueryTable = [5][2]string{
+	{
+		listReposSQLBase + listReposOrderNameAsc,
+		listReposSQLBase + listReposOrderNameDesc,
+	},
+	{
+		listReposSQLBase + listReposOrderStarsAsc,
+		listReposSQLBase + listReposOrderStarsDesc,
+	},
+	{
+		listReposSQLBase + listReposOrderForksAsc,
+		listReposSQLBase + listReposOrderForksDesc,
+	},
+	{
+		listReposSQLBase + listReposOrderTotalViewsAsc,
+		listReposSQLBase + listReposOrderTotalViewsDesc,
+	},
+	{
+		listReposSQLBase + listReposOrderTotalClonesAsc,
+		listReposSQLBase + listReposOrderTotalClonesDesc,
+	},
+}
+
+func listReposSortIndex(sort string) int {
+	switch sort {
+	case "name":
+		return 0
+	case "stars":
+		return 1
+	case "forks":
+		return 2
+	case "total_views":
+		return 3
+	case "total_clones":
+		return 4
+	default:
+		return 3
+	}
+}
+
+func listReposDirIndex(direction string) int {
+	if direction == "asc" {
+		return 0
+	}
+	return 1
+}
+
+// ListRepos returns all non-hidden repos with their aggregated traffic totals.
+func (s *Store) ListRepos(sort, direction string) ([]RepoSummary, error) {
+	allowed := map[string]bool{
+		"name": true, "stars": true, "forks": true,
+		"total_views": true, "total_clones": true,
+	}
+	if !allowed[sort] {
+		sort = "total_views"
+	}
+	if direction != "asc" {
+		direction = "desc"
+	}
+
+	query := listReposQueryTable[listReposSortIndex(sort)][listReposDirIndex(direction)]
 	rows, err := s.db.Query(query)
 	if err != nil {
 		return nil, err

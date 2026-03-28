@@ -12,6 +12,8 @@ permissions:
 jobs:
   lint:
     name: gofmt + go vet + gocyclo
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +32,8 @@ jobs:
         run: make gocyclo
 
   test:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
