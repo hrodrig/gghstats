@@ -446,6 +446,17 @@ html[data-bs-theme="dark"] .app-brutalist .pagination .page-item.active .page-li
 
 .app-brutal-console-github {
   letter-spacing: 0.1em;
+  color: var(--brutal-accent) !important;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: var(--brutal-border-ink);
+}
+
+.app-brutalist footer .app-brutal-console-github:hover,
+.app-brutalist footer .app-brutal-console-github:focus-visible {
+  color: var(--brutal-accent-2) !important;
+  text-decoration-color: var(--brutal-accent-2);
 }
 
 @media (max-width: 575.98px) {
