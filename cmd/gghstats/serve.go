@@ -136,17 +136,10 @@ func runServe(args []string) error {
 }
 
 func startScheduler(ctx context.Context, gh *github.Client, db *store.Store, opts sync.Options, interval time.Duration) {
-	// Immediate sync if DB is empty
-	hasRepos, _ := db.HasRepos()
-	if !hasRepos {
-		slog.Info("no repos in database, running initial sync")
-		if err := sync.Run(gh, db, opts); err != nil {
-			slog.Error("initial sync failed", "error", err)
-		}
-	} else {
-		if err := db.UpdateDeltas(); err != nil {
-			slog.Error("update deltas on startup failed", "error", err)
-		}
+	// Full sync on startup so repo discovery matches the current filter without waiting for the interval.
+	slog.Info("startup sync starting")
+	if err := sync.Run(gh, db, opts); err != nil {
+		slog.Error("startup sync failed", "error", err)
 	}
 
 	ticker := time.NewTicker(interval)
