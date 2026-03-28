@@ -84,6 +84,10 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=gghstats_edge
+      # Rate limit per client IP (token bucket); reduces noisy scanners before they hit the app.
+      - traefik.http.middlewares.gghstats-ratelimit.ratelimit.average=10
+      - traefik.http.middlewares.gghstats-ratelimit.ratelimit.period=1s
+      - traefik.http.middlewares.gghstats-ratelimit.ratelimit.burst=50
       - traefik.http.middlewares.gghstats-hdr.headers.frameDeny=true
       - traefik.http.middlewares.gghstats-hdr.headers.browserXssFilter=true
       - traefik.http.middlewares.gghstats-hdr.headers.contentTypeNosniff=true
@@ -93,6 +97,6 @@ services:
       - traefik.http.routers.gghstats.entrypoints=websecure
       - traefik.http.routers.gghstats.tls=true
       - traefik.http.routers.gghstats.tls.certresolver=le
-      - traefik.http.routers.gghstats.middlewares=gghstats-hdr
+      - traefik.http.routers.gghstats.middlewares=gghstats-ratelimit,gghstats-hdr
       - traefik.http.services.gghstats.loadbalancer.server.port=8080
     logging: *default-logging
