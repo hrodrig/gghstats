@@ -1,5 +1,7 @@
 # gghstats
 
+![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
+
 [![Version](https://img.shields.io/badge/version-0.1.0-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
@@ -23,6 +25,7 @@ Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only k
 
 - [Demo](#demo)
 - [Features](#features)
+- [Repository page charts](#repository-page-charts-clones--views)
 - [Quick start](#quick-start)
 - [Install](#install)
 - [Usage](#usage)
@@ -48,6 +51,17 @@ Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only k
 - CLI mode for fetch/report/export
 - Single binary, SQLite storage, no external DB dependency
 - Docker and Helm support
+
+### Repository page charts (Clones & Views)
+
+On each repository’s detail page, the **Clones** and **Views** bar charts are **stacked** from GitHub’s daily traffic API:
+
+| Segment | Meaning | GitHub field |
+|--------|---------|--------------|
+| **Lower** (theme primary color) | Unique visitors or cloners that day | `uniques` |
+| **Upper** (theme info color) | Total views or total clones that day | `count` |
+
+Exact colors depend on light/dark theme (Bootstrap `--bs-primary` / `--bs-info`, overridden in the app’s neo-brutalist CSS). The legend is hidden on the chart; use the tooltip on each bar for values.
 
 [Back to top](#gghstats)
 
