@@ -24,11 +24,31 @@ func runFetch(args []string) error {
 
 	today := time.Now().UTC().Format("2006-01-02")
 
-	meta, err := gh.Repo(gf.Repo)
+	if err := upsertRepoFromGitHub(gh, db, gf.Repo); err != nil {
+		return err
+	}
+	if err := fetchStoreViews(gh, db, gf.Repo); err != nil {
+		return err
+	}
+	if err := fetchStoreClones(gh, db, gf.Repo); err != nil {
+		return err
+	}
+	if err := fetchStoreReferrers(gh, db, gf.Repo, today); err != nil {
+		return err
+	}
+	if err := fetchStorePaths(gh, db, gf.Repo, today); err != nil {
+		return err
+	}
+	fmt.Printf("\nData saved to %s\n", gf.DB)
+	return nil
+}
+
+func upsertRepoFromGitHub(gh *github.Client, db *store.Store, repo string) error {
+	meta, err := gh.Repo(repo)
 	if err != nil {
 		return fmt.Errorf("fetch repo metadata: %w", err)
 	}
-	prs, err := gh.OpenPullRequests(gf.Repo)
+	prs, err := gh.OpenPullRequests(repo)
 	if err != nil {
 		prs = nil
 	}
@@ -45,59 +65,65 @@ func runFetch(args []string) error {
 	); err != nil {
 		return fmt.Errorf("store repo metadata: %w", err)
 	}
+	return nil
+}
 
-	// Fetch and store views
-	views, err := gh.Views(gf.Repo)
+func fetchStoreViews(gh *github.Client, db *store.Store, repo string) error {
+	views, err := gh.Views(repo)
 	if err != nil {
 		return fmt.Errorf("fetch views: %w", err)
 	}
 	for _, v := range views.Views {
 		d := v.Timestamp.Format("2006-01-02")
-		if err := db.UpsertView(gf.Repo, d, v.Count, v.Uniques); err != nil {
+		if err := db.UpsertView(repo, d, v.Count, v.Uniques); err != nil {
 			return fmt.Errorf("store view %s: %w", d, err)
 		}
 	}
 	fmt.Printf("views:     %d days stored (total: %d, uniques: %d)\n",
 		len(views.Views), views.Count, views.Uniques)
+	return nil
+}
 
-	// Fetch and store clones
-	clones, err := gh.Clones(gf.Repo)
+func fetchStoreClones(gh *github.Client, db *store.Store, repo string) error {
+	clones, err := gh.Clones(repo)
 	if err != nil {
 		return fmt.Errorf("fetch clones: %w", err)
 	}
 	for _, c := range clones.Clones {
 		d := c.Timestamp.Format("2006-01-02")
-		if err := db.UpsertClone(gf.Repo, d, c.Count, c.Uniques); err != nil {
+		if err := db.UpsertClone(repo, d, c.Count, c.Uniques); err != nil {
 			return fmt.Errorf("store clone %s: %w", d, err)
 		}
 	}
 	fmt.Printf("clones:    %d days stored (total: %d, uniques: %d)\n",
 		len(clones.Clones), clones.Count, clones.Uniques)
+	return nil
+}
 
-	// Fetch and store referrers (snapshot for today)
-	refs, err := gh.Referrers(gf.Repo)
+func fetchStoreReferrers(gh *github.Client, db *store.Store, repo, today string) error {
+	refs, err := gh.Referrers(repo)
 	if err != nil {
 		return fmt.Errorf("fetch referrers: %w", err)
 	}
 	for _, r := range refs {
-		if err := db.UpsertReferrer(gf.Repo, today, r.Referrer, r.Count, r.Uniques); err != nil {
+		if err := db.UpsertReferrer(repo, today, r.Referrer, r.Count, r.Uniques); err != nil {
 			return fmt.Errorf("store referrer %s: %w", r.Referrer, err)
 		}
 	}
 	fmt.Printf("referrers: %d entries stored\n", len(refs))
+	return nil
+}
 
-	// Fetch and store popular paths (snapshot for today)
-	paths, err := gh.PopularPaths(gf.Repo)
+func fetchStorePaths(gh *github.Client, db *store.Store, repo, today string) error {
+	paths, err := gh.PopularPaths(repo)
 	if err != nil {
 		return fmt.Errorf("fetch paths: %w", err)
 	}
 	for _, p := range paths {
-		if err := db.UpsertPath(gf.Repo, today, p.Path, p.Title, p.Count, p.Uniques); err != nil {
+		if err := db.UpsertPath(repo, today, p.Path, p.Title, p.Count, p.Uniques); err != nil {
 			return fmt.Errorf("store path %s: %w", p.Path, err)
 		}
 	}
 	fmt.Printf("paths:     %d entries stored\n", len(paths))
-	fmt.Printf("\nData saved to %s\n", gf.DB)
-
 	return nil
 }

@@ -412,6 +412,40 @@ type RepoSummary struct {
 	CloneUniques   int    `json:"clone_uniques"`
 }
 
+// listReposOrderClause returns a fixed ORDER BY fragment; sort and direction must be normalized by ListRepos.
+func listReposOrderClause(sort, direction string) string {
+	asc := direction == "asc"
+	switch sort {
+	case "name":
+		if asc {
+			return "ORDER BY r.name ASC"
+		}
+		return "ORDER BY r.name DESC"
+	case "stars":
+		if asc {
+			return "ORDER BY r.stars ASC"
+		}
+		return "ORDER BY r.stars DESC"
+	case "forks":
+		if asc {
+			return "ORDER BY r.forks ASC"
+		}
+		return "ORDER BY r.forks DESC"
+	case "total_clones":
+		if asc {
+			return "ORDER BY COALESCE(c.total_clones, 0) ASC"
+		}
+		return "ORDER BY COALESCE(c.total_clones, 0) DESC"
+	case "total_views":
+		if asc {
+			return "ORDER BY COALESCE(v.total_views, 0) ASC"
+		}
+		return "ORDER BY COALESCE(v.total_views, 0) DESC"
+	default:
+		return "ORDER BY COALESCE(v.total_views, 0) DESC"
+	}
+}
+
 // ListRepos returns all non-hidden repos with their aggregated traffic totals.
 func (s *Store) ListRepos(sort, direction string) ([]RepoSummary, error) {
 	allowed := map[string]bool{
@@ -425,7 +459,7 @@ func (s *Store) ListRepos(sort, direction string) ([]RepoSummary, error) {
 		direction = "desc"
 	}
 
-	query := fmt.Sprintf(`
+	query := `
 		SELECT
 			r.name, r.description, r.stars, r.forks, r.watchers, r.issues, r.prs,
 			r.fork, r.parent_full_name, r.archived,
@@ -441,7 +475,7 @@ func (s *Store) ListRepos(sort, direction string) ([]RepoSummary, error) {
 			FROM clones GROUP BY repo
 		) c ON c.repo = r.name
 		WHERE r.hidden = 0
-		ORDER BY %s %s`, sort, direction)
+		` + listReposOrderClause(sort, direction)
 
 	rows, err := s.db.Query(query)
 	if err != nil {
