@@ -15,7 +15,7 @@
 
 Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only keeps traffic for 14 days; `gghstats` keeps historical data indefinitely in SQLite.
 
-**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:<version>` and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
+**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.1.0`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
 
 ## Demo
 
@@ -90,7 +90,7 @@ docker run -d \
   -p 8080:8080 \
   -v ./data:/data \
   --name gghstats \
-  ghcr.io/hrodrig/gghstats:0.1.0
+  ghcr.io/hrodrig/gghstats:v0.1.0
 ```
 
 [Back to top](#gghstats)
@@ -106,7 +106,7 @@ go install github.com/hrodrig/gghstats/cmd/gghstats@latest
 ### Pre-built binary and container
 
 - **Binary archives:** [Releases](https://github.com/hrodrig/gghstats/releases) (pick OS/arch; verify `checksums.txt`).
-- **OCI image:** `ghcr.io/hrodrig/gghstats:0.1.0` or `ghcr.io/hrodrig/gghstats:latest` (same digest family as the release tag; multi-arch manifest).
+- **OCI image:** `ghcr.io/hrodrig/gghstats:v0.1.0` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
 
 ### Build from source
 
@@ -274,7 +274,7 @@ gghstats export --repo your-github-user/my-app --days 30 --output traffic-30d.cs
 ```yaml
 services:
   gghstats:
-    image: ghcr.io/hrodrig/gghstats:${GGHSTATS_VERSION:-0.1.0}
+    image: ghcr.io/hrodrig/gghstats:${GGHSTATS_VERSION:-v0.1.0}
     restart: unless-stopped
     environment:
       - GGHSTATS_GITHUB_TOKEN=${GGHSTATS_GITHUB_TOKEN}
@@ -310,7 +310,7 @@ kubectl create secret generic gghstats-secret \
 
 helm upgrade --install gghstats ./charts/gghstats \
   --set githubToken.existingSecret=gghstats-secret \
-  --set image.tag=0.1.0
+  --set image.tag=v0.1.0
 ```
 
 Customize environment and persistence in `charts/gghstats/values.yaml`.
@@ -389,7 +389,7 @@ make release                          # runs release-check then goreleaser relea
 ### Developer checklist
 
 - Update **`CHANGELOG.md`** (move `[Unreleased]` into the new version section).
-- Keep **`VERSION`**, README **Version** badge, and examples (`ghcr.io/...`, Helm `image.tag`) aligned.
+- Keep **`VERSION`** (no `v`), README **Version** badge, and examples (`ghcr.io/...:v…`, Helm `image.tag`) aligned; the OCI tag uses the same `v` prefix as the Git tag (like pgwd).
 - Ensure **CI** and **Security** workflows are green before pushing the release tag.
 - **Docker:** `Dockerfile` is for local `make docker-build` / `docker-scan`. **GoReleaser** uses **`Dockerfile.release`** (pre-built Linux binaries; same pattern as multi-arch release images).
 

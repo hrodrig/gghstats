@@ -139,7 +139,7 @@ security: govulncheck gocyclo grype
 release-check:
 	@test -f VERSION || (echo "VERSION file is required"; exit 1)
 	@echo "Release version: $(VERSION) (tag: $(TAG))"
-	@echo "$(VERSION)" | rg '^[0-9]+\.[0-9]+\.[0-9]+$$' >/dev/null || (echo "VERSION must be semantic version (e.g. 0.1.0)"; exit 1)
+	@echo "$(VERSION)" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$$' || (echo "VERSION must be semantic version (e.g. 0.1.0)"; exit 1)
 	@command -v goreleaser >/dev/null 2>&1 || (echo "goreleaser is required. Install from https://goreleaser.com/install/"; exit 1)
 	@$(MAKE) lint
 	@$(MAKE) test

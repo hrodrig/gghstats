@@ -7,7 +7,7 @@ x-logging: &default-logging
 
 services:
   gghstats:
-    image: ghcr.io/hrodrig/gghstats:${GGHSTATS_VERSION:-0.1.0}
+    image: ghcr.io/hrodrig/gghstats:${GGHSTATS_VERSION:-v0.1.0}
     container_name: gghstats
     restart: unless-stopped
     environment:

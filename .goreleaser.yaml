@@ -46,6 +46,10 @@ changelog:
       - "^test:"
       - "^chore:"
 
+# Snapshot / test-release: version from VERSION + bumped patch + -next (same idea as pgwd).
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
 # Docker: multi-arch image to ghcr.io (same pattern as pgwd: dockers_v2 + Dockerfile.release).
 # sbom: false — GitHub-hosted runners use the docker buildx driver without attestation support;
 # otherwise build fails with: "Attestation is not supported for the docker driver".
@@ -57,7 +61,7 @@ dockers_v2:
     images:
       - ghcr.io/hrodrig/gghstats
     tags:
-      - "{{ .Version }}"
+      - "v{{ .Version }}"
       - "{{ if not .IsSnapshot }}latest{{ end }}"
     labels:
       org.opencontainers.image.title: "gghstats"
@@ -68,5 +72,8 @@ dockers_v2:
     # buildx setup errors with: "index annotations not supported for single platform export".
 
 release:
+  github:
+    owner: hrodrig
+    name: gghstats
   header: |
     ## gghstats {{ .Tag }}
