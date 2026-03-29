@@ -64,8 +64,8 @@ dockers_v2:
       org.opencontainers.image.description: "GitHub traffic dashboard and CLI"
       org.opencontainers.image.source: "https://github.com/hrodrig/gghstats"
       org.opencontainers.image.version: "{{ .Version }}"
-    annotations:
-      org.opencontainers.image.description: "GitHub traffic dashboard and CLI"
+    # No `annotations:` here — GoReleaser passes them as manifest index annotations; GitHub's
+    # buildx setup errors with: "index annotations not supported for single platform export".
 
 release:
   header: |
