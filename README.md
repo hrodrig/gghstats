@@ -15,7 +15,7 @@
 
 Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only keeps traffic for 14 days; `gghstats` keeps historical data indefinitely in SQLite.
 
-> **Pre-release:** Active development is on the `develop` branch. There are no GitHub Releases or published release artifacts yet; those are produced when the project is merged to `main` and tagged (see [Release workflow](#release-workflow)).
+**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:<version>` and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
 
 ## Demo
 
@@ -102,6 +102,11 @@ docker run -d \
 ```bash
 go install github.com/hrodrig/gghstats/cmd/gghstats@latest
 ```
+
+### Pre-built binary and container
+
+- **Binary archives:** [Releases](https://github.com/hrodrig/gghstats/releases) (pick OS/arch; verify `checksums.txt`).
+- **OCI image:** `ghcr.io/hrodrig/gghstats:0.1.0` or `ghcr.io/hrodrig/gghstats:latest` (same digest family as the release tag; multi-arch manifest).
 
 ### Build from source
 
@@ -346,44 +351,47 @@ curl -H "x-api-token: $GGHSTATS_API_TOKEN" http://localhost:8080/api/repos
 
 ## Release workflow
 
-- Branch policy: day-to-day development on `develop`, production releases from `main`.
-- `VERSION` file uses semantic version without `v` (for example `0.1.0`).
-- Git tags use `v` prefix (for example `v0.1.0`).
+- Branch policy: day-to-day development on `develop`; **tagged releases** are cut from **`main`**.
+- **`VERSION`** file: semantic version **without** `v` (for example `0.1.0`). Must match the static **Version** badge at the top of this README.
+- **Git tags:** annotated tag **with** `v` prefix (for example `v0.1.0`), on the commit you want released.
+
+### Default: publish from GitHub Actions (no local GoReleaser required)
+
+Pushing a tag matching `v*` runs [`.github/workflows/release.yml`](.github/workflows/release.yml): `make release-check`, then `goreleaser release --clean` with `GITHUB_TOKEN` (releases + **GHCR**).
 
 ```bash
-# 1) finish work on develop
+# 1) On develop: land changes, bump version if needed
 git checkout develop
-make lint
-make test
-make security
+make release-check                    # optional: STRICT_RELEASE=1 (adds docker image scan)
+make test-release                     # optional: dry-run GoReleaser + local Docker build
 
-# optional strict gate (includes docker image scan)
-make release-check STRICT_RELEASE=1
+# 2) Update VERSION, README version badge, CHANGELOG; commit on develop
 
-# 2) set release version
-echo "0.1.1" > VERSION
-
-# 3) validate release artifacts locally
-make snapshot
-make test-release
-
-# 4) merge develop -> main and release from main
-git checkout main
-git merge --ff-only develop
-git tag -a v0.1.1 -m "Release 0.1.1"
+# 3) Merge into main (PR or fast-forward), then tag and push
+git checkout main && git pull origin main
+git merge --ff-only develop           # or: merge via GitHub PR
 git push origin main
-git push origin v0.1.1
 
-# 5) publish (main only)
-make release
+git tag -a v0.1.0 -m "Release 0.1.0"
+git push origin v0.1.0                # triggers Release workflow — builds and publishes artifacts
 ```
 
-Developer release checklist:
+For the **next** release after `0.1.0`, set `VERSION` to `0.1.1` (etc.), update the badge and docs examples, move changelog entries from `[Unreleased]`, then repeat with `v0.1.1`.
 
-- Update `CHANGELOG.md` (`[Unreleased]` -> new version section).
-- Confirm README version badge matches `VERSION`.
-- Ensure CI and Security workflows are green before pushing the release tag.
-- Verify GHCR image tags and Helm chart values use the intended version.
+### Optional: publish from your machine
+
+If you run GoReleaser locally instead of relying on CI, checkout **`main`** at the tagged commit, export **`GITHUB_TOKEN`** (or **`GH_TOKEN`**) with `repo` and **packages** access to push GHCR, then:
+
+```bash
+make release                          # runs release-check then goreleaser release --clean
+```
+
+### Developer checklist
+
+- Update **`CHANGELOG.md`** (move `[Unreleased]` into the new version section).
+- Keep **`VERSION`**, README **Version** badge, and examples (`ghcr.io/...`, Helm `image.tag`) aligned.
+- Ensure **CI** and **Security** workflows are green before pushing the release tag.
+- **Docker:** `Dockerfile` is for local `make docker-build` / `docker-scan`. **GoReleaser** uses **`Dockerfile.release`** (pre-built Linux binaries; same pattern as multi-arch release images).
 
 [Back to top](#gghstats)
 
