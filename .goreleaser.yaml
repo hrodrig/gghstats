@@ -46,16 +46,23 @@ changelog:
       - "^test:"
       - "^chore:"
 
-dockers:
-  - image_templates:
-      - "ghcr.io/hrodrig/gghstats:{{ .Version }}"
-      - "ghcr.io/hrodrig/gghstats:latest"
-    dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-      - "--build-arg=VERSION={{ .Version }}"
-      - "--build-arg=COMMIT={{ .ShortCommit }}"
-      - "--build-arg=BUILDDATE={{ .Date }}"
+# Docker: multi-arch image to ghcr.io (same pattern as pgwd: dockers_v2 + Dockerfile.release).
+dockers_v2:
+  - dockerfile: Dockerfile.release
+    ids:
+      - gghstats
+    images:
+      - ghcr.io/hrodrig/gghstats
+    tags:
+      - "{{ .Version }}"
+      - "{{ if not .IsSnapshot }}latest{{ end }}"
+    labels:
+      org.opencontainers.image.title: "gghstats"
+      org.opencontainers.image.description: "GitHub traffic dashboard and CLI"
+      org.opencontainers.image.source: "https://github.com/hrodrig/gghstats"
+      org.opencontainers.image.version: "{{ .Version }}"
+    annotations:
+      org.opencontainers.image.description: "GitHub traffic dashboard and CLI"
 
 release:
   header: |

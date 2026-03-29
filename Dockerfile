@@ -1,3 +1,4 @@
+# Multi-stage build for local use (make docker-build). Release images use Dockerfile.release + GoReleaser.
 FROM golang:1.26.1-alpine AS builder
 
 WORKDIR /app

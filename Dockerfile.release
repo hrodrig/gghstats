@@ -1,0 +1,26 @@
+# Runtime image for GoReleaser dockers_v2. Binaries are under linux/<arch>/gghstats per platform.
+# COPY the whole linux/ tree then pick the right binary for single-platform (snapshot) and
+# multi-platform (release) builds. Local multi-stage builds use Dockerfile (make docker-build).
+ARG TARGETPLATFORM
+FROM alpine:3.21
+LABEL org.opencontainers.image.title="gghstats"
+LABEL org.opencontainers.image.description="GitHub traffic dashboard and CLI"
+LABEL org.opencontainers.image.source="https://github.com/hrodrig/gghstats"
+LABEL org.opencontainers.image.authors="https://github.com/hrodrig/gghstats"
+RUN apk add --no-cache ca-certificates && \
+    addgroup -g 1000 gghstats && \
+    adduser -D -u 1000 -G gghstats -h /data gghstats
+COPY linux/ /tmp/linux/
+ARG TARGETPLATFORM
+RUN case "$TARGETPLATFORM" in \
+	linux/amd64) cp /tmp/linux/amd64/gghstats /usr/local/bin/gghstats ;; \
+	linux/arm64) cp /tmp/linux/arm64/gghstats /usr/local/bin/gghstats ;; \
+	*) cp /tmp/linux/amd64/gghstats /usr/local/bin/gghstats ;; \
+	esac && chown gghstats:gghstats /usr/local/bin/gghstats
+
+USER gghstats
+WORKDIR /data
+VOLUME /data
+EXPOSE 8080
+
+ENTRYPOINT ["gghstats", "serve"]

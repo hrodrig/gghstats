@@ -12,6 +12,7 @@
 !.github/
 !.github/**
 !Dockerfile
+!Dockerfile.release
 !Makefile
 !README.md
 !VERSION
