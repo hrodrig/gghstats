@@ -10,11 +10,12 @@ body.app-brutalist {
   letter-spacing: 0.08em;
 }
 
-/* External / new-tab hint (box-arrow-up-right), inherits link color */
+/* External / new-tab hint (box-arrow-up-right), inherits link color; smaller than adjacent text */
 .app-external-link-icon {
-  width: 1em;
-  height: 1em;
+  width: 0.65em;
+  height: 0.65em;
   flex-shrink: 0;
+  align-self: center;
 }
 
 /* Page titles: terminal / engineering emphasis */
