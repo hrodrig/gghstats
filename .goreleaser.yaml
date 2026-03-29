@@ -47,8 +47,11 @@ changelog:
       - "^chore:"
 
 # Docker: multi-arch image to ghcr.io (same pattern as pgwd: dockers_v2 + Dockerfile.release).
+# sbom: false — GitHub-hosted runners use the docker buildx driver without attestation support;
+# otherwise build fails with: "Attestation is not supported for the docker driver".
 dockers_v2:
   - dockerfile: Dockerfile.release
+    sbom: false
     ids:
       - gghstats
     images:
