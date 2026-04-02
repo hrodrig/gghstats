@@ -1,5 +1,5 @@
 # Release: runs on tag push (v*). Publishes binaries and Docker image via GoReleaser.
-# Trigger: git tag v0.1.0 && git push origin v0.1.0
+# Trigger: git tag v0.1.1 && git push origin v0.1.1
 # Requires: release-check passed before tagging (make release-check).
 name: Release
 

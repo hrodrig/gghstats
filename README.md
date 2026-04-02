@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.1.1-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![Go 1.26.1](https://img.shields.io/badge/go-1.26.1-00ADD8?logo=go)](https://go.dev/)
@@ -15,7 +15,7 @@
 
 Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only keeps traffic for 14 days; `gghstats` keeps historical data indefinitely in SQLite.
 
-**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.1.0`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
+**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.1.1`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
 
 ## Demo
 
@@ -90,7 +90,7 @@ docker run -d \
   -p 8080:8080 \
   -v ./data:/data \
   --name gghstats \
-  ghcr.io/hrodrig/gghstats:v0.1.0
+  ghcr.io/hrodrig/gghstats:v0.1.1
 ```
 
 [Back to top](#gghstats)
@@ -106,7 +106,7 @@ go install github.com/hrodrig/gghstats/cmd/gghstats@latest
 ### Pre-built binary and container
 
 - **Binary archives:** [Releases](https://github.com/hrodrig/gghstats/releases) (pick OS/arch; verify `checksums.txt`).
-- **OCI image:** `ghcr.io/hrodrig/gghstats:v0.1.0` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
+- **OCI image:** `ghcr.io/hrodrig/gghstats:v0.1.1` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
 
 ### Build from source
 
@@ -274,7 +274,7 @@ gghstats export --repo your-github-user/my-app --days 30 --output traffic-30d.cs
 ```yaml
 services:
   gghstats:
-    image: ghcr.io/hrodrig/gghstats:${GGHSTATS_VERSION:-v0.1.0}
+    image: ghcr.io/hrodrig/gghstats:${GGHSTATS_VERSION:-v0.1.1}
     restart: unless-stopped
     environment:
       - GGHSTATS_GITHUB_TOKEN=${GGHSTATS_GITHUB_TOKEN}
@@ -310,7 +310,7 @@ kubectl create secret generic gghstats-secret \
 
 helm upgrade --install gghstats ./charts/gghstats \
   --set githubToken.existingSecret=gghstats-secret \
-  --set image.tag=v0.1.0
+  --set image.tag=v0.1.1
 ```
 
 Customize environment and persistence in `charts/gghstats/values.yaml`.
@@ -352,8 +352,8 @@ curl -H "x-api-token: $GGHSTATS_API_TOKEN" http://localhost:8080/api/repos
 ## Release workflow
 
 - Branch policy: day-to-day development on `develop`; **tagged releases** are cut from **`main`**.
-- **`VERSION`** file: semantic version **without** `v` (for example `0.1.0`). Must match the static **Version** badge at the top of this README.
-- **Git tags:** annotated tag **with** `v` prefix (for example `v0.1.0`), on the commit you want released.
+- **`VERSION`** file: semantic version **without** `v` (for example `0.1.1`). Must match the static **Version** badge at the top of this README.
+- **Git tags:** annotated tag **with** `v` prefix (for example `v0.1.1`), on the commit you want released.
 
 ### Default: publish from GitHub Actions (no local GoReleaser required)
 
@@ -372,11 +372,11 @@ git checkout main && git pull origin main
 git merge --ff-only develop           # or: merge via GitHub PR
 git push origin main
 
-git tag -a v0.1.0 -m "Release 0.1.0"
-git push origin v0.1.0                # triggers Release workflow — builds and publishes artifacts
+git tag -a v0.1.1 -m "Release 0.1.1"
+git push origin v0.1.1                # triggers Release workflow — builds and publishes artifacts
 ```
 
-For the **next** release after `0.1.0`, set `VERSION` to `0.1.1` (etc.), update the badge and docs examples, move changelog entries from `[Unreleased]`, then repeat with `v0.1.1`.
+For the **next** release after `0.1.1`, set `VERSION` to `0.1.2` (etc.), update the badge and docs examples, move changelog entries from `[Unreleased]`, then repeat with `v0.1.2`.
 
 ### Optional: publish from your machine
 

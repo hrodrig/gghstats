@@ -51,6 +51,9 @@ body.app-brutalist {
   --brutal-btn-shift-active: 4px;
   --brutal-success: #00a86b;
   --brutal-warning: #ffd700;
+  /* Repo index Search CTA: true orange (light mode primary accent is red; keep CTA distinct) */
+  --brutal-search-cta: #fc8763;
+  --brutal-search-cta-shadow: #1a0d06;
   background-color: var(--brutal-paper) !important;
   color: var(--brutal-text);
   --bs-primary: var(--brutal-accent);
@@ -77,6 +80,8 @@ html[data-bs-theme="dark"] body.app-brutalist {
   --brutal-border: 3px solid var(--brutal-border-ink);
   --brutal-shadow: 8px 8px 0 var(--brutal-shadow-core);
   --brutal-primary-shadow: #000000;
+  --brutal-search-cta: #ff734a;
+  --brutal-search-cta-shadow: #1a0d06;
   background-color: var(--brutal-paper) !important;
   color: var(--brutal-text);
   --bs-primary: var(--brutal-accent);
@@ -329,17 +334,6 @@ html[data-bs-theme="dark"] .app-brutalist .btn-primary {
   color: #121212 !important;
 }
 
-/* Index search: same intense orange in light and dark (high-visibility CTA) */
-.app-brutalist .app-repo-search-submit.btn-primary {
-  --brutal-primary-shadow: #1a0d06;
-  background: #ff5c1a !important;
-  color: #fff !important;
-}
-
-html[data-bs-theme="dark"] .app-brutalist .app-repo-search-submit.btn-primary {
-  color: #fff !important;
-}
-
 .app-brutalist .btn-primary:hover {
   transform: translate(var(--brutal-btn-shift-hover), var(--brutal-btn-shift-hover));
   box-shadow: 2px 2px 0 var(--brutal-primary-shadow);
@@ -350,6 +344,39 @@ html[data-bs-theme="dark"] .app-brutalist .app-repo-search-submit.btn-primary {
   transform: translate(var(--brutal-btn-shift-active), var(--brutal-btn-shift-active));
   box-shadow: none !important;
   filter: brightness(0.98);
+}
+
+/*
+ * Index Search CTA: same orange in light and dark.
+ * In light mode --brutal-accent is red; Bootstrap/hover can otherwise surface btn-primary red.
+ * Keep background on base + hover + active so it never falls back to var(--brutal-accent).
+ */
+html[data-bs-theme="light"] .app-brutalist .app-repo-search-submit.btn-primary,
+html:not([data-bs-theme="dark"]) .app-brutalist .app-repo-search-submit.btn-primary,
+html[data-bs-theme="dark"] .app-brutalist .app-repo-search-submit.btn-primary,
+.app-brutalist .app-repo-search-submit.btn-primary {
+  --brutal-primary-shadow: var(--brutal-search-cta-shadow);
+  background-color: var(--brutal-search-cta) !important;
+  background: var(--brutal-search-cta) !important;
+  color: #fff !important;
+}
+
+html[data-bs-theme="light"] .app-brutalist .app-repo-search-submit.btn-primary:hover,
+html:not([data-bs-theme="dark"]) .app-brutalist .app-repo-search-submit.btn-primary:hover,
+html[data-bs-theme="dark"] .app-brutalist .app-repo-search-submit.btn-primary:hover,
+.app-brutalist .app-repo-search-submit.btn-primary:hover {
+  background-color: var(--brutal-search-cta) !important;
+  background: var(--brutal-search-cta) !important;
+  color: #fff !important;
+}
+
+html[data-bs-theme="light"] .app-brutalist .app-repo-search-submit.btn-primary:active,
+html:not([data-bs-theme="dark"]) .app-brutalist .app-repo-search-submit.btn-primary:active,
+html[data-bs-theme="dark"] .app-brutalist .app-repo-search-submit.btn-primary:active,
+.app-brutalist .app-repo-search-submit.btn-primary:active {
+  background-color: var(--brutal-search-cta) !important;
+  background: var(--brutal-search-cta) !important;
+  color: #fff !important;
 }
 
 .app-brutalist .btn-primary:focus-visible {

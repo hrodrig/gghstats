@@ -7,6 +7,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-04-02
+
+### Changed
+
+- Web UI: Search button uses theme-specific orange tokens (`--brutal-search-cta`) so light mode no longer shows the primary red accent; hover/active states keep the same fill color.
+
 ## [0.1.0] - 2026-03-29
 
 ### Added
@@ -22,5 +28,6 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.1
 [0.1.0]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.0

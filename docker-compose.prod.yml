@@ -65,7 +65,7 @@ services:
     logging: *default-logging
 
   gghstats:
-    image: ghcr.io/hrodrig/gghstats:${GGHSTATS_VERSION:-v0.1.0}
+    image: ghcr.io/hrodrig/gghstats:${GGHSTATS_VERSION:-v0.1.1}
     restart: always
     user: "${GGS_UID:?set GGS_UID in .env to id -u}:${GGS_GID:?set GGS_GID in .env to id -g}"
     security_opt:
