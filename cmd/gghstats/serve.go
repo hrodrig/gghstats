@@ -104,8 +104,9 @@ func runServe(args []string) error {
 
 	// Start HTTP server
 	handler := server.New(server.Config{
-		Store:    db,
-		APIToken: cfg.APIToken,
+		Store:          db,
+		APIToken:       cfg.APIToken,
+		DisableMetrics: os.Getenv("GGHSTATS_METRICS") == "false",
 	})
 
 	addr := cfg.Host + ":" + cfg.Port

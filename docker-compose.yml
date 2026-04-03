@@ -1,4 +1,5 @@
-# json-file log rotation (avoids unbounded container log growth on disk).
+# Local development: builds the app image from this repository (see Dockerfile).
+# For production (Traefik, TLS, Helm, observability), use the gghstats-selfhosted repository.
 x-logging: &default-logging
   driver: json-file
   options:
@@ -7,8 +8,8 @@ x-logging: &default-logging
 
 services:
   gghstats:
-    image: ghcr.io/hrodrig/gghstats:${GGHSTATS_VERSION:-v0.1.1}
-    container_name: gghstats
+    build: .
+    container_name: gghstats-local
     restart: unless-stopped
     environment:
       - GGHSTATS_GITHUB_TOKEN=${GGHSTATS_GITHUB_TOKEN}

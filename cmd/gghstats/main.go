@@ -36,6 +36,7 @@ Server env vars (serve):
   GGHSTATS_SYNC_INTERVAL   Sync frequency (default: 1h)
   GGHSTATS_API_TOKEN       Protect /api/* endpoints
   GGHSTATS_LOG_LEVEL       Log level: debug, info (default), warn, error
+  GGHSTATS_METRICS         Set to false to disable GET /metrics (Prometheus); default enabled
 
 Run 'gghstats <command> --help' for command-specific flags.`
 

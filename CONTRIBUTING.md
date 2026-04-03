@@ -22,8 +22,8 @@ Thank you for your interest in contributing.
 
 ## Release flow
 
-- Version is read from `VERSION` (semantic version without `v`, for example `0.1.1`).
-- Release tag format is `v<version>` (for example `v0.1.1`).
+- Version is read from `VERSION` (semantic version without `v`, for example `0.1.2`).
+- Release tag format is `v<version>` (for example `v0.1.2`).
 - Release PR flow: merge `develop` into `main`, then tag and release from `main`.
 - Useful commands:
   - `make snapshot`

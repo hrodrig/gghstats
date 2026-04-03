@@ -39,6 +39,50 @@ func TestHealthEndpoint(t *testing.T) {
 	}
 }
 
+func TestMetricsEndpoint(t *testing.T) {
+	db := testStore(t)
+	handler := New(Config{Store: db})
+
+	// First scrape runs before the outer middleware records the /metrics request; scrape twice
+	// so counters and histograms appear in the body.
+	for range 2 {
+		req := httptest.NewRequest("GET", MetricsPath, nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200", w.Code)
+		}
+	}
+	req := httptest.NewRequest("GET", MetricsPath, nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	body := w.Body.String()
+
+	if !strings.Contains(body, "gghstats_build_info") {
+		preview := body
+		if len(preview) > 200 {
+			preview = preview[:200]
+		}
+		t.Fatalf("expected gghstats_build_info in exposition, got %q", preview)
+	}
+	if !strings.Contains(body, "gghstats_http_requests_total") {
+		t.Fatal("expected gghstats_http_requests_total in exposition")
+	}
+}
+
+func TestMetricsDisabled(t *testing.T) {
+	db := testStore(t)
+	handler := New(Config{Store: db, DisableMetrics: true})
+
+	req := httptest.NewRequest("GET", MetricsPath, nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want 404", w.Code)
+	}
+}
+
 func TestMainStylesheetEmbedded(t *testing.T) {
 	db := testStore(t)
 	handler := New(Config{Store: db})

@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.1.1-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.1.2-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![Go 1.26.1](https://img.shields.io/badge/go-1.26.1-00ADD8?logo=go)](https://go.dev/)
@@ -15,7 +15,9 @@
 
 Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only keeps traffic for 14 days; `gghstats` keeps historical data indefinitely in SQLite.
 
-**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.1.1`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
+If you want your **own self-hosted** deployment (Docker Compose, Traefik with TLS, Helm, optional Prometheus/Grafana/Loki), use the companion repo **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** — it lists the supported options and example manifests.
+
+**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.1.2`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
 
 ## Demo
 
@@ -52,7 +54,7 @@ Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only k
 - JSON API for external integrations
 - CLI mode for fetch/report/export
 - Single binary, SQLite storage, no external DB dependency
-- Docker and Helm support
+- Docker image on GHCR; Compose / Helm examples live in **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**
 
 ### Repository page charts (Clones & Views)
 
@@ -69,17 +71,17 @@ Exact colors depend on light/dark theme (Bootstrap `--bs-primary` / `--bs-info`,
 
 ## Quick start
 
-### Docker Compose
+### Docker Compose (build from this repo)
 
 ```bash
 cp .env.example .env
 # Edit .env: set GGHSTATS_GITHUB_TOKEN (and optionally GGHSTATS_FILTER, GGHSTATS_PORT, etc.)
-docker compose up -d
+docker compose up -d --build
 ```
 
 Open <http://localhost:8080>.
 
-The template [`.env.example`](.env.example) lists every variable the server and Compose understand; `.env` stays local and is never committed.
+The template [`.env.example`](.env.example) lists variables for the **Go binary** and this dev Compose file. Production (Traefik, published image, Helm, observability) is in **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**.
 
 ### Plain Docker
 
@@ -90,7 +92,7 @@ docker run -d \
   -p 8080:8080 \
   -v ./data:/data \
   --name gghstats \
-  ghcr.io/hrodrig/gghstats:v0.1.1
+  ghcr.io/hrodrig/gghstats:v0.1.2
 ```
 
 [Back to top](#gghstats)
@@ -106,7 +108,7 @@ go install github.com/hrodrig/gghstats/cmd/gghstats@latest
 ### Pre-built binary and container
 
 - **Binary archives:** [Releases](https://github.com/hrodrig/gghstats/releases) (pick OS/arch; verify `checksums.txt`).
-- **OCI image:** `ghcr.io/hrodrig/gghstats:v0.1.1` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
+- **OCI image:** `ghcr.io/hrodrig/gghstats:v0.1.2` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
 
 ### Build from source
 
@@ -134,6 +136,7 @@ Server behavior:
 - Serves dashboard on <http://localhost:8080>
 - Stores data in `./data/gghstats.db`
 - Liveness/readiness: `GET /api/v1/healthz` → `{"status":"ok"}` (no auth; Kubernetes-style)
+- Prometheus: `GET /metrics` (disable with `GGHSTATS_METRICS=false`)
 - Listen port: `GGHSTATS_PORT` (default `8080`) or `gghstats serve --port <port>`
 - First stderr line on start: version, build date, `GOOS`/`GOARCH`, listen address, masked GitHub token (`XXXX....YYYY`); then slog at `GGHSTATS_LOG_LEVEL` (default `info`). Every structured slog line is prefixed with `gghstats ` so it is easy to grep in shared log streams.
 
@@ -205,6 +208,7 @@ All runtime configuration uses env vars (`serve`) or flags (`fetch/report/export
 | `GGHSTATS_SYNC_INTERVAL` | `1h` | Sync frequency |
 | `GGHSTATS_API_TOKEN` | (none) | Protect `/api/*` endpoints |
 | `GGHSTATS_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, or `error` (slog only; startup banner always prints) |
+| `GGHSTATS_METRICS` | (enabled) | Set to `false` to disable `GET /metrics` |
 
 ### Token setup
 
@@ -269,51 +273,11 @@ gghstats export --repo your-github-user/my-app --days 30 --output traffic-30d.cs
 
 ## Deployments
 
-### Docker Compose (deployment)
+Production and optional observability (Traefik + TLS, Prometheus / Grafana stack, Helm) live in a separate repository so release versioning applies to the **application** only. For self-hosted setups, start here:
 
-```yaml
-services:
-  gghstats:
-    image: ghcr.io/hrodrig/gghstats:${GGHSTATS_VERSION:-v0.1.1}
-    restart: unless-stopped
-    environment:
-      - GGHSTATS_GITHUB_TOKEN=${GGHSTATS_GITHUB_TOKEN}
-      - GGHSTATS_PORT=${GGHSTATS_PORT:-8080}
-      - GGHSTATS_FILTER=your-github-user/*
-    ports:
-      - "${GGHSTATS_PORT:-8080}:${GGHSTATS_PORT:-8080}"
-    volumes:
-      - ./data:/data
-```
+**[github.com/hrodrig/gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**
 
-### Docker Compose + Traefik (production VPS)
-
-Use [`docker-compose.prod.yml`](docker-compose.prod.yml) for **HTTPS** (Let's Encrypt), **HTTP→HTTPS redirect**, and **no host port** on gghstats (only Traefik listens on 80/443).
-
-1. Point **DNS** `A`/`AAAA` for your hostname to the VPS public IP.
-2. In `.env`, set at least: `GGHSTATS_GITHUB_TOKEN`, `GGHSTATS_HOSTNAME` (FQDN, e.g. `stats.example.com`), `ACME_EMAIL` (Let's Encrypt).
-3. Start:
-
-```bash
-docker compose -f docker-compose.prod.yml up -d
-```
-
-Traefik keeps certificates in the volume `traefik_letsencrypt`. Other `GGHSTATS_*` variables work like the simple Compose file.
-
-### Helm (Kubernetes)
-
-Chart path: `charts/gghstats`.
-
-```bash
-kubectl create secret generic gghstats-secret \
-  --from-literal=github-token=ghp_your_token_here
-
-helm upgrade --install gghstats ./charts/gghstats \
-  --set githubToken.existingSecret=gghstats-secret \
-  --set image.tag=v0.1.1
-```
-
-Customize environment and persistence in `charts/gghstats/values.yaml`.
+Clone that repo on your server, copy `.env.example` → `.env`, and follow its README for the deployment path you choose. For the optional metrics/logs stack, see **[run/docker-compose/observability/README.md](https://github.com/hrodrig/gghstats-selfhosted/blob/main/run/docker-compose/observability/README.md)** (on the default branch).
 
 [Back to top](#gghstats)
 
@@ -352,8 +316,8 @@ curl -H "x-api-token: $GGHSTATS_API_TOKEN" http://localhost:8080/api/repos
 ## Release workflow
 
 - Branch policy: day-to-day development on `develop`; **tagged releases** are cut from **`main`**.
-- **`VERSION`** file: semantic version **without** `v` (for example `0.1.1`). Must match the static **Version** badge at the top of this README.
-- **Git tags:** annotated tag **with** `v` prefix (for example `v0.1.1`), on the commit you want released.
+- **`VERSION`** file: semantic version **without** `v` (for example `0.1.2`). Must match the static **Version** badge at the top of this README.
+- **Git tags:** annotated tag **with** `v` prefix (for example `v0.1.2`), on the commit you want released.
 
 ### Default: publish from GitHub Actions (no local GoReleaser required)
 
@@ -372,11 +336,11 @@ git checkout main && git pull origin main
 git merge --ff-only develop           # or: merge via GitHub PR
 git push origin main
 
-git tag -a v0.1.1 -m "Release 0.1.1"
-git push origin v0.1.1                # triggers Release workflow — builds and publishes artifacts
+git tag -a v0.1.2 -m "Release 0.1.2"
+git push origin v0.1.2                # triggers Release workflow — builds and publishes artifacts
 ```
 
-For the **next** release after `0.1.1`, set `VERSION` to `0.1.2` (etc.), update the badge and docs examples, move changelog entries from `[Unreleased]`, then repeat with `v0.1.2`.
+For the **next** release after `0.1.2`, set `VERSION` to `0.1.3` (etc.), update the badge and [CHANGELOG](CHANGELOG.md), then repeat with `v0.1.3`.
 
 ### Optional: publish from your machine
 
@@ -389,7 +353,7 @@ make release                          # runs release-check then goreleaser relea
 ### Developer checklist
 
 - Update **`CHANGELOG.md`** (move `[Unreleased]` into the new version section).
-- Keep **`VERSION`** (no `v`), README **Version** badge, and examples (`ghcr.io/...:v…`, Helm `image.tag`) aligned; the OCI tag uses the same `v` prefix as the Git tag (like pgwd).
+- Keep **`VERSION`** (no `v`), README **Version** badge, and [CHANGELOG](CHANGELOG.md) in sync; the OCI tag uses the same `v` prefix as the Git tag. Deployment image pins live in **gghstats-selfhosted**.
 - Ensure **CI** and **Security** workflows are green before pushing the release tag.
 - **Docker:** `Dockerfile` is for local `make docker-build` / `docker-scan`. **GoReleaser** uses **`Dockerfile.release`** (pre-built Linux binaries; same pattern as multi-arch release images).
 

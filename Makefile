@@ -3,7 +3,7 @@
 BINARY      := gghstats
 MODULE      := github.com/hrodrig/gghstats
 DIST        := dist
-VERSION_RAW ?= $(shell v=$$(cat VERSION 2>/dev/null | tr -d '\n\r'); [ -n "$$v" ] && echo "$$v" || echo "0.1.1")
+VERSION_RAW ?= $(shell v=$$(cat VERSION 2>/dev/null | tr -d '\n\r'); [ -n "$$v" ] && echo "$$v" || echo "0.1.2")
 VERSION     := $(patsubst v%,%,$(VERSION_RAW))
 TAG         := v$(VERSION)
 COMMIT      := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)

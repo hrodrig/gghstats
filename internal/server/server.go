@@ -22,8 +22,9 @@ const HealthzPath = "/api/v1/healthz"
 
 // Config holds server configuration.
 type Config struct {
-	Store    *store.Store
-	APIToken string // if empty, API is disabled
+	Store          *store.Store
+	APIToken       string // if empty, API is disabled
+	DisableMetrics bool   // if true, omit /metrics and Prometheus HTTP metrics (see GGHSTATS_METRICS)
 }
 
 func withCacheControl(directive string, next http.Handler) http.Handler {
@@ -74,7 +75,12 @@ func New(cfg Config) http.Handler {
 		htmlNotFound(w, r)
 	})
 
-	return logMiddleware(mux)
+	if cfg.DisableMetrics {
+		return logMiddleware(mux)
+	}
+	reg := newMetricsRegistry()
+	mux.Handle("GET "+MetricsPath, metricsExporter(reg))
+	return logMiddleware(wrapWithHTTPMetrics(reg, mux))
 }
 
 // --- Middleware ---
