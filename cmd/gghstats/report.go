@@ -11,16 +11,22 @@ import (
 )
 
 func runReport(args []string) error {
-	fs, gf, err := parseGlobalFlags("report", args)
-	if err != nil {
+	fs := flag.NewFlagSet("report", flag.ContinueOnError)
+	var gf globalFlags
+	var days int
+	fs.StringVar(&gf.Repo, "repo", envOr("GGHSTATS_REPO", ""), "owner/repo")
+	fs.StringVar(&gf.Token, "token", envOr("GGHSTATS_GITHUB_TOKEN", ""), "GitHub personal access token")
+	fs.StringVar(&gf.DB, "db", envOr("GGHSTATS_DB", defaultDBPath()), "SQLite database path")
+	fs.IntVar(&days, "days", 14, "number of days to show")
+	if err := fs.Parse(args); err != nil {
 		return err
 	}
-
-	days := 14
-	fs.IntVar(&days, "days", 14, "number of days to show")
-	// Re-parse to pick up report-specific flags.
-	// parseGlobalFlags already consumed known flags; re-parse remaining.
-	_ = fs // days already parsed if provided before global flags
+	if gf.Repo == "" {
+		return fmt.Errorf("--repo or GGHSTATS_REPO is required")
+	}
+	if gf.Token == "" {
+		return fmt.Errorf("--token or GGHSTATS_GITHUB_TOKEN is required")
+	}
 
 	db, err := store.Open(gf.DB)
 	if err != nil {
@@ -30,12 +36,6 @@ func runReport(args []string) error {
 
 	to := time.Now().UTC().Format("2006-01-02")
 	from := time.Now().UTC().AddDate(0, 0, -days).Format("2006-01-02")
-
-	// Allow --days to be passed; re-parse remaining args for it
-	rfs := flag.NewFlagSet("report-extra", flag.ContinueOnError)
-	rfs.IntVar(&days, "days", 14, "")
-	_ = rfs.Parse(fs.Args())
-	from = time.Now().UTC().AddDate(0, 0, -days).Format("2006-01-02")
 
 	views, err := db.ViewsByRange(gf.Repo, from, to)
 	if err != nil {

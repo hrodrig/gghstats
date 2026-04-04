@@ -108,3 +108,108 @@ func TestRunReportStdout(t *testing.T) {
 		t.Fatalf("expected terminal output, got %q", buf.String())
 	}
 }
+
+func TestRunExportToFile(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "e2.db")
+	outPath := filepath.Join(dir, "out.csv")
+
+	s, err := store.Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.Close() })
+
+	day := time.Now().UTC().Format("2006-01-02")
+	if err := s.UpsertRepo("my/repo", "d", 1, 0, 0, 0, 0, false, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertView("my/repo", day, 1, 1); err != nil {
+		t.Fatal(err)
+	}
+
+	err = runExport([]string{
+		"-repo", "my/repo", "-token", "tok", "-db", dbPath,
+		"-days", "7",
+		"-output", outPath,
+	})
+	if err != nil {
+		t.Fatalf("runExport: %v", err)
+	}
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(data) < 10 || !bytes.Contains(data, []byte("# Views")) {
+		t.Fatalf("unexpected file: %q", data)
+	}
+}
+
+func TestRunExportCreateFileError(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "e3.db")
+	s, err := store.Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.Close() })
+	if err := s.UpsertRepo("my/repo", "d", 1, 0, 0, 0, 0, false, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertView("my/repo", time.Now().UTC().Format("2006-01-02"), 1, 1); err != nil {
+		t.Fatal(err)
+	}
+
+	badPath := filepath.Join(dir, "nope", "sub", "out.csv")
+	err = runExport([]string{
+		"-repo", "my/repo", "-token", "tok", "-db", dbPath,
+		"-output", badPath,
+	})
+	if err == nil {
+		t.Fatal("expected error creating output under missing directory")
+	}
+}
+
+func TestRunReportWithDaysFlag(t *testing.T) {
+	stdoutSwapMu.Lock()
+	defer stdoutSwapMu.Unlock()
+
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "r2.db")
+
+	s, err := store.Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.Close() })
+
+	if err := s.UpsertRepo("my/repo", "desc", 1, 0, 0, 0, 0, false, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertView("my/repo", time.Now().UTC().Format("2006-01-02"), 1, 1); err != nil {
+		t.Fatal(err)
+	}
+
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = w
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- runReport([]string{"-repo", "my/repo", "-token", "tok", "-db", dbPath, "-days", "1"})
+		w.Close()
+	}()
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	os.Stdout = old
+	_ = r.Close()
+
+	if err := <-errCh; err != nil {
+		t.Fatalf("runReport: %v", err)
+	}
+	if !bytes.Contains(buf.Bytes(), []byte("Traffic report")) {
+		t.Fatalf("unexpected output: %q", buf.String())
+	}
+}

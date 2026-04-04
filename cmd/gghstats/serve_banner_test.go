@@ -90,6 +90,16 @@ func TestWriteServeStartupBanner(t *testing.T) {
 	}
 }
 
+func TestInitServeLogging(t *testing.T) {
+	old := slog.Default()
+	t.Cleanup(func() { slog.SetDefault(old) })
+
+	t.Setenv("GGHSTATS_LOG_LEVEL", "warn")
+	initServeLogging()
+	slog.Warn("test init logging")
+	// Global handler is wired; absence of panic is enough for coverage.
+}
+
 func TestWriteServeStartupBannerEmptyToken(t *testing.T) {
 	oldV, oldD := version.Version, version.BuildDate
 	version.Version = "v"

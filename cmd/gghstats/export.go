@@ -11,18 +11,24 @@ import (
 )
 
 func runExport(args []string) error {
-	fs, gf, err := parseGlobalFlags("export", args)
-	if err != nil {
+	fs := flag.NewFlagSet("export", flag.ContinueOnError)
+	var gf globalFlags
+	var days int
+	var output string
+	fs.StringVar(&gf.Repo, "repo", envOr("GGHSTATS_REPO", ""), "owner/repo")
+	fs.StringVar(&gf.Token, "token", envOr("GGHSTATS_GITHUB_TOKEN", ""), "GitHub personal access token")
+	fs.StringVar(&gf.DB, "db", envOr("GGHSTATS_DB", defaultDBPath()), "SQLite database path")
+	fs.IntVar(&days, "days", 14, "number of days to export")
+	fs.StringVar(&output, "output", "", "output file path (default: stdout)")
+	if err := fs.Parse(args); err != nil {
 		return err
 	}
-
-	days := 14
-	output := ""
-
-	rfs := flag.NewFlagSet("export-extra", flag.ContinueOnError)
-	rfs.IntVar(&days, "days", 14, "number of days to export")
-	rfs.StringVar(&output, "output", "", "output file path (default: stdout)")
-	_ = rfs.Parse(fs.Args())
+	if gf.Repo == "" {
+		return fmt.Errorf("--repo or GGHSTATS_REPO is required")
+	}
+	if gf.Token == "" {
+		return fmt.Errorf("--token or GGHSTATS_GITHUB_TOKEN is required")
+	}
 
 	db, err := store.Open(gf.DB)
 	if err != nil {

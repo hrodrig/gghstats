@@ -41,39 +41,50 @@ Server env vars (serve):
 Run 'gghstats <command> --help' for command-specific flags.`
 
 func main() {
-	if len(os.Args) < 2 {
+	os.Exit(runCLI(os.Args))
+}
+
+// runCLI runs the CLI and returns a process exit code (0 = success).
+func runCLI(args []string) int {
+	if len(args) < 2 {
 		fmt.Fprintln(os.Stderr, usage)
-		os.Exit(1)
+		return 1
 	}
 
-	switch os.Args[1] {
+	switch args[1] {
 	case "serve":
-		if err := runServe(os.Args[2:]); err != nil {
+		if err := runServe(args[2:]); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			os.Exit(1)
+			return 1
 		}
+		return 0
 	case "fetch":
-		if err := runFetch(os.Args[2:]); err != nil {
+		if err := runFetch(args[2:]); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			os.Exit(1)
+			return 1
 		}
+		return 0
 	case "report":
-		if err := runReport(os.Args[2:]); err != nil {
+		if err := runReport(args[2:]); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			os.Exit(1)
+			return 1
 		}
+		return 0
 	case "export":
-		if err := runExport(os.Args[2:]); err != nil {
+		if err := runExport(args[2:]); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			os.Exit(1)
+			return 1
 		}
+		return 0
 	case "version":
 		fmt.Printf("gghstats %s (commit: %s, built: %s)\n",
 			version.Version, version.Commit, version.BuildDate)
+		return 0
 	case "--help", "-h", "help":
 		fmt.Println(usage)
+		return 0
 	default:
-		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n%s\n", os.Args[1], usage)
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n%s\n", args[1], usage)
+		return 1
 	}
 }
