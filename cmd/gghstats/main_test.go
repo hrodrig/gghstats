@@ -18,6 +18,45 @@ func TestRunCLIUsageAndErrors(t *testing.T) {
 	}
 }
 
+// TestRunCLISubcommandFailures exercises runCLI dispatch for each subcommand on
+// validation errors (no t.Parallel: env is per-test).
+func TestRunCLISubcommandFailures(t *testing.T) {
+	t.Run("fetch_missing_repo", func(t *testing.T) {
+		t.Setenv("GGHSTATS_REPO", "")
+		t.Setenv("GGHSTATS_GITHUB_TOKEN", "")
+		if code := runCLI([]string{"gghstats", "fetch"}); code != 1 {
+			t.Fatalf("want exit 1, got %d", code)
+		}
+	})
+	t.Run("fetch_missing_token", func(t *testing.T) {
+		t.Setenv("GGHSTATS_REPO", "owner/name")
+		t.Setenv("GGHSTATS_GITHUB_TOKEN", "")
+		if code := runCLI([]string{"gghstats", "fetch"}); code != 1 {
+			t.Fatalf("want exit 1, got %d", code)
+		}
+	})
+	t.Run("export_missing_repo", func(t *testing.T) {
+		t.Setenv("GGHSTATS_REPO", "")
+		t.Setenv("GGHSTATS_GITHUB_TOKEN", "")
+		if code := runCLI([]string{"gghstats", "export"}); code != 1 {
+			t.Fatalf("want exit 1, got %d", code)
+		}
+	})
+	t.Run("report_missing_repo", func(t *testing.T) {
+		t.Setenv("GGHSTATS_REPO", "")
+		t.Setenv("GGHSTATS_GITHUB_TOKEN", "")
+		if code := runCLI([]string{"gghstats", "report"}); code != 1 {
+			t.Fatalf("want exit 1, got %d", code)
+		}
+	})
+	t.Run("serve_missing_token", func(t *testing.T) {
+		t.Setenv("GGHSTATS_GITHUB_TOKEN", "")
+		if code := runCLI([]string{"gghstats", "serve"}); code != 1 {
+			t.Fatalf("want exit 1, got %d", code)
+		}
+	})
+}
+
 func TestRunCLIHelp(t *testing.T) {
 	stdoutSwapMu.Lock()
 	defer stdoutSwapMu.Unlock()
