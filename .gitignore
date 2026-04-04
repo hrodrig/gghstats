@@ -21,6 +21,7 @@
 !CONTRIBUTING.md
 !CODE_OF_CONDUCT.md
 !SECURITY.md
+!codecov.yml
 !docker-compose.yml
 !go.mod
 !go.sum
