@@ -193,6 +193,71 @@ func TestUpsertAndQueryPaths(t *testing.T) {
 	}
 }
 
+func TestListReposSortByNameAsc(t *testing.T) {
+	s := tempDB(t)
+	s.UpsertRepo("z/last", "", 1, 0, 0, 0, 0, false, false, "")
+	s.UpsertRepo("a/first", "", 99, 0, 0, 0, 0, false, false, "")
+
+	repos, err := s.ListRepos("name", "asc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(repos) != 2 || repos[0].Name != "a/first" || repos[1].Name != "z/last" {
+		t.Fatalf("order: %+v", repos)
+	}
+}
+
+func TestListReposInvalidSortUsesDefault(t *testing.T) {
+	s := tempDB(t)
+	s.UpsertRepo("r1", "", 0, 0, 0, 0, 0, false, false, "")
+	s.UpsertRepo("r2", "", 0, 0, 0, 0, 0, false, false, "")
+	s.UpsertView("r1", "2026-01-01", 100, 50)
+	s.UpsertView("r2", "2026-01-01", 10, 5)
+
+	repos, err := s.ListRepos("not-a-valid-key", "desc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(repos) != 2 {
+		t.Fatalf("want 2 repos, got %d", len(repos))
+	}
+	// Default is total_views desc — r1 should rank first.
+	if repos[0].Name != "r1" {
+		t.Errorf("first = %q, want r1 (higher views)", repos[0].Name)
+	}
+}
+
+func TestPopularPathsAggregated(t *testing.T) {
+	s := tempDB(t)
+	// Same monotonic shape as TestUpdateDeltas referrers — deltas sum to cumulative net new traffic.
+	if err := s.UpsertPath("r", "2026-03-20", "/doc", "Doc", 40, 10); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertPath("r", "2026-03-21", "/doc", "Doc", 50, 15); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertPath("r", "2026-03-22", "/doc", "Doc", 55, 16); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpdateDeltas(); err != nil {
+		t.Fatal(err)
+	}
+
+	items, err := s.PopularPaths("r", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+	if items[0].Name != "/doc" || items[0].Count != 55 {
+		t.Errorf("item = %+v, want path /doc count_delta sum 55", items[0])
+	}
+	if items[0].Uniques != 16 {
+		t.Errorf("uniques_delta sum = %d, want 16", items[0].Uniques)
+	}
+}
+
 func TestUpsertRepoAndList(t *testing.T) {
 	s := tempDB(t)
 
