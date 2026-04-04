@@ -207,6 +207,48 @@ func TestListReposSortByNameAsc(t *testing.T) {
 	}
 }
 
+// TestListReposAllSortVariants exercises every whitelisted ORDER BY branch in queryListReposRows.
+func TestListReposAllSortVariants(t *testing.T) {
+	s := tempDB(t)
+	// a/r: low stars, high forks, low total views, high total clones
+	s.UpsertRepo("a/r", "", 1, 100, 0, 0, 0, false, false, "")
+	// z/r: high stars, low forks, high total views, low total clones
+	s.UpsertRepo("z/r", "", 100, 1, 0, 0, 0, false, false, "")
+	s.UpsertView("a/r", "2026-01-01", 10, 5)
+	s.UpsertView("z/r", "2026-01-01", 1000, 500)
+	s.UpsertClone("a/r", "2026-01-01", 1000, 100)
+	s.UpsertClone("z/r", "2026-01-01", 10, 5)
+
+	tests := []struct {
+		sort, dir, wantFirst string
+	}{
+		{"name", "asc", "a/r"},
+		{"name", "desc", "z/r"},
+		{"stars", "asc", "a/r"},
+		{"stars", "desc", "z/r"},
+		{"forks", "asc", "z/r"},
+		{"forks", "desc", "a/r"},
+		{"total_views", "asc", "a/r"},
+		{"total_views", "desc", "z/r"},
+		{"total_clones", "asc", "z/r"},
+		{"total_clones", "desc", "a/r"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.sort+"_"+tt.dir, func(t *testing.T) {
+			repos, err := s.ListRepos(tt.sort, tt.dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(repos) != 2 {
+				t.Fatalf("want 2 repos, got %d", len(repos))
+			}
+			if repos[0].Name != tt.wantFirst {
+				t.Errorf("first = %q, want %q", repos[0].Name, tt.wantFirst)
+			}
+		})
+	}
+}
+
 func TestListReposInvalidSortUsesDefault(t *testing.T) {
 	s := tempDB(t)
 	s.UpsertRepo("r1", "", 0, 0, 0, 0, 0, false, false, "")
