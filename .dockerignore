@@ -4,3 +4,5 @@
 !cmd/
 !internal/
 !web/
+!assets/
+!assets/**
