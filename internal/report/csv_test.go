@@ -53,6 +53,20 @@ func TestCSVViewsOnlyNoClones(t *testing.T) {
 	}
 }
 
+func TestCSVReferrersOnlyNoViewsClones(t *testing.T) {
+	refs := []store.ReferrerRow{
+		{Date: "2026-04-01", Referrer: "only-ref", Count: 2, Uniques: 1},
+	}
+	var buf bytes.Buffer
+	if err := CSV(&buf, "r", nil, nil, refs, nil); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "# Referrers") || !strings.Contains(out, "only-ref") {
+		t.Fatalf("expected referrers section: %s", out)
+	}
+}
+
 func TestCSVWithReferrersAndPaths(t *testing.T) {
 	refs := []store.ReferrerRow{
 		{Date: "2026-03-20", Referrer: "google.com", Count: 40, Uniques: 10},

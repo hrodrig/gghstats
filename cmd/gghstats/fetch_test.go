@@ -203,3 +203,68 @@ func tempFetchStore(t *testing.T) *store.Store {
 	t.Cleanup(func() { s.Close() })
 	return s
 }
+
+func TestFetchStoreViewsAPIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "bad", http.StatusBadGateway)
+	}))
+	defer srv.Close()
+	c := github.NewClient("t")
+	c.BaseURL = srv.URL
+	s := tempFetchStore(t)
+	if err := fetchStoreViews(c, s, "o/r"); err == nil {
+		t.Fatal("expected error from views API")
+	}
+}
+
+func TestFetchStoreClonesAPIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "bad", http.StatusBadGateway)
+	}))
+	defer srv.Close()
+	c := github.NewClient("t")
+	c.BaseURL = srv.URL
+	s := tempFetchStore(t)
+	if err := fetchStoreClones(c, s, "o/r"); err == nil {
+		t.Fatal("expected error from clones API")
+	}
+}
+
+func TestFetchStoreReferrersAPIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "bad", http.StatusBadGateway)
+	}))
+	defer srv.Close()
+	c := github.NewClient("t")
+	c.BaseURL = srv.URL
+	s := tempFetchStore(t)
+	if err := fetchStoreReferrers(c, s, "o/r", "2026-04-04"); err == nil {
+		t.Fatal("expected error from referrers API")
+	}
+}
+
+func TestFetchStorePathsAPIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "bad", http.StatusBadGateway)
+	}))
+	defer srv.Close()
+	c := github.NewClient("t")
+	c.BaseURL = srv.URL
+	s := tempFetchStore(t)
+	if err := fetchStorePaths(c, s, "o/r", "2026-04-04"); err == nil {
+		t.Fatal("expected error from paths API")
+	}
+}
+
+func TestUpsertRepoFromGitHubRepoAPIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "nope", http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+	c := github.NewClient("t")
+	c.BaseURL = srv.URL
+	s := tempFetchStore(t)
+	if err := upsertRepoFromGitHub(c, s, "o/r"); err == nil {
+		t.Fatal("expected error from repo API")
+	}
+}

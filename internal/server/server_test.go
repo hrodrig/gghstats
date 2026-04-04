@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -210,6 +211,48 @@ func TestIndexPagePagination(t *testing.T) {
 	}
 	if !strings.Contains(body, "Page 2") {
 		t.Fatalf("expected page indicator in response")
+	}
+}
+
+func TestIndexInvalidPageAndPerPageQuery(t *testing.T) {
+	db := testStore(t)
+	_ = db.UpsertRepo("a/b", "x", 1, 0, 1, 0, 0, false, false, "")
+	handler := New(Config{Store: db})
+
+	req := httptest.NewRequest("GET", "/?page=abc&per_page=-99", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != 200 {
+		t.Fatalf("status = %d, want 200 (fallback pagination)", w.Code)
+	}
+}
+
+func TestIndexPerPageCappedAtMax(t *testing.T) {
+	db := testStore(t)
+	for i := 0; i < 150; i++ {
+		_ = db.UpsertRepo(fmt.Sprintf("o/r-%03d", i), "x", 1, 0, 1, 0, 0, false, false, "")
+	}
+	handler := New(Config{Store: db})
+
+	req := httptest.NewRequest("GET", "/?per_page=500", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != 200 {
+		t.Fatalf("status = %d", w.Code)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Showing <strong>1</strong>–<strong>100</strong> of <strong>150</strong>") {
+		t.Fatal("expected per_page capped at 100 in summary")
+	}
+}
+
+func TestExecuteTemplateMissingName(t *testing.T) {
+	tmpl := template.New("root")
+	got := executeTemplate(tmpl, "no_such_template", nil)
+	if !strings.Contains(string(got), "Error rendering") {
+		t.Fatalf("expected fallback HTML, got %q", got)
 	}
 }
 
