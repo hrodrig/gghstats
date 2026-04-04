@@ -7,6 +7,22 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-04-04
+
+### Fixed
+
+- CLI `export` and `report`: `--days` and `--output` parse correctly when passed with the subcommand (single `FlagSet` per command).
+- Docker image build: include `assets/` in the build context (`.dockerignore` whitelist).
+
+### Added
+
+- Codecov upload in CI; broadened unit tests (CLI dispatch, fetch/serve paths, store, server, report).
+- Optional `GGHSTATS_GITHUB_API_BASE_URL` for GitHub Enterprise or integration tests (see `.env.example`).
+
+### Changed
+
+- Dependency updates (including Prometheus client); `govulncheck` reports no known vulnerabilities.
+
 ## [0.1.2] - 2026-04-02
 
 ### Added
@@ -38,7 +54,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.3
 [0.1.2]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.2
 [0.1.1]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.1
 [0.1.0]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.0
