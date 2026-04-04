@@ -213,3 +213,54 @@ func TestRunReportWithDaysFlag(t *testing.T) {
 		t.Fatalf("unexpected output: %q", buf.String())
 	}
 }
+
+func TestRunReportUnknownFlag(t *testing.T) {
+	err := runReport([]string{"-undefined-flag"})
+	if err == nil {
+		t.Fatal("expected flag parse error")
+	}
+}
+
+func TestRunExportUnknownFlag(t *testing.T) {
+	err := runExport([]string{"-undefined-flag"})
+	if err == nil {
+		t.Fatal("expected flag parse error")
+	}
+}
+
+func TestRunReportMissingToken(t *testing.T) {
+	t.Setenv("GGHSTATS_REPO", "o/r")
+	t.Setenv("GGHSTATS_GITHUB_TOKEN", "")
+	err := runReport(nil)
+	if err == nil {
+		t.Fatal("expected missing token error")
+	}
+}
+
+func TestRunReportOpenDBFails(t *testing.T) {
+	root := t.TempDir()
+	dbDir := filepath.Join(root, "dbdir")
+	if err := os.Mkdir(dbDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GGHSTATS_REPO", "o/r")
+	t.Setenv("GGHSTATS_GITHUB_TOKEN", "tok")
+	err := runReport([]string{"-db", dbDir})
+	if err == nil {
+		t.Fatal("expected database open error")
+	}
+}
+
+func TestRunExportOpenDBFails(t *testing.T) {
+	root := t.TempDir()
+	dbDir := filepath.Join(root, "dbdir")
+	if err := os.Mkdir(dbDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GGHSTATS_REPO", "o/r")
+	t.Setenv("GGHSTATS_GITHUB_TOKEN", "tok")
+	err := runExport([]string{"-db", dbDir})
+	if err == nil {
+		t.Fatal("expected database open error")
+	}
+}
