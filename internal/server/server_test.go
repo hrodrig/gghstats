@@ -100,6 +100,46 @@ func TestMainStylesheetEmbedded(t *testing.T) {
 	}
 }
 
+func TestFaviconEmbeddedFromAssets(t *testing.T) {
+	db := testStore(t)
+	handler := New(Config{Store: db})
+
+	for _, path := range []string{
+		"/static/favicon.ico",
+		"/static/favicon.svg",
+		"/static/favicon-16x16.png",
+		"/static/favicon-32x32.png",
+		"/static/apple-touch-icon.png",
+		"/static/android-chrome-192x192.png",
+		"/static/android-chrome-512x512.png",
+		"/static/manifest.json",
+	} {
+		req := httptest.NewRequest("GET", path, nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Errorf("%s: status = %d, want 200", path, w.Code)
+		}
+	}
+	req := httptest.NewRequest("GET", "/static/favicon.svg", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if !strings.Contains(w.Body.String(), "<svg") {
+		t.Error("expected SVG body for favicon.svg")
+	}
+
+	req = httptest.NewRequest("GET", "/static/manifest.json", nil)
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	ct := w.Header().Get("Content-Type")
+	if !strings.HasPrefix(ct, "application/manifest+json") {
+		t.Errorf("manifest Content-Type = %q, want application/manifest+json…", ct)
+	}
+	if !strings.Contains(w.Body.String(), `"name"`) || !strings.Contains(w.Body.String(), "gghstats") {
+		t.Error("expected Web manifest JSON body")
+	}
+}
+
 func TestIndexPage(t *testing.T) {
 	db := testStore(t)
 	db.UpsertRepo("a/b", "test repo", 10, 2, 10, 1, 0, false, false, "")

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hrodrig/gghstats/assets"
 	"github.com/hrodrig/gghstats/internal/store"
 	"github.com/hrodrig/gghstats/internal/version"
 	"github.com/hrodrig/gghstats/web"
@@ -39,6 +40,37 @@ func New(cfg Config) http.Handler {
 	mux := http.NewServeMux()
 
 	tmpl := template.Must(template.ParseFS(web.TemplateFS, "templates/*.html"))
+
+	favFS, err := fs.Sub(assets.FaviconsFS, "favicons")
+	if err != nil {
+		panic("assets/favicons: " + err.Error())
+	}
+	const favCache = "no-cache, must-revalidate"
+	for _, name := range []string{
+		"favicon.ico",
+		"favicon.svg",
+		"favicon-16x16.png",
+		"favicon-32x32.png",
+		"apple-touch-icon.png",
+		"android-chrome-192x192.png",
+		"android-chrome-512x512.png",
+	} {
+		n := name
+		mux.Handle("GET /static/"+n, withCacheControl(favCache, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFileFS(w, r, favFS, n)
+		})))
+	}
+	mux.Handle("GET /static/manifest.json", withCacheControl(favCache, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, err := fs.ReadFile(favFS, "manifest.json")
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/manifest+json; charset=utf-8")
+		if _, err := w.Write(b); err != nil {
+			slog.Error("write manifest.json", "error", err)
+		}
+	})))
 
 	staticSub, _ := fs.Sub(web.StaticFS, "static")
 	staticHandler := withCacheControl("no-cache, must-revalidate", http.FileServer(http.FS(staticSub)))

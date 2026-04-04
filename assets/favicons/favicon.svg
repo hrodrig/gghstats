@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="gghstats">
+  <!-- Neobrutalist favicon: coral field + thick ink rim + three rising bars (traffic metaphor). -->
+  <rect x="2" y="2" width="60" height="60" fill="#fc8763" stroke="#121212" stroke-width="4"/>
+  <g fill="#121212">
+    <rect x="12" y="38" width="12" height="16" rx="0"/>
+    <rect x="26" y="28" width="12" height="26" rx="0"/>
+    <rect x="40" y="18" width="12" height="36" rx="0"/>
+  </g>
+</svg>

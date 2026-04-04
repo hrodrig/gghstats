@@ -32,6 +32,7 @@ If you want your **own self-hosted** deployment (Docker Compose, Traefik with TL
 - [Repository page charts](#repository-page-charts-clones--views)
 - [Quick start](#quick-start)
 - [Install](#install)
+- [Web UI assets (developers)](#web-ui-assets-developers)
 - [Usage](#usage)
 - [Examples](#examples)
 - [Configuration](#configuration)
@@ -117,6 +118,35 @@ git clone https://github.com/hrodrig/gghstats.git
 cd gghstats
 make install
 ```
+
+### Web UI assets (developers)
+
+Favicons and the [web app manifest](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest) live under [`assets/favicons/`](assets/favicons/) and are embedded at build time via [`assets/embed.go`](assets/embed.go) (`go:embed favicons/*`). The HTTP server exposes each file under `/static/<filename>` (see table). Other UI assets (CSS, Bootstrap) remain under [`web/static/`](web/static/) via [`web/embed.go`](web/embed.go).
+
+| File | Role |
+|------|------|
+| [`assets/favicons/favicon.svg`](assets/favicons/favicon.svg) | **Source artwork** (vector). Edit this when changing the mark; regenerate the raster files below. |
+| [`assets/favicons/favicon-16x16.png`](assets/favicons/favicon-16x16.png) | PNG **16×16** (tabs, legacy). |
+| [`assets/favicons/favicon-32x32.png`](assets/favicons/favicon-32x32.png) | PNG **32×32**. |
+| [`assets/favicons/favicon.ico`](assets/favicons/favicon.ico) | Multi-size **ICO** (16 + 32). |
+| [`assets/favicons/apple-touch-icon.png`](assets/favicons/apple-touch-icon.png) | **180×180** (iOS / “Add to Home Screen”). |
+| [`assets/favicons/android-chrome-192x192.png`](assets/favicons/android-chrome-192x192.png) | **192×192** (PWA / Android). |
+| [`assets/favicons/android-chrome-512x512.png`](assets/favicons/android-chrome-512x512.png) | **512×512** (PWA splash / install). |
+| [`assets/favicons/manifest.json`](assets/favicons/manifest.json) | [Web app manifest](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest) (`/static/manifest.json`; linked from `layout.html`). |
+
+**Regenerating rasters after you change `favicon.svg`:** from the repository root, with [librsvg](https://wiki.gnome.org/Projects/LibRsvg) (`rsvg-convert`) and [ImageMagick](https://imagemagick.org/) (`magick`) on your `PATH`:
+
+```bash
+SVG=assets/favicons/favicon.svg
+rsvg-convert -w 16  -h 16  "$SVG" -o assets/favicons/favicon-16x16.png
+rsvg-convert -w 32  -h 32  "$SVG" -o assets/favicons/favicon-32x32.png
+rsvg-convert -w 180 -h 180 "$SVG" -o assets/favicons/apple-touch-icon.png
+rsvg-convert -w 192 -h 192 "$SVG" -o assets/favicons/android-chrome-192x192.png
+rsvg-convert -w 512 -h 512 "$SVG" -o assets/favicons/android-chrome-512x512.png
+magick assets/favicons/favicon-16x16.png assets/favicons/favicon-32x32.png assets/favicons/favicon.ico
+```
+
+Commit everything under `assets/favicons/` together so all icons stay in sync.
 
 [Back to top](#gghstats)
 
