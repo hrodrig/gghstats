@@ -33,3 +33,16 @@ func TestRepoJSONNoParent(t *testing.T) {
 		t.Errorf("want empty parent, got %q", r.ParentFullName())
 	}
 }
+
+func TestDescriptionOrEmpty(t *testing.T) {
+	t.Parallel()
+	var r Repo
+	if got := r.DescriptionOrEmpty(); got != "" {
+		t.Errorf("nil description: got %q", got)
+	}
+	s := "hello"
+	r.Description = &s
+	if got := r.DescriptionOrEmpty(); got != "hello" {
+		t.Errorf("got %q, want hello", got)
+	}
+}

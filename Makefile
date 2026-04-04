@@ -19,7 +19,7 @@ LDFLAGS     := -s -w \
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build install server compose-up compose-down test lint lint-fix clean docker-build docker-build-amd64 docker-export-amd64 docker-scan docker-run tools govulncheck gocyclo grype security release-check snapshot test-release release
+.PHONY: help build install server compose-up compose-down test cover lint lint-fix clean docker-build docker-build-amd64 docker-export-amd64 docker-scan docker-run tools govulncheck gocyclo grype security release-check snapshot test-release release
 
 help:
 	@echo "gghstats — GitHub traffic dashboard and CLI"
@@ -36,6 +36,7 @@ help:
 	@echo ""
 	@echo "Quality:"
 	@echo "  test               Run unit tests"
+	@echo "  cover              Run tests with coverage profile and total % (stdout + coverage.out)"
 	@echo "  lint               Check gofmt and go vet"
 	@echo "  lint-fix           Apply gofmt -s -w"
 	@echo "  tools              Install govulncheck and gocyclo"
@@ -73,6 +74,10 @@ compose-down:
 
 test:
 	go test -race ./...
+
+cover:
+	go test ./... -coverprofile=coverage.out -covermode=atomic
+	@go tool cover -func=coverage.out | tail -1
 
 lint:
 	@echo "Checking gofmt -s..."

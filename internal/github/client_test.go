@@ -241,6 +241,32 @@ func TestRepo(t *testing.T) {
 	}
 }
 
+func TestOpenPullRequests(t *testing.T) {
+	want := []PullRequest{{ID: 101}, {ID: 102}}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/repos/owner/repo/pulls" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		json.NewEncoder(w).Encode(want)
+	}))
+	defer srv.Close()
+
+	c := NewClient("tok")
+	c.BaseURL = srv.URL
+
+	got, err := c.OpenPullRequests("owner/repo")
+	if err != nil {
+		t.Fatalf("OpenPullRequests: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("len = %d, want 2", len(got))
+	}
+	if got[0].ID != 101 {
+		t.Errorf("ID = %d", got[0].ID)
+	}
+}
+
 func TestNextPagePath(t *testing.T) {
 	tests := []struct {
 		header string

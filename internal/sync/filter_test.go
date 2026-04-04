@@ -88,3 +88,11 @@ func TestFilterCombined(t *testing.T) {
 		t.Errorf("got %v, want [x/a]", repoNames(got))
 	}
 }
+
+func TestFilterExcludeWildcardPrefix(t *testing.T) {
+	repos := makeRepos("acme/a", "acme/b", "other/z")
+	got := applyFilter(repos, "*,!acme/*")
+	if len(got) != 1 || got[0].FullName != "other/z" {
+		t.Errorf("got %v, want [other/z]", repoNames(got))
+	}
+}
