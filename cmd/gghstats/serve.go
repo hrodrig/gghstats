@@ -90,6 +90,7 @@ func runServe(args []string) error {
 	defer db.Close()
 
 	gh := github.NewClient(cfg.GithubToken)
+	applyOptionalGitHubBaseURL(gh)
 
 	syncOpts := sync.Options{
 		IncludePrivate: cfg.IncludePrivate,

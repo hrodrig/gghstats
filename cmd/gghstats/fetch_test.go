@@ -49,6 +49,94 @@ func TestUpsertRepoFromGitHub(t *testing.T) {
 	}
 }
 
+func TestUpsertRepoFromGitHubClampsNegativeIssues(t *testing.T) {
+	meta := github.Repo{
+		FullName:        "o/r",
+		OpenIssuesCount: 1,
+		StargazersCount: 0,
+		ForksCount:      0,
+		WatchersCount:   0,
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/repos/o/r":
+			json.NewEncoder(w).Encode(meta)
+		case "/repos/o/r/pulls":
+			json.NewEncoder(w).Encode([]github.PullRequest{{ID: 1}, {ID: 2}})
+		default:
+			t.Fatalf("unexpected %s", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	c := github.NewClient("tok")
+	c.BaseURL = srv.URL
+	s := tempFetchStore(t)
+
+	if err := upsertRepoFromGitHub(c, s, "o/r"); err != nil {
+		t.Fatal(err)
+	}
+	r, err := s.RepoByName("o/r")
+	if err != nil || r == nil {
+		t.Fatalf("RepoByName: %v", err)
+	}
+	if r.Issues != 0 {
+		t.Errorf("issues = %d, want 0 (clamped)", r.Issues)
+	}
+}
+
+func TestRunFetchEndToEnd(t *testing.T) {
+	repo := "owner/repo"
+	ts := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Path
+		switch p {
+		case "/repos/" + repo:
+			json.NewEncoder(w).Encode(github.Repo{
+				FullName: repo, StargazersCount: 1, OpenIssuesCount: 0,
+				ForksCount: 0, WatchersCount: 1,
+			})
+		case "/repos/" + repo + "/pulls":
+			json.NewEncoder(w).Encode([]github.PullRequest{})
+		case "/repos/" + repo + "/traffic/views":
+			json.NewEncoder(w).Encode(github.TrafficViews{
+				Views: []github.DailyStat{{Timestamp: ts, Count: 7, Uniques: 4}},
+			})
+		case "/repos/" + repo + "/traffic/clones":
+			json.NewEncoder(w).Encode(github.TrafficClones{
+				Clones: []github.DailyStat{{Timestamp: ts, Count: 2, Uniques: 1}},
+			})
+		case "/repos/" + repo + "/traffic/popular/referrers":
+			json.NewEncoder(w).Encode([]github.Referrer{})
+		case "/repos/" + repo + "/traffic/popular/paths":
+			json.NewEncoder(w).Encode([]github.PopularPath{})
+		default:
+			t.Fatalf("unexpected %s", p)
+		}
+	}))
+	defer srv.Close()
+
+	t.Setenv("GGHSTATS_GITHUB_API_BASE_URL", srv.URL)
+
+	dbPath := filepath.Join(t.TempDir(), "fetch-e2e.db")
+	if err := runFetch([]string{"-repo", repo, "-token", "tok", "-db", dbPath}); err != nil {
+		t.Fatalf("runFetch: %v", err)
+	}
+
+	st, err := store.Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+
+	v, _ := st.ViewsByRange(repo, "2026-04-01", "2026-04-01")
+	if len(v) != 1 || v[0].Count != 7 {
+		t.Fatalf("views after fetch: %+v", v)
+	}
+}
+
 func TestFetchStoreViewsClonesReferrersPaths(t *testing.T) {
 	ts := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
 	today := "2026-04-04"

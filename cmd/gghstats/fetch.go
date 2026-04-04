@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/hrodrig/gghstats/internal/github"
@@ -15,6 +17,7 @@ func runFetch(args []string) error {
 	}
 
 	gh := github.NewClient(gf.Token)
+	applyOptionalGitHubBaseURL(gh)
 
 	db, err := store.Open(gf.DB)
 	if err != nil {
@@ -126,4 +129,12 @@ func fetchStorePaths(gh *github.Client, db *store.Store, repo, today string) err
 	}
 	fmt.Printf("paths:     %d entries stored\n", len(paths))
 	return nil
+}
+
+// applyOptionalGitHubBaseURL sets Client.BaseURL when GGHSTATS_GITHUB_API_BASE_URL is set
+// (e.g. GitHub Enterprise or integration tests against httptest).
+func applyOptionalGitHubBaseURL(c *github.Client) {
+	if b := strings.TrimSpace(os.Getenv("GGHSTATS_GITHUB_API_BASE_URL")); b != "" {
+		c.BaseURL = strings.TrimRight(b, "/")
+	}
 }
