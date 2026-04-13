@@ -7,6 +7,16 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-04-13
+
+### Changed
+
+- Go toolchain **1.26.2** (addresses stdlib CVEs reported by scanners for 1.26.1); Docker builder image `golang:1.26.2-alpine`.
+- **Security** workflow: run Grype via `docker run anchore/grype:latest --pull=always` (same pattern as `make docker-scan`), replacing `curl | sh` install.
+- **Docker** runtime image (`Dockerfile`, `Dockerfile.release`): on Alpine 3.21, run `apk update`, install `ca-certificates`, then `apk upgrade` so OpenSSL/base packages pick up security revisions from the Alpine 3.21 repository at build time.
+- **Makefile:** `docker run` for Grype uses `--pull=always` (including the `grype` / `dir:.` fallback) so `anchore/grype:latest` is not a stale local cache.
+- **`make grype` / `grype dir:.`:** exclude `./dist/**` and `./gghstats` (Grype/Syft glob rules) so scans do not treat locally built binaries (older embedded Go in buildinfo) as the project stdlib version.
+
 ## [0.1.3] - 2026-04-04
 
 ### Fixed
@@ -54,7 +64,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.4
 [0.1.3]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.3
 [0.1.2]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.2
 [0.1.1]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.1

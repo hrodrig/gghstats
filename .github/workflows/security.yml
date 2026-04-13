@@ -60,9 +60,10 @@ jobs:
             COMMIT=${{ github.sha }}
             BUILDDATE=${{ steps.ts.outputs.b }}
 
-      - name: Install Grype
-        run: |
-          curl -sSfL https://get.anchore.io/grype | sh -s -- -b /usr/local/bin
-
+      # Same as `make docker-scan` fallback: official image + --pull=always (no stale :latest cache).
       - name: Run Grype on image
-        run: grype gghstats:scan --fail-on high
+        run: |
+          docker run --rm --pull=always \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            anchore/grype:latest \
+            gghstats:scan --fail-on high

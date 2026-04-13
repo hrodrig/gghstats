@@ -3,7 +3,7 @@
 BINARY      := gghstats
 MODULE      := github.com/hrodrig/gghstats
 DIST        := dist
-VERSION_RAW ?= $(shell v=$$(cat VERSION 2>/dev/null | tr -d '\n\r'); [ -n "$$v" ] && echo "$$v" || echo "0.1.3")
+VERSION_RAW ?= $(shell v=$$(cat VERSION 2>/dev/null | tr -d '\n\r'); [ -n "$$v" ] && echo "$$v" || echo "0.1.4")
 VERSION     := $(patsubst v%,%,$(VERSION_RAW))
 TAG         := v$(VERSION)
 COMMIT      := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
@@ -41,6 +41,7 @@ help:
 	@echo "  lint-fix           Apply gofmt -s -w"
 	@echo "  tools              Install govulncheck and gocyclo"
 	@echo "  security           Run govulncheck, gocyclo and grype"
+	@echo "  grype              Grype directory scan (excludes ./dist/**, ./gghstats)"
 	@echo ""
 	@echo "Docker:"
 	@echo "  docker-build       Build image gghstats:$(VERSION) (optional: DOCKER_PLATFORM=linux/amd64)"
@@ -109,12 +110,13 @@ docker-export-amd64: docker-build-amd64
 	@echo "Wrote $(DIST)/gghstats-$(VERSION)-linux-amd64.tar.gz"
 	@echo "On VPS: gunzip -c gghstats-$(VERSION)-linux-amd64.tar.gz | docker load"
 
+# Docker path: --pull=always so anchore/grype:latest is not a stale local cache (latest != auto-update).
 docker-scan: docker-build
 	@if command -v grype >/dev/null 2>&1; then \
 		grype gghstats:$(VERSION) --fail-on $(GRYPE_FAIL_ON) ; \
 	else \
 		echo "grype not found locally, using container image..."; \
-		docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/grype:latest gghstats:$(VERSION) --fail-on $(GRYPE_FAIL_ON) ; \
+		docker run --rm --pull=always -v /var/run/docker.sock:/var/run/docker.sock anchore/grype:latest gghstats:$(VERSION) --fail-on $(GRYPE_FAIL_ON) ; \
 	fi
 
 docker-run:
@@ -131,12 +133,17 @@ gocyclo:
 	@command -v gocyclo >/dev/null 2>&1 || go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
 	gocyclo -over 15 .
 
+# Dir scan: exclude local build outputs — binaries embed buildinfo (older Go) and skew stdlib CVE noise vs `go version`.
+# Syft/Grype require exclusion globs to start with ./, */, or **/ (see grype catalog error).
+GRYPE_DIR_EXCLUDES := --exclude './dist/**' --exclude './gghstats'
+
 grype:
 	@if command -v grype >/dev/null 2>&1; then \
-		grype dir:. ; \
+		grype dir:. $(GRYPE_DIR_EXCLUDES) ; \
 	else \
 		echo "grype not found locally, using container image..."; \
-		docker run --rm -v "$(PWD):/workspace" anchore/grype:latest dir:/workspace ; \
+		docker run --rm --pull=always -v "$(PWD):/workspace" anchore/grype:latest \
+			dir:/workspace $(GRYPE_DIR_EXCLUDES) ; \
 	fi
 
 security: govulncheck gocyclo grype

@@ -7,9 +7,11 @@ LABEL org.opencontainers.image.title="gghstats"
 LABEL org.opencontainers.image.description="GitHub traffic dashboard and CLI"
 LABEL org.opencontainers.image.source="https://github.com/hrodrig/gghstats"
 LABEL org.opencontainers.image.authors="https://github.com/hrodrig/gghstats"
-RUN apk add --no-cache ca-certificates && \
-    addgroup -g 1000 gghstats && \
-    adduser -D -u 1000 -G gghstats -h /data gghstats
+RUN apk update \
+    && apk add --no-cache ca-certificates \
+    && apk upgrade --no-cache \
+    && addgroup -g 1000 gghstats \
+    && adduser -D -u 1000 -G gghstats -h /data gghstats
 COPY linux/ /tmp/linux/
 ARG TARGETPLATFORM
 RUN case "$TARGETPLATFORM" in \
