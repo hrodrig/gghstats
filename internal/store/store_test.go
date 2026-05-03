@@ -145,18 +145,34 @@ func TestUpsertAndQueryClones(t *testing.T) {
 	}
 }
 
-func TestCloneDateExtentAndAggregatedClonesForRepos(t *testing.T) {
-	s := tempDB(t)
-	_ = s.UpsertClone("a/r", "2026-03-10", 10, 2)
-	_ = s.UpsertClone("a/r", "2026-03-11", 20, 5)
-	_ = s.UpsertClone("b/r", "2026-03-10", 100, 30)
-	_ = s.UpsertClone("b/r", "2026-03-12", 1, 1)
+func seedTwoReposCloneFixture(t *testing.T, s *Store) {
+	t.Helper()
+	if err := s.UpsertClone("a/r", "2026-03-10", 10, 2); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertClone("a/r", "2026-03-11", 20, 5); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertClone("b/r", "2026-03-10", 100, 30); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertClone("b/r", "2026-03-12", 1, 1); err != nil {
+		t.Fatal(err)
+	}
+}
 
+func TestCloneDateExtentForRepos_multiRepo(t *testing.T) {
+	s := tempDB(t)
+	seedTwoReposCloneFixture(t, s)
 	minD, maxD, ok, err := s.CloneDateExtentForRepos([]string{"a/r", "b/r"})
 	if err != nil || !ok || minD != "2026-03-10" || maxD != "2026-03-12" {
 		t.Fatalf("extent min=%q max=%q ok=%v err=%v", minD, maxD, ok, err)
 	}
+}
 
+func TestAggregatedClonesByDayForRepos_multiRepo(t *testing.T) {
+	s := tempDB(t)
+	seedTwoReposCloneFixture(t, s)
 	rows, err := s.AggregatedClonesByDayForRepos([]string{"a/r", "b/r"}, "2026-03-10", "2026-03-12")
 	if err != nil {
 		t.Fatal(err)
@@ -173,11 +189,18 @@ func TestCloneDateExtentAndAggregatedClonesForRepos(t *testing.T) {
 	if rows[2].Date != "2026-03-12" || rows[2].Count != 1 {
 		t.Errorf("third day: %+v", rows[2])
 	}
+}
 
+func TestCloneDateExtentForRepos_emptyList(t *testing.T) {
+	s := tempDB(t)
 	_, _, okEmpty, err := s.CloneDateExtentForRepos(nil)
 	if err != nil || okEmpty {
 		t.Fatalf("empty repo list: ok=%v err=%v", okEmpty, err)
 	}
+}
+
+func TestAggregatedClonesByDayForRepos_nilRepoList(t *testing.T) {
+	s := tempDB(t)
 	got, err := s.AggregatedClonesByDayForRepos(nil, "2026-01-01", "2026-12-31")
 	if err != nil || got != nil {
 		t.Fatalf("aggregated nil repos: %v err=%v", got, err)

@@ -251,6 +251,149 @@ func buildIndexListClonesChartPayload(db *store.Store, repoNames []string) (aggC
 	return len(rows), template.JS(b), nil
 }
 
+func parseIndexQueryParams(r *http.Request) (sort, dir, query string, page, perPage int) {
+	sort = r.URL.Query().Get("sort")
+	if sort == "" {
+		sort = "total_views"
+	}
+	query = strings.TrimSpace(r.URL.Query().Get("q"))
+	dir = r.URL.Query().Get("dir")
+	if dir == "" {
+		dir = "desc"
+	}
+	page = parsePositiveInt(r.URL.Query().Get("page"), 1)
+	perPage = parsePositiveInt(r.URL.Query().Get("per_page"), defaultPerPage)
+	if perPage > maxPerPage {
+		perPage = maxPerPage
+	}
+	return sort, dir, query, page, perPage
+}
+
+func loadFilteredIndexRepos(db *store.Store, sort, dir, query string) ([]store.RepoSummary, error) {
+	repos, err := db.ListRepos(sort, dir)
+	if err != nil {
+		return nil, err
+	}
+	if query != "" {
+		repos = filterReposByName(repos, query)
+	}
+	return repos, nil
+}
+
+func repoNamesFromSummaries(repos []store.RepoSummary) []string {
+	names := make([]string, len(repos))
+	for i := range repos {
+		names[i] = repos[i].Name
+	}
+	return names
+}
+
+func sumIndexKPIs(repos []store.RepoSummary) (stars, forks, clones, views int) {
+	for _, rp := range repos {
+		stars += rp.Stars
+		forks += rp.Forks
+		clones += rp.TotalClones
+		views += rp.TotalViews
+	}
+	return stars, forks, clones, views
+}
+
+func indexReposPageSlice(repos []store.RepoSummary, page, perPage int) (start, end int, pageSlice []store.RepoSummary) {
+	total := len(repos)
+	start = (page - 1) * perPage
+	if start > total {
+		start = total
+	}
+	end = start + perPage
+	if end > total {
+		end = total
+	}
+	return start, end, repos[start:end]
+}
+
+func indexTotalPages(total, perPage int) int {
+	if total <= 0 {
+		return 1
+	}
+	return (total + perPage - 1) / perPage
+}
+
+func clampIndexPage(page, totalPages int) int {
+	if page > totalPages {
+		return totalPages
+	}
+	return page
+}
+
+type indexTemplatePayload struct {
+	Repos              []store.RepoSummary
+	Sort               string
+	Dir                string
+	Query              string
+	Page               int
+	PerPage            int
+	Total              int
+	From               int
+	To                 int
+	KPIStars           int
+	KPIForks           int
+	KPIClones          int
+	KPIViews           int
+	PrevURL            string
+	NextURL            string
+	SortNameURL        string
+	SortStarsURL       string
+	SortForksURL       string
+	SortClonesURL      string
+	SortViewsURL       string
+	ListClonesAggJSON  template.JS
+	ListClonesAggCount int
+}
+
+func buildIndexTemplatePayload(
+	reposPage []store.RepoSummary,
+	sort, dir, query string,
+	page, perPage, total, start, end, totalPages int,
+	kpiStars, kpiForks, kpiClones, kpiViews int,
+	listClonesAggJSON template.JS,
+	listClonesAggCount int,
+) indexTemplatePayload {
+	data := indexTemplatePayload{
+		Repos:              reposPage,
+		Sort:               sort,
+		Dir:                dir,
+		Query:              query,
+		Page:               page,
+		PerPage:            perPage,
+		Total:              total,
+		From:               start + 1,
+		To:                 end,
+		KPIStars:           kpiStars,
+		KPIForks:           kpiForks,
+		KPIClones:          kpiClones,
+		KPIViews:           kpiViews,
+		PrevURL:            buildIndexURL(sort, dir, query, page-1, perPage),
+		NextURL:            buildIndexURL(sort, dir, query, page+1, perPage),
+		SortNameURL:        buildSortURL("name", sort, dir, query, perPage),
+		SortStarsURL:       buildSortURL("stars", sort, dir, query, perPage),
+		SortForksURL:       buildSortURL("forks", sort, dir, query, perPage),
+		SortClonesURL:      buildSortURL("total_clones", sort, dir, query, perPage),
+		SortViewsURL:       buildSortURL("total_views", sort, dir, query, perPage),
+		ListClonesAggJSON:  listClonesAggJSON,
+		ListClonesAggCount: listClonesAggCount,
+	}
+	if total == 0 {
+		data.From = 0
+	}
+	if page <= 1 {
+		data.PrevURL = ""
+	}
+	if page >= totalPages {
+		data.NextURL = ""
+	}
+	return data
+}
+
 func handleIndex(db *store.Store, tmpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -259,119 +402,27 @@ func handleIndex(db *store.Store, tmpl *template.Template) http.HandlerFunc {
 			return
 		}
 
-		sort := r.URL.Query().Get("sort")
-		if sort == "" {
-			sort = "total_views"
-		}
-		query := strings.TrimSpace(r.URL.Query().Get("q"))
-		dir := r.URL.Query().Get("dir")
-		if dir == "" {
-			dir = "desc"
-		}
-		page := parsePositiveInt(r.URL.Query().Get("page"), 1)
-		perPage := parsePositiveInt(r.URL.Query().Get("per_page"), defaultPerPage)
-		if perPage > maxPerPage {
-			perPage = maxPerPage
-		}
-
-		repos, err := db.ListRepos(sort, dir)
+		sort, dir, query, page, perPage := parseIndexQueryParams(r)
+		repos, err := loadFilteredIndexRepos(db, sort, dir, query)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if query != "" {
-			repos = filterReposByName(repos, query)
-		}
-		repoNames := make([]string, len(repos))
-		for i := range repos {
-			repoNames[i] = repos[i].Name
-		}
-		listClonesAggCount, listClonesAggJSON, err := buildIndexListClonesChartPayload(db, repoNames)
+		listClonesAggCount, listClonesAggJSON, err := buildIndexListClonesChartPayload(db, repoNamesFromSummaries(repos))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		var kpiStars, kpiForks, kpiClones, kpiViews int
-		for _, r := range repos {
-			kpiStars += r.Stars
-			kpiForks += r.Forks
-			kpiClones += r.TotalClones
-			kpiViews += r.TotalViews
-		}
+		kpiStars, kpiForks, kpiClones, kpiViews := sumIndexKPIs(repos)
 		total := len(repos)
-		start := (page - 1) * perPage
-		if start > total {
-			start = total
-		}
-		end := start + perPage
-		if end > total {
-			end = total
-		}
-		reposPage := repos[start:end]
-		totalPages := 1
-		if total > 0 {
-			totalPages = (total + perPage - 1) / perPage
-		}
-		if page > totalPages {
-			page = totalPages
-		}
+		start, end, reposPage := indexReposPageSlice(repos, page, perPage)
+		totalPages := indexTotalPages(total, perPage)
+		page = clampIndexPage(page, totalPages)
 
-		data := struct {
-			Repos              []store.RepoSummary
-			Sort               string
-			Dir                string
-			Query              string
-			Page               int
-			PerPage            int
-			Total              int
-			From               int
-			To                 int
-			KPIStars           int
-			KPIForks           int
-			KPIClones          int
-			KPIViews           int
-			PrevURL            string
-			NextURL            string
-			SortNameURL        string
-			SortStarsURL       string
-			SortForksURL       string
-			SortClonesURL      string
-			SortViewsURL       string
-			ListClonesAggJSON  template.JS
-			ListClonesAggCount int
-		}{
-			Repos:              reposPage,
-			Sort:               sort,
-			Dir:                dir,
-			Query:              query,
-			Page:               page,
-			PerPage:            perPage,
-			Total:              total,
-			From:               start + 1,
-			To:                 end,
-			KPIStars:           kpiStars,
-			KPIForks:           kpiForks,
-			KPIClones:          kpiClones,
-			KPIViews:           kpiViews,
-			PrevURL:            buildIndexURL(sort, dir, query, page-1, perPage),
-			NextURL:            buildIndexURL(sort, dir, query, page+1, perPage),
-			SortNameURL:        buildSortURL("name", sort, dir, query, perPage),
-			SortStarsURL:       buildSortURL("stars", sort, dir, query, perPage),
-			SortForksURL:       buildSortURL("forks", sort, dir, query, perPage),
-			SortClonesURL:      buildSortURL("total_clones", sort, dir, query, perPage),
-			SortViewsURL:       buildSortURL("total_views", sort, dir, query, perPage),
-			ListClonesAggJSON:  listClonesAggJSON,
-			ListClonesAggCount: listClonesAggCount,
-		}
-		if total == 0 {
-			data.From = 0
-		}
-		if page <= 1 {
-			data.PrevURL = ""
-		}
-		if page >= totalPages {
-			data.NextURL = ""
-		}
+		data := buildIndexTemplatePayload(
+			reposPage, sort, dir, query, page, perPage, total, start, end, totalPages,
+			kpiStars, kpiForks, kpiClones, kpiViews, listClonesAggJSON, listClonesAggCount,
+		)
 
 		content := executeTemplate(tmpl, "index", data)
 		renderLayout(w, tmpl, layoutData{
