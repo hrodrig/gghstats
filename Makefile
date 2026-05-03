@@ -19,7 +19,7 @@ LDFLAGS     := -s -w \
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build install server compose-up compose-down test cover lint lint-fix clean docker-build docker-build-amd64 docker-export-amd64 docker-scan docker-run tools govulncheck gocyclo grype security release-check snapshot test-release release
+.PHONY: build clean compose-down compose-up cover docker-build docker-build-amd64 docker-export-amd64 docker-run docker-scan gocyclo govulncheck grype help install lint lint-fix release release-check security server snapshot test test-release tools
 
 help:
 	@echo "gghstats — GitHub traffic dashboard and CLI"
@@ -28,33 +28,33 @@ help:
 	@echo ""
 	@echo "Build:"
 	@echo "  build              Build local binary"
+	@echo "  clean              Remove local build artifacts"
+	@echo "  compose-down       Stop stack with docker compose"
+	@echo "  compose-up         Start stack with docker compose"
 	@echo "  install            Install binary with ldflags"
 	@echo "  server             Run gghstats serve locally (go run)"
-	@echo "  compose-up         Start stack with docker compose"
-	@echo "  compose-down       Stop stack with docker compose"
-	@echo "  clean              Remove local build artifacts"
 	@echo ""
 	@echo "Quality:"
-	@echo "  test               Run unit tests"
 	@echo "  cover              Run tests with coverage profile and total % (stdout + coverage.out)"
+	@echo "  grype              Grype directory scan (excludes ./dist/**, ./gghstats)"
 	@echo "  lint               Check gofmt and go vet"
 	@echo "  lint-fix           Apply gofmt -s -w"
-	@echo "  tools              Install govulncheck and gocyclo"
 	@echo "  security           Run govulncheck, gocyclo and grype"
-	@echo "  grype              Grype directory scan (excludes ./dist/**, ./gghstats)"
+	@echo "  tools              Install govulncheck and gocyclo"
+	@echo "  test               Run unit tests"
 	@echo ""
 	@echo "Docker:"
 	@echo "  docker-build       Build image gghstats:$(VERSION) (optional: DOCKER_PLATFORM=linux/amd64)"
 	@echo "  docker-build-amd64 Same, forced linux/amd64 (VPS / x86_64 validation)"
 	@echo "  docker-export-amd64 Build amd64 image and write dist/gghstats-$(VERSION)-linux-amd64.tar.gz for docker load on VPS"
-	@echo "  docker-scan        Build and scan image with Grype (pass DOCKER_PLATFORM=... to match target arch)"
 	@echo "  docker-run         Run local Docker image"
+	@echo "  docker-scan        Build and scan image with Grype (pass DOCKER_PLATFORM=... to match target arch)"
 	@echo ""
 	@echo "Release:"
+	@echo "  release            Publish release (main branch only)"
 	@echo "  release-check      Validate semver, tooling, lint, test and security"
 	@echo "  snapshot           Goreleaser snapshot build (local artifacts)"
 	@echo "  test-release       Simulate release without publishing"
-	@echo "  release            Publish release (main branch only)"
 	@echo ""
 	@echo "Current version: $(VERSION) (tag: $(TAG))"
 
