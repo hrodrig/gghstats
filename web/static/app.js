@@ -73,7 +73,10 @@ function applyTheme(theme) {
 
 function toggleTheme() {
   applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
-  requestAnimationFrame(() => refreshRepoCharts());
+  requestAnimationFrame(() => {
+    refreshRepoCharts();
+    refreshIndexListCharts();
+  });
 }
 
 function initThemeToggle() {
@@ -117,9 +120,85 @@ function refreshRepoCharts() {
   initRepoCharts();
 }
 
+const indexListChartCanvasIds = ['chart_index_clones'];
+
+function destroyIndexListCharts() {
+  if (typeof Chart === 'undefined' || typeof Chart.getChart !== 'function') return;
+  for (const id of indexListChartCanvasIds) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    const existing = Chart.getChart(el);
+    if (existing) existing.destroy();
+  }
+}
+
+function renderIndexClonesOverTime(canvasId, data) {
+  const el = document.getElementById(canvasId);
+  if (!el || !data || data.length === 0) return;
+
+  const c = chartThemeColors();
+  new Chart(el, {
+    type: 'line',
+    data: {
+      labels: data.map(d => d.date),
+      datasets: [{
+        label: 'Clones (count)',
+        data: data.map(d => d.count),
+        borderColor: c.primary,
+        backgroundColor: 'transparent',
+        pointStyle: false,
+        tension: 0.1,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index' },
+      scales: {
+        x: {
+          ticks: {
+            color: c.fg,
+            maxRotation: 45,
+            font: { size: 11, family: "'JetBrains Mono', monospace" }
+          },
+          grid: { color: c.grid },
+          border: { display: true, color: c.border, width: 1 }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: c.fg,
+            font: { size: 11, family: "'JetBrains Mono', monospace" }
+          },
+          grid: { color: c.grid },
+          border: { display: true, color: c.border, width: 1 }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: chartTooltipOptions()
+      }
+    },
+    plugins: [mouseLinePlugin]
+  });
+}
+
+function initIndexListCharts() {
+  const payload = window.gghstatsListClonesData;
+  if (!payload || !Array.isArray(payload) || payload.length === 0) return;
+  renderIndexClonesOverTime('chart_index_clones', payload);
+}
+
+function refreshIndexListCharts() {
+  destroyIndexListCharts();
+  initIndexListCharts();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initThemeToggle();
   initRepoCharts();
+  initIndexListCharts();
 });
 
 function renderMetrics(canvasId, data, uniqueCol, countCol) {

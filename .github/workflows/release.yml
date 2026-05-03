@@ -39,8 +39,8 @@ jobs:
       - name: Run release checks
         run: make release-check
 
-      # pgwd/.github/workflows/release.yml omits this block; on ubuntu-latest + GoReleaser 2.14,
-      # dockers_v2 multi-arch failed with "Multi-platform build is not supported for the docker driver".
+      # QEMU + Buildx + GHCR login: required for GoReleaser dockers_v2 multi-arch on ubuntu-latest
+      # ("Multi-platform build is not supported for the docker driver" without them). Same steps as pgwd.
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 

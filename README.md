@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.1.4-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.1.5-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -18,7 +18,7 @@ Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only k
 
 If you want your **own self-hosted** deployment (Docker Compose, Traefik with TLS, Helm, optional Prometheus/Grafana/Loki), use the companion repo **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** — it lists the supported options and example manifests.
 
-**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.1.4`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
+**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.1.5`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
 
 ## Demo
 
@@ -94,7 +94,7 @@ docker run -d \
   -p 8080:8080 \
   -v ./data:/data \
   --name gghstats \
-  ghcr.io/hrodrig/gghstats:v0.1.4
+  ghcr.io/hrodrig/gghstats:v0.1.5
 ```
 
 [Back to top](#gghstats)
@@ -110,7 +110,7 @@ go install github.com/hrodrig/gghstats/cmd/gghstats@latest
 ### Pre-built binary and container
 
 - **Binary archives:** [Releases](https://github.com/hrodrig/gghstats/releases) (pick OS/arch; verify `checksums.txt`).
-- **OCI image:** `ghcr.io/hrodrig/gghstats:v0.1.4` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
+- **OCI image:** `ghcr.io/hrodrig/gghstats:v0.1.5` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
 
 ### Build from source
 
@@ -347,8 +347,8 @@ curl -H "x-api-token: $GGHSTATS_API_TOKEN" http://localhost:8080/api/repos
 ## Release workflow
 
 - Branch policy: day-to-day development on `develop`; **tagged releases** are cut from **`main`**.
-- **`VERSION`** file: semantic version **without** `v` (for example `0.1.4`). Must match the static **Version** badge at the top of this README.
-- **Git tags:** annotated tag **with** `v` prefix (for example `v0.1.4`), on the commit you want released.
+- **`VERSION`** file: semantic version **without** `v` (for example `0.1.5`). Must match the static **Version** badge at the top of this README.
+- **Git tags:** annotated tag **with** `v` prefix (for example `v0.1.5`), on the commit you want released.
 
 ### Default: publish from GitHub Actions (no local GoReleaser required)
 
@@ -367,11 +367,11 @@ git checkout main && git pull origin main
 git merge --ff-only develop           # or: merge via GitHub PR
 git push origin main
 
-git tag -a v0.1.4 -m "Release 0.1.4"
-git push origin v0.1.4                # triggers Release workflow — builds and publishes artifacts
+git tag -a v0.1.5 -m "Release 0.1.5"
+git push origin v0.1.5                # triggers Release workflow — builds and publishes artifacts
 ```
 
-For the **next** release after `0.1.4`, set `VERSION` to `0.1.5` (etc.), update the badge and [CHANGELOG](CHANGELOG.md), then repeat with `v0.1.5`.
+For the **next** release after `0.1.5`, set `VERSION` to `0.1.6` (etc.), update the badge and [CHANGELOG](CHANGELOG.md), then repeat with `v0.1.6`.
 
 ### Optional: publish from your machine
 

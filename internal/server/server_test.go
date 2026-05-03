@@ -145,6 +145,8 @@ func TestIndexPage(t *testing.T) {
 	db := testStore(t)
 	db.UpsertRepo("a/b", "test repo", 10, 2, 10, 1, 0, false, false, "")
 	db.UpsertView("a/b", "2026-03-20", 50, 20)
+	_ = db.UpsertClone("a/b", "2026-03-18", 5, 2)
+	_ = db.UpsertClone("a/b", "2026-03-19", 12, 4)
 
 	handler := New(Config{Store: db})
 
@@ -170,6 +172,12 @@ func TestIndexPage(t *testing.T) {
 	}
 	if !strings.Contains(body, "total across list") || !strings.Contains(body, ">10<") {
 		t.Error("expected KPI summary for seeded repo (10 stars)")
+	}
+	if !strings.Contains(body, `id="chart_index_clones"`) {
+		t.Error("expected index clones-over-time chart canvas")
+	}
+	if !strings.Contains(body, "gghstatsListClonesData") || !strings.Contains(body, "2026-03-18") {
+		t.Error("expected embedded clone series JSON for chart")
 	}
 }
 
