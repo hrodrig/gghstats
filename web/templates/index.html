@@ -38,7 +38,7 @@
   </div>
 </div>
 
-<div class="card shadow-sm border-0">
+<div class="card shadow-sm border-0 mb-3">
   <div class="card-body border-bottom app-brutal-search-panel">
     <form method="get" class="row g-3 align-items-end" id="repo-search-form">
       <input type="hidden" name="sort" value="{{.Sort}}">
@@ -53,73 +53,98 @@
       </div>
     </form>
   </div>
-  {{if and .Repos (gt .Total .PerPage)}}
-  <div class="card-body border-bottom py-2 app-repo-pagination-bar">
-    <div class="d-flex flex-wrap align-items-center gap-3 justify-content-start">
-      <nav aria-label="Repository list pagination (top)">
-        <ul class="pagination pagination-sm mb-0">
-          <li class="page-item{{if not .PrevURL}} disabled{{end}}">
-            {{if .PrevURL}}<a class="page-link" href="{{.PrevURL}}">Previous</a>{{else}}<span class="page-link">Previous</span>{{end}}
-          </li>
-          <li class="page-item disabled"><span class="page-link">Page {{.Page}}</span></li>
-          <li class="page-item{{if not .NextURL}} disabled{{end}}">
-            {{if .NextURL}}<a class="page-link" href="{{.NextURL}}">Next</a>{{else}}<span class="page-link">Next</span>{{end}}
-          </li>
-        </ul>
-      </nav>
-      <p class="text-muted small mb-0">Showing <strong>{{.From}}</strong>–<strong>{{.To}}</strong> of <strong>{{.Total}}</strong> repositories</p>
-    </div>
-  </div>
-  {{end}}
-  <div class="table-responsive">
-    <table class="table table-hover table-striped table-bordered mb-0 align-middle">
-      <thead class="table-light">
-        <tr>
-          <th scope="col" class="fw-semibold"><a href="{{.SortNameURL}}" class="text-decoration-none text-body">Name{{if eq .Sort "name"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
-          <th scope="col" class="text-end fw-semibold"><a href="{{.SortStarsURL}}" class="text-decoration-none text-body">Stars{{if eq .Sort "stars"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
-          <th scope="col" class="text-end fw-semibold"><a href="{{.SortForksURL}}" class="text-decoration-none text-body">Forks{{if eq .Sort "forks"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
-          <th scope="col" class="text-end fw-semibold"><a href="{{.SortClonesURL}}" class="text-decoration-none text-body">Clones{{if eq .Sort "total_clones"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
-          <th scope="col" class="text-end fw-semibold"><a href="{{.SortViewsURL}}" class="text-decoration-none text-body">Views{{if eq .Sort "total_views"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
-        </tr>
-      </thead>
-      <tbody>
-        {{range .Repos}}
-        <tr>
-          <td><a href="/{{.Name}}" class="fw-medium" title="View traffic stats for {{.Name}} in gghstats">{{.Name}}</a></td>
-          <td class="text-end">{{.Stars}}</td>
-          <td class="text-end">{{.Forks}}</td>
-          <td class="text-end">{{.TotalClones}}</td>
-          <td class="text-end">{{.TotalViews}}</td>
-        </tr>
-        {{else}}
-        <tr>
-          <td colspan="5" class="text-center text-muted py-5">
-            <p class="mb-2">No repositories yet.</p>
-            <p class="small mb-0">Sync one repository with:</p>
-            <code class="d-inline-block mt-2 p-2 bg-body-secondary rounded small text-start">gghstats fetch --repo owner/repo --db ./data/gghstats.db --token $GGHSTATS_GITHUB_TOKEN</code>
-          </td>
-        </tr>
-        {{end}}
-      </tbody>
-    </table>
-  </div>
-  {{if and .Repos (gt .Total .PerPage)}}
-  <div class="card-body border-top py-2 app-repo-pagination-bar">
-    <div class="d-flex flex-wrap align-items-center gap-3 justify-content-start">
-      <nav aria-label="Repository list pagination (bottom)">
-        <ul class="pagination pagination-sm mb-0">
-          <li class="page-item{{if not .PrevURL}} disabled{{end}}">
-            {{if .PrevURL}}<a class="page-link" href="{{.PrevURL}}">Previous</a>{{else}}<span class="page-link">Previous</span>{{end}}
-          </li>
-          <li class="page-item disabled"><span class="page-link">Page {{.Page}}</span></li>
-          <li class="page-item{{if not .NextURL}} disabled{{end}}">
-            {{if .NextURL}}<a class="page-link" href="{{.NextURL}}">Next</a>{{else}}<span class="page-link">Next</span>{{end}}
-          </li>
-        </ul>
-      </nav>
-      <p class="text-muted small mb-0">Showing <strong>{{.From}}</strong>–<strong>{{.To}}</strong> of <strong>{{.Total}}</strong> repositories</p>
-    </div>
-  </div>
-  {{end}}
 </div>
+
+<div class="row g-3 align-items-start">
+  <div class="col-lg-7 col-xl-8">
+    <div class="card shadow-sm border-0 h-100">
+      {{if and .Repos (gt .Total .PerPage)}}
+      <div class="card-body border-bottom py-2 app-repo-pagination-bar">
+        <div class="d-flex flex-wrap align-items-center gap-3 justify-content-start">
+          <nav aria-label="Repository list pagination (top)">
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item{{if not .PrevURL}} disabled{{end}}">
+                {{if .PrevURL}}<a class="page-link" href="{{.PrevURL}}">Previous</a>{{else}}<span class="page-link">Previous</span>{{end}}
+              </li>
+              <li class="page-item disabled"><span class="page-link">Page {{.Page}}</span></li>
+              <li class="page-item{{if not .NextURL}} disabled{{end}}">
+                {{if .NextURL}}<a class="page-link" href="{{.NextURL}}">Next</a>{{else}}<span class="page-link">Next</span>{{end}}
+              </li>
+            </ul>
+          </nav>
+          <p class="text-muted small mb-0">Showing <strong>{{.From}}</strong>–<strong>{{.To}}</strong> of <strong>{{.Total}}</strong> repositories</p>
+        </div>
+      </div>
+      {{end}}
+      <div class="table-responsive">
+        <table class="table table-hover table-striped table-bordered mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" class="fw-semibold"><a href="{{.SortNameURL}}" class="text-decoration-none text-body">Name{{if eq .Sort "name"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
+              <th scope="col" class="text-end fw-semibold"><a href="{{.SortStarsURL}}" class="text-decoration-none text-body">Stars{{if eq .Sort "stars"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
+              <th scope="col" class="text-end fw-semibold"><a href="{{.SortForksURL}}" class="text-decoration-none text-body">Forks{{if eq .Sort "forks"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
+              <th scope="col" class="text-end fw-semibold"><a href="{{.SortClonesURL}}" class="text-decoration-none text-body">Clones{{if eq .Sort "total_clones"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
+              <th scope="col" class="text-end fw-semibold"><a href="{{.SortViewsURL}}" class="text-decoration-none text-body">Views{{if eq .Sort "total_views"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
+            </tr>
+          </thead>
+          <tbody>
+            {{range .Repos}}
+            <tr>
+              <td><a href="/{{.Name}}" class="fw-medium" title="View traffic stats for {{.Name}} in gghstats">{{.Name}}</a></td>
+              <td class="text-end">{{.Stars}}</td>
+              <td class="text-end">{{.Forks}}</td>
+              <td class="text-end">{{.TotalClones}}</td>
+              <td class="text-end">{{.TotalViews}}</td>
+            </tr>
+            {{else}}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-5">
+                <p class="mb-2">No repositories yet.</p>
+                <p class="small mb-0">Sync one repository with:</p>
+                <code class="d-inline-block mt-2 p-2 bg-body-secondary rounded small text-start">gghstats fetch --repo owner/repo --db ./data/gghstats.db --token $GGHSTATS_GITHUB_TOKEN</code>
+              </td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+      {{if and .Repos (gt .Total .PerPage)}}
+      <div class="card-body border-top py-2 app-repo-pagination-bar">
+        <div class="d-flex flex-wrap align-items-center gap-3 justify-content-start">
+          <nav aria-label="Repository list pagination (bottom)">
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item{{if not .PrevURL}} disabled{{end}}">
+                {{if .PrevURL}}<a class="page-link" href="{{.PrevURL}}">Previous</a>{{else}}<span class="page-link">Previous</span>{{end}}
+              </li>
+              <li class="page-item disabled"><span class="page-link">Page {{.Page}}</span></li>
+              <li class="page-item{{if not .NextURL}} disabled{{end}}">
+                {{if .NextURL}}<a class="page-link" href="{{.NextURL}}">Next</a>{{else}}<span class="page-link">Next</span>{{end}}
+              </li>
+            </ul>
+          </nav>
+          <p class="text-muted small mb-0">Showing <strong>{{.From}}</strong>–<strong>{{.To}}</strong> of <strong>{{.Total}}</strong> repositories</p>
+        </div>
+      </div>
+      {{end}}
+    </div>
+  </div>
+  <div class="col-lg-5 col-xl-4 mt-4 app-repo-index-clones-col">
+    <div class="card shadow-sm border-0 h-100 app-brutal-chart-card">
+      <div class="card-header fw-semibold bg-body-secondary border-bottom">Clones over time</div>
+      <div class="card-body border-bottom py-2 px-3">
+        <p class="small text-muted mb-0">Daily <strong>clone counts</strong> (GitHub traffic) summed across every repository in the current list and search filter — not only this page. Window: up to the last <strong>120</strong> days with data.</p>
+      </div>
+      <div class="card-body app-brutal-chart-well chart-index-clones-wrap">
+        {{if gt .ListClonesAggCount 0}}
+        <canvas id="chart_index_clones" class="chart-canvas chart-canvas-index-clones" aria-label="Clones over time chart"></canvas>
+        {{else}}
+        <p class="text-muted small mb-0">No clone history for this list yet. Run <code class="small">gghstats fetch</code> to collect traffic.</p>
+        {{end}}
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+window.gghstatsListClonesData = {{.ListClonesAggJSON}};
+</script>
 {{end}}

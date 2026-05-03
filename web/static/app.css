@@ -317,6 +317,13 @@ html[data-bs-theme="dark"] .app-brutalist .app-brutal-chart-well {
   color: var(--brutal-text) !important;
 }
 
+/* Index: extra space only above the clones chart; table stays tight under search (lg+) */
+@media (min-width: 992px) {
+  .app-brutalist .app-repo-index-clones-col {
+    margin-top: 1.0rem !important;
+  }
+}
+
 /* Primary CTA: 2px frame + hard shadow; hover/active “press” */
 .app-brutalist .btn-primary {
   border-radius: 0 !important;
@@ -529,4 +536,13 @@ html[data-bs-theme="dark"] .app-brutalist .pagination .page-item.active .page-li
 .chart-canvas-stars {
   min-height: 260px;
   max-height: 320px;
+}
+
+.chart-index-clones-wrap {
+  min-height: 280px;
+}
+
+.chart-canvas-index-clones {
+  min-height: 240px;
+  max-height: 360px;
 }

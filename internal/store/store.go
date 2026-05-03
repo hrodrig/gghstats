@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	_ "modernc.org/sqlite"
 )
@@ -302,6 +303,76 @@ func (s *Store) ClonesByRange(repo, from, to string) ([]DayRow, error) {
 		`SELECT date, count, uniques FROM clones WHERE repo=? AND date>=? AND date<=? ORDER BY date`,
 		repo, from, to,
 	)
+}
+
+// CloneDateExtentForRepos returns the min and max clone dates (YYYY-MM-DD) across the given repos.
+// ok is false when repos is empty or no clone rows exist for those repos.
+func (s *Store) CloneDateExtentForRepos(repos []string) (minDate, maxDate string, ok bool, err error) {
+	if len(repos) == 0 {
+		return "", "", false, nil
+	}
+	ph := placeholders(len(repos))
+	args := make([]interface{}, len(repos))
+	for i, n := range repos {
+		args[i] = n
+	}
+	q := fmt.Sprintf(`SELECT MIN(date), MAX(date) FROM clones WHERE repo IN (%s)`, ph)
+	var minNS, maxNS sql.NullString
+	if err := s.db.QueryRow(q, args...).Scan(&minNS, &maxNS); err != nil {
+		return "", "", false, err
+	}
+	if !minNS.Valid || !maxNS.Valid || minNS.String == "" || maxNS.String == "" {
+		return "", "", false, nil
+	}
+	return minNS.String, maxNS.String, true, nil
+}
+
+// AggregatedClonesByDayForRepos returns per-day sums of count and uniques across repos (inclusive dates).
+// repos must be non-empty; callers should use CloneDateExtentForRepos first when choosing the window.
+func (s *Store) AggregatedClonesByDayForRepos(repos []string, from, to string) ([]DayRow, error) {
+	if len(repos) == 0 {
+		return nil, nil
+	}
+	ph := placeholders(len(repos))
+	q := fmt.Sprintf(
+		`SELECT date, SUM(count), SUM(uniques) FROM clones WHERE repo IN (%s) AND date >= ? AND date <= ? GROUP BY date ORDER BY date`,
+		ph,
+	)
+	args := make([]interface{}, 0, len(repos)+2)
+	for _, n := range repos {
+		args = append(args, n)
+	}
+	args = append(args, from, to)
+
+	rows, err := s.db.Query(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []DayRow
+	for rows.Next() {
+		var r DayRow
+		if err := rows.Scan(&r.Date, &r.Count, &r.Uniques); err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+func placeholders(n int) string {
+	if n <= 0 {
+		return ""
+	}
+	b := strings.Builder{}
+	for i := 0; i < n; i++ {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		b.WriteByte('?')
+	}
+	return b.String()
 }
 
 // ReferrerRow holds a referrer entry with its date.

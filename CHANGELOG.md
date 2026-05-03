@@ -7,6 +7,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-05-03
+
+### Added
+
+- **Web index (`/`):** **Clones over time** line chart (Chart.js) to the right of the repository table — daily **clone counts** summed across every repo in the current list and search filter (same scope as KPI totals; not only the current page). Data window: up to the last **120** days with clone rows in SQLite.
+
 ## [0.1.4] - 2026-04-13
 
 ### Changed
@@ -64,7 +70,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.5
 [0.1.4]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.4
 [0.1.3]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.3
 [0.1.2]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.2

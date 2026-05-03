@@ -21,6 +21,10 @@ import (
 // HealthzPath is the Kubernetes-style liveness/readiness probe path (public, no auth).
 const HealthzPath = "/api/v1/healthz"
 
+// indexCloneChartMaxDays limits how many calendar days of clone points we load for the index chart
+// (full filtered repo list can span years of GitHub traffic data).
+const indexCloneChartMaxDays = 120
+
 // Config holds server configuration.
 type Config struct {
 	Store          *store.Store
@@ -210,6 +214,43 @@ func fillLayoutDefaults(d layoutData) layoutData {
 	return d
 }
 
+// buildIndexListClonesChartPayload returns JSON (for Chart.js) of daily clone totals across repoNames,
+// scoped to the last indexCloneChartMaxDays ending at the newest clone date in the DB.
+func buildIndexListClonesChartPayload(db *store.Store, repoNames []string) (aggCount int, js template.JS, err error) {
+	js = template.JS("[]")
+	if len(repoNames) == 0 {
+		return 0, js, nil
+	}
+	minD, maxD, ok, err := db.CloneDateExtentForRepos(repoNames)
+	if err != nil {
+		return 0, js, err
+	}
+	if !ok {
+		return 0, js, nil
+	}
+	from := minD
+	if tMin, e1 := time.Parse("2006-01-02", minD); e1 == nil {
+		if tMax, e2 := time.Parse("2006-01-02", maxD); e2 == nil {
+			winStart := tMax.AddDate(0, 0, -indexCloneChartMaxDays)
+			if tMin.Before(winStart) {
+				from = winStart.Format("2006-01-02")
+			}
+		}
+	}
+	rows, err := db.AggregatedClonesByDayForRepos(repoNames, from, maxD)
+	if err != nil {
+		return 0, js, err
+	}
+	if len(rows) == 0 {
+		return 0, js, nil
+	}
+	b, err := json.Marshal(rows)
+	if err != nil {
+		return 0, js, err
+	}
+	return len(rows), template.JS(b), nil
+}
+
 func handleIndex(db *store.Store, tmpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -241,6 +282,15 @@ func handleIndex(db *store.Store, tmpl *template.Template) http.HandlerFunc {
 		if query != "" {
 			repos = filterReposByName(repos, query)
 		}
+		repoNames := make([]string, len(repos))
+		for i := range repos {
+			repoNames[i] = repos[i].Name
+		}
+		listClonesAggCount, listClonesAggJSON, err := buildIndexListClonesChartPayload(db, repoNames)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		var kpiStars, kpiForks, kpiClones, kpiViews int
 		for _, r := range repos {
 			kpiStars += r.Stars
@@ -267,47 +317,51 @@ func handleIndex(db *store.Store, tmpl *template.Template) http.HandlerFunc {
 		}
 
 		data := struct {
-			Repos         []store.RepoSummary
-			Sort          string
-			Dir           string
-			Query         string
-			Page          int
-			PerPage       int
-			Total         int
-			From          int
-			To            int
-			KPIStars      int
-			KPIForks      int
-			KPIClones     int
-			KPIViews      int
-			PrevURL       string
-			NextURL       string
-			SortNameURL   string
-			SortStarsURL  string
-			SortForksURL  string
-			SortClonesURL string
-			SortViewsURL  string
+			Repos              []store.RepoSummary
+			Sort               string
+			Dir                string
+			Query              string
+			Page               int
+			PerPage            int
+			Total              int
+			From               int
+			To                 int
+			KPIStars           int
+			KPIForks           int
+			KPIClones          int
+			KPIViews           int
+			PrevURL            string
+			NextURL            string
+			SortNameURL        string
+			SortStarsURL       string
+			SortForksURL       string
+			SortClonesURL      string
+			SortViewsURL       string
+			ListClonesAggJSON  template.JS
+			ListClonesAggCount int
 		}{
-			Repos:         reposPage,
-			Sort:          sort,
-			Dir:           dir,
-			Query:         query,
-			Page:          page,
-			PerPage:       perPage,
-			Total:         total,
-			From:          start + 1,
-			To:            end,
-			KPIStars:      kpiStars,
-			KPIForks:      kpiForks,
-			KPIClones:     kpiClones,
-			KPIViews:      kpiViews,
-			PrevURL:       buildIndexURL(sort, dir, query, page-1, perPage),
-			NextURL:       buildIndexURL(sort, dir, query, page+1, perPage),
-			SortNameURL:   buildSortURL("name", sort, dir, query, perPage),
-			SortStarsURL:  buildSortURL("stars", sort, dir, query, perPage),
-			SortForksURL:  buildSortURL("forks", sort, dir, query, perPage),
-			SortClonesURL: buildSortURL("total_clones", sort, dir, query, perPage),
-			SortViewsURL:  buildSortURL("total_views", sort, dir, query, perPage),
+			Repos:              reposPage,
+			Sort:               sort,
+			Dir:                dir,
+			Query:              query,
+			Page:               page,
+			PerPage:            perPage,
+			Total:              total,
+			From:               start + 1,
+			To:                 end,
+			KPIStars:           kpiStars,
+			KPIForks:           kpiForks,
+			KPIClones:          kpiClones,
+			KPIViews:           kpiViews,
+			PrevURL:            buildIndexURL(sort, dir, query, page-1, perPage),
+			NextURL:            buildIndexURL(sort, dir, query, page+1, perPage),
+			SortNameURL:        buildSortURL("name", sort, dir, query, perPage),
+			SortStarsURL:       buildSortURL("stars", sort, dir, query, perPage),
+			SortForksURL:       buildSortURL("forks", sort, dir, query, perPage),
+			SortClonesURL:      buildSortURL("total_clones", sort, dir, query, perPage),
+			SortViewsURL:       buildSortURL("total_views", sort, dir, query, perPage),
+			ListClonesAggJSON:  listClonesAggJSON,
+			ListClonesAggCount: listClonesAggCount,
 		}
 		if total == 0 {
 			data.From = 0
