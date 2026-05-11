@@ -1,5 +1,9 @@
 # Multi-stage build for local use (make docker-build). Release images use Dockerfile.release + GoReleaser.
-FROM golang:1.26.2-alpine AS builder
+FROM golang:1.26.3-alpine AS builder
+
+# Pin module proxy so builds do not inherit a broken or empty GOPROXY from the host/BuildKit environment.
+ENV GOPROXY=https://proxy.golang.org,direct
+ENV GOSUMDB=sum.golang.org
 
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -16,8 +20,8 @@ RUN go build -ldflags "-s -w \
     -X 'github.com/hrodrig/gghstats/internal/version.BuildDate=${BUILDDATE}'" \
     -o gghstats ./cmd/gghstats
 
-# Alpine 3.21 keeps OpenSSL 3.3.x (see 3.22+ for 3.5.x). apk upgrade pulls patches from the 3.21 repo.
-FROM alpine:3.21
+# Alpine 3.22+: fresher busybox/ca-certificates vs Grype noise on 3.21; apk upgrade pulls security revisions.
+FROM alpine:3.22
 RUN apk update \
     && apk add --no-cache ca-certificates \
     && apk upgrade --no-cache \
