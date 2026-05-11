@@ -7,6 +7,14 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-05-11
+
+### Changed
+
+- Go toolchain **1.26.3** (stdlib fixes reported by vulnerability scanners for 1.26.2); Docker builder `golang:1.26.3-alpine`.
+- Docker runtime images (`Dockerfile`, `Dockerfile.release`): **Alpine 3.22** with `apk upgrade` for patched base packages (including Busybox) vs prior 3.21.
+- **`Dockerfile` builder:** set `GOPROXY` / `GOSUMDB` so `go mod download` does not fail when the host forwards an invalid or empty `GOPROXY` into the build.
+
 ## [0.1.5] - 2026-05-03
 
 ### Added
@@ -70,7 +78,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.6
 [0.1.5]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.5
 [0.1.4]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.4
 [0.1.3]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.3
