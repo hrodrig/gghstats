@@ -1,0 +1,24 @@
+/*
+ * gghstats example theme — ocean / coral accents (light + dark).
+ * Copy this file, set GGHSTATS_CUSTOM_CSS to its path, restart serve.
+ */
+
+body.app-brutalist {
+  --brutal-accent: #0d9488;
+  --brutal-accent-2: #ea580c;
+  --brutal-nav-active-bg: #0f766e;
+  --brutal-nav-active-fg: #ecfeff;
+  --brutal-chart-rim: #0d9488;
+  --brutal-search-cta: #ea580c;
+  --brutal-search-cta-shadow: #431407;
+}
+
+html[data-bs-theme="dark"] body.app-brutalist {
+  --brutal-accent: #5eead4;
+  --brutal-accent-2: #fda4af;
+  --brutal-nav-active-bg: #5eead4;
+  --brutal-nav-active-fg: #0f172a;
+  --brutal-chart-rim: #5eead4;
+  --brutal-search-cta: #fda4af;
+  --brutal-search-cta-shadow: #450a0a;
+}

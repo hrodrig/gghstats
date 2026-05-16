@@ -35,6 +35,8 @@
 !web/**
 !assets/
 !assets/**
+!contrib/
+!contrib/**
 # Persist data/ in repo (placeholder only); never commit the SQLite DB.
 !data/
 !.keep

@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -178,6 +179,12 @@ func TestIndexPage(t *testing.T) {
 	}
 	if !strings.Contains(body, "gghstatsListClonesData") || !strings.Contains(body, "2026-03-18") {
 		t.Error("expected embedded clone series JSON for chart")
+	}
+	if !strings.Contains(body, `name="sort" value="total_clones"`) {
+		t.Error("expected default index sort total_clones in search form hidden fields")
+	}
+	if !strings.Contains(body, "Clones (30d)") {
+		t.Error("expected Clones (30d) column label on index table")
 	}
 }
 
@@ -390,5 +397,60 @@ func TestAPIAuthorized(t *testing.T) {
 	}
 	if resp["total_count"].(float64) != 1 {
 		t.Errorf("total_count = %v, want 1", resp["total_count"])
+	}
+}
+
+func TestThemeCustomCSSNotConfigured(t *testing.T) {
+	db := testStore(t)
+	handler := New(Config{Store: db})
+
+	req := httptest.NewRequest(http.MethodGet, "/theme/custom.css", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", w.Code)
+	}
+}
+
+func TestThemeCustomCSSServedAndLinkedFromIndex(t *testing.T) {
+	db := testStore(t)
+	db.UpsertRepo("a/b", "x", 1, 0, 1, 0, 0, false, false, "")
+
+	dir := t.TempDir()
+	cssPath := filepath.Join(dir, "theme.css")
+	cssBody := "/* test theme */\nbody.app-brutalist { --brutal-accent: #123456; }\n"
+	if err := os.WriteFile(cssPath, []byte(cssBody), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	abs, q := ResolveCustomCSS(cssPath)
+	if abs == "" || q == "" {
+		t.Fatalf("ResolveCustomCSS failed: abs=%q q=%q", abs, q)
+	}
+
+	handler := New(Config{Store: db, CustomCSSAbsPath: abs, CustomCSSQuery: q})
+
+	req := httptest.NewRequest(http.MethodGet, "/theme/custom.css", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("css status = %d, body=%s", w.Code, w.Body.String())
+	}
+	if ct := w.Header().Get("Content-Type"); ct != "text/css; charset=utf-8" {
+		t.Errorf("Content-Type = %q", ct)
+	}
+	if w.Body.String() != cssBody {
+		t.Errorf("css body mismatch")
+	}
+
+	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
+	w2 := httptest.NewRecorder()
+	handler.ServeHTTP(w2, req2)
+	if w2.Code != http.StatusOK {
+		t.Fatalf("index status = %d", w2.Code)
+	}
+	html := w2.Body.String()
+	wantSub := "/theme/custom.css?" + q
+	if !strings.Contains(html, wantSub) {
+		t.Fatalf("expected theme link with %q in HTML", wantSub)
 	}
 }

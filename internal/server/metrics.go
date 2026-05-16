@@ -87,13 +87,13 @@ func metricsRouteLabel(r *http.Request) string {
 		return "health"
 	case strings.HasPrefix(p, "/static/"):
 		return "static"
-	case p == "/api/repos":
-		return "api_repos"
+	case p == "/theme/custom.css":
+		return "theme_custom_css"
 	case p == "/":
 		return "index"
 	}
 	parts := strings.Split(strings.Trim(p, "/"), "/")
-	if len(parts) == 2 && parts[0] != "" && parts[0] != "static" && parts[0] != "api" {
+	if len(parts) == 2 && parts[0] != "" && parts[0] != "static" && parts[0] != "api" && parts[0] != "theme" {
 		return "repo"
 	}
 	return "other"

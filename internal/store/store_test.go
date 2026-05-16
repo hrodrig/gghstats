@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func tempDB(t *testing.T) *Store {
@@ -280,6 +281,11 @@ func TestListReposAllSortVariants(t *testing.T) {
 	s.UpsertView("z/r", "2026-01-01", 1000, 500)
 	s.UpsertClone("a/r", "2026-01-01", 1000, 100)
 	s.UpsertClone("z/r", "2026-01-01", 10, 5)
+	today := time.Now().UTC().Format("2006-01-02")
+	yesterday := time.Now().UTC().AddDate(0, 0, -1).Format("2006-01-02")
+	s.UpsertClone("a/r", yesterday, 50, 10)
+	s.UpsertClone("a/r", today, 50, 10)
+	s.UpsertClone("z/r", today, 1, 1)
 
 	tests := []struct {
 		sort, dir, wantFirst string
@@ -294,6 +300,8 @@ func TestListReposAllSortVariants(t *testing.T) {
 		{"total_views", "desc", "z/r"},
 		{"total_clones", "asc", "z/r"},
 		{"total_clones", "desc", "a/r"},
+		{"clones_30d", "desc", "a/r"},
+		{"clones_30d", "asc", "z/r"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.sort+"_"+tt.dir, func(t *testing.T) {
@@ -394,6 +402,8 @@ func TestRepoByName(t *testing.T) {
 
 	s.UpsertRepo("a/b", "desc", 5, 1, 5, 0, 0, false, false, "")
 	s.UpsertView("a/b", "2026-01-01", 10, 5)
+	today := time.Now().UTC().Format("2006-01-02")
+	s.UpsertClone("a/b", today, 7, 3)
 
 	r, err := s.RepoByName("a/b")
 	if err != nil {
@@ -404,6 +414,9 @@ func TestRepoByName(t *testing.T) {
 	}
 	if r.Stars != 5 {
 		t.Errorf("stars = %d, want 5", r.Stars)
+	}
+	if r.Clones30d != 7 {
+		t.Errorf("clones_30d = %d, want 7", r.Clones30d)
 	}
 
 	r2, err := s.RepoByName("nonexistent")

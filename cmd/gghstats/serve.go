@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -103,11 +104,19 @@ func runServe(args []string) error {
 	defer cancel()
 	go startScheduler(ctx, gh, db, syncOpts, cfg.SyncInterval)
 
+	cssAbs, cssQuery := server.ResolveCustomCSS(os.Getenv("GGHSTATS_CUSTOM_CSS"))
+	if strings.TrimSpace(os.Getenv("GGHSTATS_CUSTOM_CSS")) != "" && cssAbs == "" {
+		slog.Warn("GGHSTATS_CUSTOM_CSS ignored: path is missing or not a regular file",
+			"GGHSTATS_CUSTOM_CSS", os.Getenv("GGHSTATS_CUSTOM_CSS"))
+	}
+
 	// Start HTTP server
 	handler := server.New(server.Config{
-		Store:          db,
-		APIToken:       cfg.APIToken,
-		DisableMetrics: os.Getenv("GGHSTATS_METRICS") == "false",
+		Store:            db,
+		APIToken:         cfg.APIToken,
+		DisableMetrics:   os.Getenv("GGHSTATS_METRICS") == "false",
+		CustomCSSAbsPath: cssAbs,
+		CustomCSSQuery:   cssQuery,
 	})
 
 	addr := cfg.Host + ":" + cfg.Port

@@ -481,6 +481,8 @@ type RepoSummary struct {
 	TotalUniques   int    `json:"total_uniques"`
 	TotalClones    int    `json:"total_clones"`
 	CloneUniques   int    `json:"clone_uniques"`
+	// Clones30d is the sum of daily clone counts from GitHub traffic for the last 30 calendar days (UTC).
+	Clones30d int `json:"clones_30d"`
 }
 
 // Fixed SQL fragments for ListRepos: no dynamic string building from sort/direction reaches the DB (CodeQL-safe).
@@ -489,7 +491,8 @@ const listReposSQLBase = `
 			r.name, r.description, r.stars, r.forks, r.watchers, r.issues, r.prs,
 			r.fork, r.parent_full_name, r.archived,
 			COALESCE(v.total_views, 0), COALESCE(v.total_uniques, 0),
-			COALESCE(c.total_clones, 0), COALESCE(c.clone_uniques, 0)
+			COALESCE(c.total_clones, 0), COALESCE(c.clone_uniques, 0),
+			COALESCE(c30.clones_30d, 0)
 		FROM repos r
 		LEFT JOIN (
 			SELECT repo, SUM(count) AS total_views, SUM(uniques) AS total_uniques
@@ -499,6 +502,12 @@ const listReposSQLBase = `
 			SELECT repo, SUM(count) AS total_clones, SUM(uniques) AS clone_uniques
 			FROM clones GROUP BY repo
 		) c ON c.repo = r.name
+		LEFT JOIN (
+			SELECT repo, SUM(count) AS clones_30d
+			FROM clones
+			WHERE date >= date('now', '-29 days') AND date <= date('now')
+			GROUP BY repo
+		) c30 ON c30.repo = r.name
 		WHERE r.hidden = 0
 `
 
@@ -513,6 +522,8 @@ const (
 	listReposOrderTotalViewsDesc  = `ORDER BY COALESCE(v.total_views, 0) DESC`
 	listReposOrderTotalClonesAsc  = `ORDER BY COALESCE(c.total_clones, 0) ASC`
 	listReposOrderTotalClonesDesc = `ORDER BY COALESCE(c.total_clones, 0) DESC`
+	listReposOrderClones30dAsc    = `ORDER BY COALESCE(c30.clones_30d, 0) ASC`
+	listReposOrderClones30dDesc   = `ORDER BY COALESCE(c30.clones_30d, 0) DESC`
 )
 
 // Each queryListRepos* method passes only compile-time constant SQL to db.Query (no query string
@@ -547,6 +558,12 @@ func (s *Store) queryListReposTotalClonesAsc() (*sql.Rows, error) {
 func (s *Store) queryListReposTotalClonesDesc() (*sql.Rows, error) {
 	return s.db.Query(listReposSQLBase + listReposOrderTotalClonesDesc)
 }
+func (s *Store) queryListReposClones30dAsc() (*sql.Rows, error) {
+	return s.db.Query(listReposSQLBase + listReposOrderClones30dAsc)
+}
+func (s *Store) queryListReposClones30dDesc() (*sql.Rows, error) {
+	return s.db.Query(listReposSQLBase + listReposOrderClones30dDesc)
+}
 
 func (s *Store) queryListReposRows(sort, direction string) (*sql.Rows, error) {
 	asc := direction == "asc"
@@ -576,6 +593,11 @@ func (s *Store) queryListReposRows(sort, direction string) (*sql.Rows, error) {
 			return s.queryListReposTotalClonesAsc()
 		}
 		return s.queryListReposTotalClonesDesc()
+	case "clones_30d":
+		if asc {
+			return s.queryListReposClones30dAsc()
+		}
+		return s.queryListReposClones30dDesc()
 	default:
 		return s.queryListReposTotalViewsDesc()
 	}
@@ -585,7 +607,7 @@ func (s *Store) queryListReposRows(sort, direction string) (*sql.Rows, error) {
 func (s *Store) ListRepos(sort, direction string) ([]RepoSummary, error) {
 	allowed := map[string]bool{
 		"name": true, "stars": true, "forks": true,
-		"total_views": true, "total_clones": true,
+		"total_views": true, "total_clones": true, "clones_30d": true,
 	}
 	if !allowed[sort] {
 		sort = "total_views"
@@ -607,6 +629,7 @@ func (s *Store) ListRepos(sort, direction string) ([]RepoSummary, error) {
 			&r.Name, &r.Description, &r.Stars, &r.Forks, &r.Watchers,
 			&r.Issues, &r.PRs, &r.Fork, &r.ParentFullName, &r.Archived,
 			&r.TotalViews, &r.TotalUniques, &r.TotalClones, &r.CloneUniques,
+			&r.Clones30d,
 		); err != nil {
 			return nil, err
 		}
@@ -623,7 +646,8 @@ func (s *Store) RepoByName(name string) (*RepoSummary, error) {
 			r.name, r.description, r.stars, r.forks, r.watchers, r.issues, r.prs,
 			r.fork, r.parent_full_name, r.archived,
 			COALESCE(v.total_views, 0), COALESCE(v.total_uniques, 0),
-			COALESCE(c.total_clones, 0), COALESCE(c.clone_uniques, 0)
+			COALESCE(c.total_clones, 0), COALESCE(c.clone_uniques, 0),
+			COALESCE(c30.clones_30d, 0)
 		FROM repos r
 		LEFT JOIN (
 			SELECT repo, SUM(count) AS total_views, SUM(uniques) AS total_uniques
@@ -633,12 +657,19 @@ func (s *Store) RepoByName(name string) (*RepoSummary, error) {
 			SELECT repo, SUM(count) AS total_clones, SUM(uniques) AS clone_uniques
 			FROM clones GROUP BY repo
 		) c ON c.repo = r.name
+		LEFT JOIN (
+			SELECT repo, SUM(count) AS clones_30d
+			FROM clones
+			WHERE date >= date('now', '-29 days') AND date <= date('now')
+			GROUP BY repo
+		) c30 ON c30.repo = r.name
 		WHERE r.name = ? AND r.hidden = 0`,
 		name,
 	).Scan(
 		&r.Name, &r.Description, &r.Stars, &r.Forks, &r.Watchers,
 		&r.Issues, &r.PRs, &r.Fork, &r.ParentFullName, &r.Archived,
 		&r.TotalViews, &r.TotalUniques, &r.TotalClones, &r.CloneUniques,
+		&r.Clones30d,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil

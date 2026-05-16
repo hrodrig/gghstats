@@ -16,6 +16,8 @@ services:
       - GGHSTATS_PORT=${GGHSTATS_PORT:-8080}
       - GGHSTATS_FILTER=${GGHSTATS_FILTER:-*}
       - GGHSTATS_SYNC_INTERVAL=${GGHSTATS_SYNC_INTERVAL:-1h}
+      # Optional UI theme: mount a CSS file and set path inside the container (see README "Custom UI theme").
+      # - GGHSTATS_CUSTOM_CSS=/data/custom-theme.css
     ports:
       - "${GGHSTATS_PORT:-8080}:${GGHSTATS_PORT:-8080}"
     volumes:

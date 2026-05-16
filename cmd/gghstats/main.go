@@ -37,6 +37,7 @@ Server env vars (serve):
   GGHSTATS_API_TOKEN       Protect /api/* endpoints
   GGHSTATS_LOG_LEVEL       Log level: debug, info (default), warn, error
   GGHSTATS_METRICS         Set to false to disable GET /metrics (Prometheus); default enabled
+  GGHSTATS_CUSTOM_CSS      Optional .css path: overrides / extends neo-brutalist app.css (simpler UI, branding)
 
 Run 'gghstats <command> --help' for command-specific flags.`
 

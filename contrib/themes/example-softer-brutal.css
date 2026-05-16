@@ -1,0 +1,20 @@
+/*
+ * gghstats example theme — softer brutalist (light + dark).
+ * Copy this file, set GGHSTATS_CUSTOM_CSS to its path, restart serve.
+ */
+
+body.app-brutalist {
+  --brutal-border: 2px solid var(--brutal-border-ink);
+  --brutal-shadow: 4px 4px 0 var(--brutal-shadow-core);
+  --brutal-btn-shift-hover: 1px;
+  --brutal-btn-shift-active: 2px;
+}
+
+html[data-bs-theme="dark"] body.app-brutalist {
+  --brutal-border: 2px solid var(--brutal-border-ink);
+  --brutal-shadow: 5px 5px 0 var(--brutal-shadow-core);
+}
+
+.app-brutal-toggler {
+  box-shadow: var(--brutal-shadow);
+}

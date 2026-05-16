@@ -1,0 +1,24 @@
+/*
+ * gghstats example theme — violet primary + citrus secondary (light + dark).
+ * Copy this file, set GGHSTATS_CUSTOM_CSS to its path, restart serve.
+ */
+
+body.app-brutalist {
+  --brutal-accent: #6d28d9;
+  --brutal-accent-2: #65a30d;
+  --brutal-nav-active-bg: #5b21b6;
+  --brutal-nav-active-fg: #f5f3ff;
+  --brutal-chart-rim: #6d28d9;
+  --brutal-search-cta: #ca8a04;
+  --brutal-search-cta-shadow: #422006;
+}
+
+html[data-bs-theme="dark"] body.app-brutalist {
+  --brutal-accent: #c4b5fd;
+  --brutal-accent-2: #bef264;
+  --brutal-nav-active-bg: #c4b5fd;
+  --brutal-nav-active-fg: #1e1b4b;
+  --brutal-chart-rim: #c4b5fd;
+  --brutal-search-cta: #fde047;
+  --brutal-search-cta-shadow: #422006;
+}

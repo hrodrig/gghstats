@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.1.6-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -18,7 +18,7 @@ Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only k
 
 If you want your **own self-hosted** deployment (Docker Compose, Traefik with TLS, Helm, optional Prometheus/Grafana/Loki), use the companion repo **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** — it lists the supported options and example manifests.
 
-**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.1.6`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
+**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.2.0`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
 
 ## Demo
 
@@ -38,6 +38,8 @@ If you want your **own self-hosted** deployment (Docker Compose, Traefik with TL
 - [Examples](#examples)
 - [Configuration](#configuration)
 - [Environment file](#environment-file)
+- [Custom UI theme (optional)](#custom-ui-theme-optional)
+- [HTTP API (JSON)](#http-api-json)
 - [Typical scenarios](#typical-scenarios)
 - [Deployments](#deployments)
 - [Troubleshooting](#troubleshooting)
@@ -94,7 +96,7 @@ docker run -d \
   -p 8080:8080 \
   -v ./data:/data \
   --name gghstats \
-  ghcr.io/hrodrig/gghstats:v0.1.6
+  ghcr.io/hrodrig/gghstats:v0.2.0
 ```
 
 [Back to top](#gghstats)
@@ -110,7 +112,7 @@ go install github.com/hrodrig/gghstats/cmd/gghstats@latest
 ### Pre-built binary and container
 
 - **Binary archives:** [Releases](https://github.com/hrodrig/gghstats/releases) (pick OS/arch; verify `checksums.txt`).
-- **OCI image:** `ghcr.io/hrodrig/gghstats:v0.1.6` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
+- **OCI image:** `ghcr.io/hrodrig/gghstats:v0.2.0` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
 
 ### Build from source
 
@@ -134,6 +136,7 @@ Favicons and the [web app manifest](https://developer.mozilla.org/en-US/docs/Web
 | [`assets/favicons/android-chrome-192x192.png`](assets/favicons/android-chrome-192x192.png) | **192×192** (PWA / Android). |
 | [`assets/favicons/android-chrome-512x512.png`](assets/favicons/android-chrome-512x512.png) | **512×512** (PWA splash / install). |
 | [`assets/favicons/manifest.json`](assets/favicons/manifest.json) | [Web app manifest](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest) (`/static/manifest.json`; linked from `layout.html`). |
+| [`assets/gghstats-main-theme-bootstrap-plain.png`](assets/gghstats-main-theme-bootstrap-plain.png) | **Documentation only:** screenshot of the optional **Bootstrap-plain** theme ([`contrib/themes/example-bootstrap-plain.css`](contrib/themes/example-bootstrap-plain.css)); not embedded in the binary or served by the app. |
 
 **Regenerating rasters after you change `favicon.svg`:** from the repository root, with [librsvg](https://wiki.gnome.org/Projects/LibRsvg) (`rsvg-convert`) and [ImageMagick](https://imagemagick.org/) (`magick`) on your `PATH`:
 
@@ -237,15 +240,56 @@ All runtime configuration uses env vars (`serve`) or flags (`fetch/report/export
 | `GGHSTATS_FILTER` | `*` | Repo filter expression |
 | `GGHSTATS_INCLUDE_PRIVATE` | `false` | Include private repos |
 | `GGHSTATS_SYNC_INTERVAL` | `1h` | Sync frequency |
-| `GGHSTATS_API_TOKEN` | (none) | Protect `/api/*` endpoints |
+| `GGHSTATS_API_TOKEN` | (none) | If set, `GET /api/repos` requires matching `x-api-token` header (see [HTTP API (JSON)](#http-api-json)) |
 | `GGHSTATS_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, or `error` (slog only; startup banner always prints) |
 | `GGHSTATS_METRICS` | (enabled) | Set to `false` to disable `GET /metrics` |
+| `GGHSTATS_CUSTOM_CSS` | (none) | Optional **regular** `.css` file: loaded **after** built-in `app.css` at `/theme/custom.css` so you can tone down neo-brutalism or replace accents (see [Custom UI theme](#custom-ui-theme-optional)) |
+
+### Custom UI theme (optional)
+
+The shipped look is **neo-brutalist** on purpose—not every user or org wants heavy borders and loud chrome. If you prefer something **flatter, calmer, or closer to your brand**, you can supply your own CSS and keep the same binary and data layout.
+
+Self-hosted installs can override colors and chrome **without rebuilding**:
+
+1. Copy one of the **five official example themes** from [`contrib/themes/`](contrib/themes/README.md) (for a stock-Bootstrap feel use **`example-bootstrap-plain.css`**; or write your own CSS targeting `body.app-brutalist` and `html[data-bs-theme="dark"] body.app-brutalist`).
+2. Place the file where the process can read it (e.g. mount `./data/custom-theme.css` in Docker to `/data/custom-theme.css`).
+3. Set **`GGHSTATS_CUSTOM_CSS=/data/custom-theme.css`** (absolute or relative path; relative paths resolve from the process working directory).
+4. Restart **`gghstats serve`**. The layout adds `<link href="/theme/custom.css?…">` after `/static/app.css`. The query string bumps when the file’s modification time changes.
+
+**Bootstrap-plain example** ([`example-bootstrap-plain.css`](contrib/themes/example-bootstrap-plain.css) with `GGHSTATS_CUSTOM_CSS`): repository index in light mode — closer to stock Bootstrap (sans-serif, thin borders, no offset shadows):
+
+![gghstats dashboard with Bootstrap-plain optional theme](assets/gghstats-main-theme-bootstrap-plain.png)
+
+If the variable is set but the path is not a readable regular file, startup logs a **warning** and the UI stays default (no extra link).
 
 ### Token setup
 
-1. Go to <https://github.com/settings/tokens>
-2. Generate a classic token
-3. Use `public_repo` scope (or `repo` for private repos)
+Create a **GitHub personal access token** the app will use for [`/user/repos`](https://docs.github.com/en/rest/repos/repos#list-repositories-for-the-authenticated-user) and [repository traffic](https://docs.github.com/en/rest/metrics/traffic) (views, clones, referrers, paths) plus stars and related metadata.
+
+1. Go to **[GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)** (classic or fine-grained, see below).
+2. Create the token and store it only in env / secret storage (`GGHSTATS_GITHUB_TOKEN`).
+
+#### Classic tokens (“Generate new token (classic)”)
+
+| Scope | When to use it |
+| --- | --- |
+| **`repo`** | **Recommended default** if you sync **private** repositories (`GGHSTATS_INCLUDE_PRIVATE=true`) or you hit **403** on traffic endpoints. Full `repo` covers private repos, traffic, and listing for repos your account can access (subject to GitHub’s own rules). |
+| **`public_repo`** | Only **public** repositories and `GGHSTATS_INCLUDE_PRIVATE` is **not** `true`. Narrow with `GGHSTATS_FILTER` if needed. Traffic APIs require **push/admin** on each repo; for repos **you own**, this scope is often enough for public traffic. If traffic calls fail with **403**, switch to **`repo`**. |
+
+Optional: **`read:org`** if you rely on organization membership to see org repos not returned by default (uncommon for a personal token on your own org).
+
+#### Fine-grained tokens
+
+Create at **[Fine-grained tokens](https://github.com/settings/personal-access-tokens)**. Pick the **resource owner** (user or org), then either **only selected repositories** or **all** this token may access. Grant **read-only** (or higher) permissions that allow:
+
+- Listing and reading those repositories (metadata / contents as required by GitHub for your setup).
+- Access to **traffic** metrics for each repo (GitHub’s permission names change over time; if sync logs show **403** on `/traffic/*`, widen repository permissions or use a **classic** token with **`repo`** for that account).
+
+Fine-grained tokens **cannot** be mixed with classic scope names; follow GitHub’s UI for the minimum set that allows traffic reads on your repos.
+
+#### References
+
+- GitHub: [Authenticating to the REST API](https://docs.github.com/en/rest/authentication/authenticating-to-the-rest-api), [Repository traffic](https://docs.github.com/en/rest/metrics/traffic).
 
 ### Filter examples
 
@@ -260,13 +304,103 @@ GGHSTATS_FILTER="your-github-user/*,!fork,!archived"
 GGHSTATS_FILTER="*,!your-github-user/legacy-repo"
 ```
 
-### API
+### HTTP API (JSON)
 
-When `GGHSTATS_API_TOKEN` is configured:
+gghstats exposes a **small read-only JSON surface** for probes and integrations. There is **no** generic REST CRUD layer; everything else is the HTML UI or the CLI.
+
+#### `GET /api/v1/healthz`
+
+| | |
+| --- | --- |
+| **Purpose** | Liveness / readiness style probe (same path string as many Kubernetes configs). |
+| **Auth** | None — **public**. |
+| **Response** | **`200`** with body `{"status":"ok"}` and `Content-Type: application/json`. |
 
 ```bash
-curl -H "x-api-token: your-token" http://localhost:8080/api/repos
+curl -sS http://localhost:8080/api/v1/healthz
+# {"status":"ok"}
 ```
+
+#### `GET /api/repos`
+
+| | |
+| --- | --- |
+| **Purpose** | Snapshot of all **non-hidden** repositories in the local SQLite DB with aggregate counters. |
+| **Auth** | **Required** when `GGHSTATS_API_TOKEN` is set: send header **`x-api-token: <value>`** matching that env var exactly. If `GGHSTATS_API_TOKEN` is **unset**, requests to this path return **`404 Not Found`** (API disabled by default). |
+| **CORS** | Successful responses include **`Access-Control-Allow-Origin: *`** so browser dashboards on another origin can read the JSON (you still must keep the API token secret). |
+| **Sort order** | Items are always returned in **`total_views` descending** (see `handleAPIRepos` in the server code). This is **independent** of the web index `sort=` query parameter. |
+| **Errors** | **`401`** with JSON `{"error":"unauthorized"}` if the token header is missing or wrong. **`500`** with JSON `{"error":"…"}` on database or encoding failures. |
+
+**Response shape (`200`):**
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `total_count` | number | Count of repos in `items`. |
+| `total_stars` | number | Sum of `stars` across repos. |
+| `total_forks` | number | Sum of `forks` across repos. |
+| `total_views` | number | Sum of `total_views` across repos. |
+| `total_clones` | number | Sum of `total_clones` across repos. |
+| `items` | array | One object per repository (see table below). |
+
+**Each element of `items`** matches [`RepoSummary`](internal/store/store.go) JSON tags:
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `name` | string | `owner/repo` |
+| `description` | string | |
+| `stars`, `forks`, `watchers`, `issues`, `prs` | number | From last GitHub metadata sync. |
+| `fork` | boolean | |
+| `parent_full_name` | string | Upstream if fork (may be empty / omitted). |
+| `archived` | boolean | |
+| `total_views`, `total_uniques` | number | Lifetime sums of daily GitHub **view** traffic stored in SQLite. |
+| `total_clones`, `clone_uniques` | number | Lifetime sums of daily **clone** traffic. |
+| `clones_30d` | number | Sum of daily clone counts in the **last 30 calendar days (UTC)**; missing days count as `0`. |
+
+**Example request:**
+
+```bash
+curl -sS -H "x-api-token: $GGHSTATS_API_TOKEN" http://localhost:8080/api/repos
+```
+
+**Example response (truncated to one repo):**
+
+```json
+{
+  "total_count": 1,
+  "total_stars": 10,
+  "total_forks": 2,
+  "total_views": 150,
+  "total_clones": 42,
+  "items": [
+    {
+      "name": "your-github-user/my-app",
+      "description": "Example",
+      "stars": 10,
+      "forks": 2,
+      "watchers": 3,
+      "issues": 1,
+      "prs": 0,
+      "fork": false,
+      "archived": false,
+      "total_views": 150,
+      "total_uniques": 80,
+      "total_clones": 42,
+      "clone_uniques": 12,
+      "clones_30d": 7
+    }
+  ]
+}
+```
+
+#### `GET /metrics`
+
+| | |
+| --- | --- |
+| **Purpose** | [Prometheus](https://prometheus.io/) text / OpenMetrics exposition for scraping. |
+| **Auth** | None — treat network access like any other unauthenticated metrics endpoint. |
+| **Disabled** | When `GGHSTATS_METRICS=false`, the route is omitted (returns **`404`**). |
+
+See [Security and quality](#security-and-quality) for the local tooling that scans this surface in CI.
 
 [Back to top](#gghstats)
 
@@ -287,6 +421,8 @@ gghstats serve
 ```
 
 ### Protect API with token
+
+Full field list, error codes, and probe endpoint are documented under **[HTTP API (JSON)](#http-api-json)**.
 
 ```bash
 export GGHSTATS_API_TOKEN="my-api-token"
@@ -322,7 +458,7 @@ Set `GGHSTATS_GITHUB_TOKEN` in your shell or `.env` file before running `serve`.
 
 - Wait for the initial sync to finish.
 - Verify filter rules (`GGHSTATS_FILTER`) are not excluding all repos.
-- Confirm token scope includes repository metadata access.
+- Confirm [token scopes](#token-setup) allow listing repos and reading **traffic** (see **403** note there).
 
 ### Port `8080` already in use
 
@@ -336,7 +472,7 @@ gghstats serve
 
 ### API returns `401 unauthorized`
 
-Confirm request header exactly matches configured token:
+Confirm request header exactly matches configured token. For `404` on `/api/repos`, the API is disabled until you set `GGHSTATS_API_TOKEN` (see [HTTP API (JSON)](#http-api-json)).
 
 ```bash
 curl -H "x-api-token: $GGHSTATS_API_TOKEN" http://localhost:8080/api/repos
@@ -347,8 +483,8 @@ curl -H "x-api-token: $GGHSTATS_API_TOKEN" http://localhost:8080/api/repos
 ## Release workflow
 
 - Branch policy: day-to-day development on `develop`; **tagged releases** are cut from **`main`**.
-- **`VERSION`** file: semantic version **without** `v` (for example `0.1.6`). Must match the static **Version** badge at the top of this README.
-- **Git tags:** annotated tag **with** `v` prefix (for example `v0.1.6`), on the commit you want released.
+- **`VERSION`** file: semantic version **without** `v` (for example `0.2.0`). Must match the static **Version** badge at the top of this README.
+- **Git tags:** annotated tag **with** `v` prefix (for example `v0.2.0`), on the commit you want released.
 
 ### Default: publish from GitHub Actions (no local GoReleaser required)
 
@@ -367,11 +503,11 @@ git checkout main && git pull origin main
 git merge --ff-only develop           # or: merge via GitHub PR
 git push origin main
 
-git tag -a v0.1.6 -m "Release 0.1.6"
-git push origin v0.1.6                # triggers Release workflow — builds and publishes artifacts
+git tag -a v0.2.0 -m "Release 0.2.0"
+git push origin v0.2.0                # triggers Release workflow — builds and publishes artifacts
 ```
 
-For the **next** release after `0.1.6`, set `VERSION` to `0.1.7` (etc.), update the badge and [CHANGELOG](CHANGELOG.md), then repeat with `v0.1.7`.
+For the **next** release after `0.2.0`, set `VERSION` to `0.2.1` (etc.), update the badge and [CHANGELOG](CHANGELOG.md), then repeat with `v0.2.1`.
 
 ### Optional: publish from your machine
 

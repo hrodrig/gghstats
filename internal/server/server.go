@@ -30,6 +30,10 @@ type Config struct {
 	Store          *store.Store
 	APIToken       string // if empty, API is disabled
 	DisableMetrics bool   // if true, omit /metrics and Prometheus HTTP metrics (see GGHSTATS_METRICS)
+	// CustomCSSAbsPath, if non-empty, is the absolute path to a regular CSS file served at GET /theme/custom.css.
+	CustomCSSAbsPath string
+	// CustomCSSQuery is the cache-busting query for the layout link (e.g. "v=1715888123"); empty disables the link.
+	CustomCSSQuery string
 }
 
 func withCacheControl(directive string, next http.Handler) http.Handler {
@@ -80,18 +84,20 @@ func New(cfg Config) http.Handler {
 	staticHandler := withCacheControl("no-cache, must-revalidate", http.FileServer(http.FS(staticSub)))
 	mux.Handle("GET /static/", http.StripPrefix("/static/", staticHandler))
 
+	mux.Handle("GET /theme/custom.css", withCacheControl("no-cache, must-revalidate", handleCustomCSSEndpoint(cfg.CustomCSSAbsPath)))
+
 	mux.HandleFunc("GET "+HealthzPath, handleHealthz)
 	mux.HandleFunc("GET /api/repos", apiMiddleware(cfg.APIToken, handleAPIRepos(cfg.Store)))
 
-	repoHandler := handleRepoPage(cfg.Store, tmpl)
-	indexHandler := handleIndex(cfg.Store, tmpl)
+	repoHandler := handleRepoPage(cfg, cfg.Store, tmpl)
+	indexHandler := handleIndex(cfg, cfg.Store, tmpl)
 	htmlNotFound := func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 		if strings.HasPrefix(path, "/api/") {
 			writeJSONNotFound(w)
 			return
 		}
-		writeBrutalistNotFound(w, tmpl, "Not found", "Page not found", path,
+		writeBrutalistNotFound(w, tmpl, cfg, "Not found", "Page not found", path,
 			"The requested page does not exist, or the URL may be incorrect.")
 	}
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +108,7 @@ func New(cfg Config) http.Handler {
 		}
 		// Route /{owner}/{repo} — must have exactly two segments
 		parts := strings.SplitN(strings.Trim(path, "/"), "/", 3)
-		if len(parts) == 2 && parts[0] != "static" && parts[0] != "api" {
+		if len(parts) == 2 && parts[0] != "static" && parts[0] != "api" && parts[0] != "theme" {
 			r.SetPathValue("owner", parts[0])
 			r.SetPathValue("repo", parts[1])
 			repoHandler(w, r)
@@ -195,6 +201,8 @@ type layoutData struct {
 	StylesheetFile   string // main CSS under /static/ (go:embed), e.g. bootstrap.min.css
 	Breadcrumbs      []breadcrumb
 	Content          template.HTML
+	// CustomStylesheetURL is set when GGHSTATS_CUSTOM_CSS points to a valid file (safe for href).
+	CustomStylesheetURL template.URL
 }
 
 const (
@@ -254,7 +262,7 @@ func buildIndexListClonesChartPayload(db *store.Store, repoNames []string) (aggC
 func parseIndexQueryParams(r *http.Request) (sort, dir, query string, page, perPage int) {
 	sort = r.URL.Query().Get("sort")
 	if sort == "" {
-		sort = "total_views"
+		sort = "total_clones"
 	}
 	query = strings.TrimSpace(r.URL.Query().Get("q"))
 	dir = r.URL.Query().Get("dir")
@@ -345,6 +353,7 @@ type indexTemplatePayload struct {
 	SortStarsURL       string
 	SortForksURL       string
 	SortClonesURL      string
+	SortClones30dURL   string
 	SortViewsURL       string
 	ListClonesAggJSON  template.JS
 	ListClonesAggCount int
@@ -378,6 +387,7 @@ func buildIndexTemplatePayload(
 		SortStarsURL:       buildSortURL("stars", sort, dir, query, perPage),
 		SortForksURL:       buildSortURL("forks", sort, dir, query, perPage),
 		SortClonesURL:      buildSortURL("total_clones", sort, dir, query, perPage),
+		SortClones30dURL:   buildSortURL("clones_30d", sort, dir, query, perPage),
 		SortViewsURL:       buildSortURL("total_views", sort, dir, query, perPage),
 		ListClonesAggJSON:  listClonesAggJSON,
 		ListClonesAggCount: listClonesAggCount,
@@ -394,10 +404,10 @@ func buildIndexTemplatePayload(
 	return data
 }
 
-func handleIndex(db *store.Store, tmpl *template.Template) http.HandlerFunc {
+func handleIndex(cfg Config, db *store.Store, tmpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
-			writeBrutalistNotFound(w, tmpl, "Not found", "Page not found", r.URL.Path,
+			writeBrutalistNotFound(w, tmpl, cfg, "Not found", "Page not found", r.URL.Path,
 				"The requested page does not exist, or the URL may be incorrect.")
 			return
 		}
@@ -425,7 +435,7 @@ func handleIndex(db *store.Store, tmpl *template.Template) http.HandlerFunc {
 		)
 
 		content := executeTemplate(tmpl, "index", data)
-		renderLayout(w, tmpl, layoutData{
+		renderLayout(w, tmpl, cfg, layoutData{
 			Title:   "Repositories",
 			Version: version.Version,
 			Content: content,
@@ -481,7 +491,7 @@ func filterReposByName(repos []store.RepoSummary, query string) []store.RepoSumm
 	return result
 }
 
-func handleRepoPage(db *store.Store, tmpl *template.Template) http.HandlerFunc {
+func handleRepoPage(cfg Config, db *store.Store, tmpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		owner := r.PathValue("owner")
 		repo := r.PathValue("repo")
@@ -494,7 +504,7 @@ func handleRepoPage(db *store.Store, tmpl *template.Template) http.HandlerFunc {
 		}
 		if summary == nil {
 			fullPath := "/" + owner + "/" + repo
-			writeBrutalistNotFound(w, tmpl, "Repository not found", "Repository not found", fullPath,
+			writeBrutalistNotFound(w, tmpl, cfg, "Repository not found", "Repository not found", fullPath,
 				"This repository is not in the database. Check the name or run a sync so it is collected.")
 			return
 		}
@@ -529,7 +539,7 @@ func handleRepoPage(db *store.Store, tmpl *template.Template) http.HandlerFunc {
 		}
 
 		content := executeTemplate(tmpl, "repo", data)
-		renderLayout(w, tmpl, layoutData{
+		renderLayout(w, tmpl, cfg, layoutData{
 			Title:       fullName,
 			Version:     version.Version,
 			Breadcrumbs: []breadcrumb{{Label: fullName, URL: ""}},
@@ -550,13 +560,13 @@ func writeJSONNotFound(w http.ResponseWriter) {
 	fmt.Fprint(w, `{"error":"not_found"}`)
 }
 
-func writeBrutalistNotFound(w http.ResponseWriter, tmpl *template.Template, layoutTitle, heading, path, detail string) {
+func writeBrutalistNotFound(w http.ResponseWriter, tmpl *template.Template, cfg Config, layoutTitle, heading, path, detail string) {
 	content := executeTemplate(tmpl, "not_found", notFoundContentData{
 		Heading: heading,
 		Path:    path,
 		Detail:  detail,
 	})
-	renderLayoutStatus(w, tmpl, layoutData{
+	renderLayoutStatus(w, tmpl, cfg, layoutData{
 		Title:       layoutTitle,
 		Version:     version.Version,
 		Breadcrumbs: []breadcrumb{{Label: layoutTitle, URL: ""}},
@@ -564,11 +574,14 @@ func writeBrutalistNotFound(w http.ResponseWriter, tmpl *template.Template, layo
 	}, http.StatusNotFound)
 }
 
-func renderLayout(w http.ResponseWriter, tmpl *template.Template, data layoutData) {
-	renderLayoutStatus(w, tmpl, data, http.StatusOK)
+func renderLayout(w http.ResponseWriter, tmpl *template.Template, cfg Config, data layoutData) {
+	renderLayoutStatus(w, tmpl, cfg, data, http.StatusOK)
 }
 
-func renderLayoutStatus(w http.ResponseWriter, tmpl *template.Template, data layoutData, status int) {
+func renderLayoutStatus(w http.ResponseWriter, tmpl *template.Template, cfg Config, data layoutData, status int) {
+	if cfg.CustomCSSQuery != "" {
+		data.CustomStylesheetURL = template.URL("/theme/custom.css?" + cfg.CustomCSSQuery)
+	}
 	data = fillLayoutDefaults(data)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache, must-revalidate")

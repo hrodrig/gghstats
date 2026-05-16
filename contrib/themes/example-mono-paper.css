@@ -1,0 +1,52 @@
+/*
+ * gghstats example theme — mono paper (cream light, graphite dark).
+ * Copy this file, set GGHSTATS_CUSTOM_CSS to its path, restart serve.
+ */
+
+body.app-brutalist {
+  --brutal-text: #252525;
+  --brutal-paper: #f4f0e8;
+  --brutal-surface: #faf6ef;
+  --brutal-elevated: #fffdf8;
+  --brutal-border-ink: #1c1c1c;
+  --brutal-shadow-core: #1a1a1a;
+  --brutal-accent: #3a3a3a;
+  --brutal-accent-2: #6b5b4a;
+  --brutal-muted: #5a564d;
+  --brutal-chart-well: #ede8df;
+  --brutal-chart-rim: #3a3a3a;
+  --brutal-nav-active-bg: #2a2a2a;
+  --brutal-nav-active-fg: #f7f4ec;
+  --brutal-search-cta: #8b6914;
+  --brutal-search-cta-shadow: #2a1f05;
+  background-color: var(--brutal-paper) !important;
+  color: var(--brutal-text);
+  --bs-primary: var(--brutal-accent);
+  --bs-info: var(--brutal-accent-2);
+  --bs-body-bg: var(--brutal-paper);
+  --bs-body-color: var(--brutal-text);
+}
+
+html[data-bs-theme="dark"] body.app-brutalist {
+  --brutal-text: #eceae5;
+  --brutal-paper: #161616;
+  --brutal-surface: #1f1f1f;
+  --brutal-elevated: #242424;
+  --brutal-border-ink: #e2dfdb;
+  --brutal-shadow-core: #000000;
+  --brutal-accent: #c9c6c0;
+  --brutal-accent-2: #a89f8c;
+  --brutal-muted: #9c9a94;
+  --brutal-chart-well: #222222;
+  --brutal-chart-rim: #c9c6c0;
+  --brutal-nav-active-bg: #e8e5df;
+  --brutal-nav-active-fg: #121212;
+  --brutal-search-cta: #d4a574;
+  --brutal-search-cta-shadow: #1a0f05;
+  background-color: var(--brutal-paper) !important;
+  color: var(--brutal-text);
+  --bs-primary: var(--brutal-accent);
+  --bs-info: var(--brutal-accent-2);
+  --bs-body-bg: var(--brutal-paper);
+  --bs-body-color: var(--brutal-text);
+}
