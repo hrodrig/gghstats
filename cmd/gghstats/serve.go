@@ -111,11 +111,12 @@ func runServe(args []string) error {
 		Filter:         cfg.Filter,
 		SyncStars:      true,
 	}
+	coord := sync.NewCoordinator(gh, db, syncOpts)
 
 	// Start scheduler in background
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go startScheduler(ctx, gh, db, syncOpts, cfg.SyncInterval)
+	go startScheduler(ctx, coord, cfg.SyncInterval)
 
 	cssAbs, cssQuery := server.ResolveCustomCSS(os.Getenv("GGHSTATS_CUSTOM_CSS"))
 	if strings.TrimSpace(os.Getenv("GGHSTATS_CUSTOM_CSS")) != "" && cssAbs == "" {
@@ -127,6 +128,7 @@ func runServe(args []string) error {
 	handler := server.New(server.Config{
 		Store:            db,
 		APIToken:         cfg.APIToken,
+		SyncCoordinator:  coord,
 		BadgePublic:      cfg.BadgePublic,
 		BadgeCacheMaxAge: cfg.BadgeCacheMaxAge,
 		PublicURL:        cfg.PublicURL,
@@ -162,11 +164,15 @@ func runServe(args []string) error {
 	return srv.Shutdown(shutdownCtx)
 }
 
-func startScheduler(ctx context.Context, gh *github.Client, db *store.Store, opts sync.Options, interval time.Duration) {
+func startScheduler(ctx context.Context, coord *sync.Coordinator, interval time.Duration) {
 	// Full sync on startup so repo discovery matches the current filter without waiting for the interval.
 	slog.Info("startup sync starting")
-	if err := sync.Run(gh, db, opts); err != nil {
-		slog.Error("startup sync failed", "error", err)
+	if err := coord.Run(); err != nil {
+		if errors.Is(err, sync.ErrInProgress) {
+			slog.Warn("startup sync skipped", "reason", err)
+		} else {
+			slog.Error("startup sync failed", "error", err)
+		}
 	}
 
 	ticker := time.NewTicker(interval)
@@ -179,8 +185,12 @@ func startScheduler(ctx context.Context, gh *github.Client, db *store.Store, opt
 			return
 		case <-ticker.C:
 			slog.Info("scheduled sync starting")
-			if err := sync.Run(gh, db, opts); err != nil {
-				slog.Error("scheduled sync failed", "error", err)
+			if err := coord.Run(); err != nil {
+				if errors.Is(err, sync.ErrInProgress) {
+					slog.Info("scheduled sync skipped", "reason", err)
+				} else {
+					slog.Error("scheduled sync failed", "error", err)
+				}
 			}
 		}
 	}

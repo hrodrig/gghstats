@@ -384,6 +384,44 @@ curl -sS -H "x-api-token: $GGHSTATS_API_TOKEN" \
   'http://localhost:8080/api/v1/repos/your-user/your-repo/traffic?days=30'
 ```
 
+#### `POST /api/v1/sync` and `GET /api/v1/sync`
+
+| | |
+| --- | --- |
+| **Purpose** | **Manual sync** with GitHub (same job as the scheduler): list repos, refresh metadata, pull traffic. |
+| **Auth** | Same as **`GET /api/repos`**: **`GGHSTATS_API_TOKEN`** + **`x-api-token`**. Returns **`404`** when the API is disabled. |
+| **Concurrency** | Only one sync runs at a time. **`POST`** while a run is active returns **`409`** with `sync_in_progress`. The scheduler skips its tick if a manual sync is running. |
+
+**`POST /api/v1/sync`** — starts a background **full** sync (all repos matching `GGHSTATS_FILTER`); responds **`202 Accepted`** with `{"status":"started","scope":"all"}` when accepted.
+
+**`POST /api/v1/sync?repo=owner/name`** — syncs **only that repository** (fast; does not wait for the full list). Response includes `"scope":"repo"` and `"repo":"owner/name"`.
+
+**`GET /api/v1/sync`** — status JSON:
+
+| Field | Meaning |
+| --- | --- |
+| `running` | `true` while a sync is in progress |
+| `scope` | `all` or `repo` while running |
+| `repo` | `owner/name` when `scope` is `repo` |
+| `last_started_at`, `last_finished_at` | RFC3339 timestamps (UTC) of the last run |
+| `last_error` | Non-empty if the last run failed |
+
+```bash
+# Sync all repos (respects GGHSTATS_FILTER)
+curl -sS -X POST -H "x-api-token: $GGHSTATS_API_TOKEN" \
+  http://localhost:8080/api/v1/sync
+
+# Sync one repo only
+curl -sS -X POST -H "x-api-token: $GGHSTATS_API_TOKEN" \
+  'http://localhost:8080/api/v1/sync?repo=your-user/your-repo'
+
+# Poll status
+curl -sS -H "x-api-token: $GGHSTATS_API_TOKEN" \
+  http://localhost:8080/api/v1/sync
+```
+
+When **`GGHSTATS_API_TOKEN`** is set, the sidebar shows **Sync all** on the index and **Sync this repo** on a repository page. The first click opens a modal to enter the token; it is stored in **`sessionStorage`** (same origin only). After a successful single-repo sync, the repo page reloads to refresh charts.
+
 #### `GET /api/repos`
 
 | | |

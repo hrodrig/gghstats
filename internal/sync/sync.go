@@ -74,7 +74,33 @@ func syncRepo(gh *github.Client, db *store.Store, repo github.Repo, today string
 	name := repo.FullName
 	slog.Info("syncing", "repo", name)
 
-	// Repo metadata — store it
+	var err error
+	repo, err = ensureRepoMetadata(gh, repo)
+	if err != nil {
+		return err
+	}
+	if err := upsertRepoRecord(gh, db, repo); err != nil {
+		return err
+	}
+	syncRepoTraffic(gh, db, name)
+	syncRepoSnapshots(gh, db, name, today)
+	syncRepoStars(gh, db, repo, name, today, syncStars)
+	return nil
+}
+
+func ensureRepoMetadata(gh *github.Client, repo github.Repo) (github.Repo, error) {
+	if repo.ID != 0 {
+		return repo, nil
+	}
+	meta, err := gh.Repo(repo.FullName)
+	if err != nil {
+		return repo, fmt.Errorf("repo metadata: %w", err)
+	}
+	return *meta, nil
+}
+
+func upsertRepoRecord(gh *github.Client, db *store.Store, repo github.Repo) error {
+	name := repo.FullName
 	prs, err := gh.OpenPullRequests(name)
 	if err != nil {
 		slog.Warn("open PRs failed", "repo", name, "error", err)
@@ -93,8 +119,10 @@ func syncRepo(gh *github.Client, db *store.Store, repo github.Repo, today string
 	); err != nil {
 		return fmt.Errorf("upsert repo: %w", err)
 	}
+	return nil
+}
 
-	// Views
+func syncRepoTraffic(gh *github.Client, db *store.Store, name string) {
 	views, err := gh.Views(name)
 	if err != nil {
 		slog.Warn("views failed", "repo", name, "error", err)
@@ -104,8 +132,6 @@ func syncRepo(gh *github.Client, db *store.Store, repo github.Repo, today string
 			db.UpsertView(name, d, v.Count, v.Uniques)
 		}
 	}
-
-	// Clones
 	clones, err := gh.Clones(name)
 	if err != nil {
 		slog.Warn("clones failed", "repo", name, "error", err)
@@ -115,8 +141,9 @@ func syncRepo(gh *github.Client, db *store.Store, repo github.Repo, today string
 			db.UpsertClone(name, d, c.Count, c.Uniques)
 		}
 	}
+}
 
-	// Referrers (snapshot for today)
+func syncRepoSnapshots(gh *github.Client, db *store.Store, name, today string) {
 	refs, err := gh.Referrers(name)
 	if err != nil {
 		slog.Warn("referrers failed", "repo", name, "error", err)
@@ -125,8 +152,6 @@ func syncRepo(gh *github.Client, db *store.Store, repo github.Repo, today string
 			db.UpsertReferrer(name, today, r.Referrer, r.Count, r.Uniques)
 		}
 	}
-
-	// Popular paths (snapshot for today)
 	paths, err := gh.PopularPaths(name)
 	if err != nil {
 		slog.Warn("paths failed", "repo", name, "error", err)
@@ -135,21 +160,19 @@ func syncRepo(gh *github.Client, db *store.Store, repo github.Repo, today string
 			db.UpsertPath(name, today, p.Path, p.Title, p.Count, p.Uniques)
 		}
 	}
+}
 
-	// Stars (daily cumulative from stargazer timestamps)
+func syncRepoStars(gh *github.Client, db *store.Store, repo github.Repo, name, today string, syncStars bool) {
 	if syncStars {
 		stars, err := gh.Stargazers(name)
 		if err != nil {
 			slog.Warn("stargazers failed", "repo", name, "error", err)
-		} else {
-			storeStarHistory(db, name, stars)
+			return
 		}
-	} else {
-		// Just store today's star count from repo metadata
-		db.UpsertStar(name, today, repo.StargazersCount)
+		storeStarHistory(db, name, stars)
+		return
 	}
-
-	return nil
+	db.UpsertStar(name, today, repo.StargazersCount)
 }
 
 // storeStarHistory converts individual star events into daily cumulative counts.

@@ -115,6 +115,8 @@ func TestRunOneExplicitRepo(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path
 		switch p {
+		case "/repos/" + repoPath:
+			json.NewEncoder(w).Encode(github.Repo{ID: 1, FullName: repoPath, StargazersCount: 10})
 		case "/repos/" + repoPath + "/pulls":
 			json.NewEncoder(w).Encode([]github.PullRequest{})
 		case "/repos/" + repoPath + "/traffic/views":
@@ -162,6 +164,8 @@ func TestRunWithStarHistory(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path
 		switch {
+		case p == "/repos/"+repoPath:
+			json.NewEncoder(w).Encode(github.Repo{ID: 1, FullName: repoPath, StargazersCount: 2})
 		case p == "/repos/"+repoPath+"/pulls":
 			json.NewEncoder(w).Encode([]github.PullRequest{})
 		case p == "/repos/"+repoPath+"/traffic/views":

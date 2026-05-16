@@ -185,6 +185,18 @@ html[data-bs-theme="dark"] .app-brutal-btn {
   color: var(--brutal-muted) !important;
 }
 
+.app-brutal-modal {
+  background: var(--brutal-elevated) !important;
+  box-shadow: var(--brutal-shadow);
+  color: var(--brutal-text);
+}
+
+.app-brutal-modal .modal-header,
+.app-brutal-modal .modal-body,
+.app-brutal-modal .modal-footer {
+  background: var(--brutal-elevated) !important;
+}
+
 .app-brutal-header,
 .app-brutal-footer,
 .app-brutal-main {

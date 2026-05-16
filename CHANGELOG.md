@@ -11,6 +11,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 - **Badges (shields-style SVG):** `GET /api/v1/badge/{owner}/{repo}` with `metric` (`clones`, `clones_30d`, `views`, `stars`), optional `.svg` suffix, `Cache-Control`, and public-by-default auth (`GGHSTATS_BADGE_PUBLIC=false` requires `x-api-token`). Repo detail page: **Embed badge** block with preview and **Copy** Markdown. README **Acknowledgments** credit [git-clone-stats](https://github.com/taylorwilsdon/git-clone-stats) for the badge embed pattern.
 - **Traffic time series API:** `GET /api/v1/repos/{owner}/{repo}/traffic?days=30` (same auth as `/api/repos`) returns daily `clones` and `views` rows (`date`, `count`, `uniques`). `days=0` returns all stored history; default `days` is 30 (UTC calendar window).
+- **Manual sync:** `POST /api/v1/sync` and `GET /api/v1/sync` (same auth as `/api/repos`) trigger or inspect a background GitHub sync; only one run at a time (scheduler skips if busy). Optional `?repo=owner/name` syncs a single repository. Sidebar **Sync all** / **Sync this repo** when `GGHSTATS_API_TOKEN` is set (token via modal, stored in browser sessionStorage).
 
 ### Changed
 

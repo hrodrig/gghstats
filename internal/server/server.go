@@ -14,6 +14,7 @@ import (
 
 	"github.com/hrodrig/gghstats/assets"
 	"github.com/hrodrig/gghstats/internal/store"
+	"github.com/hrodrig/gghstats/internal/sync"
 	"github.com/hrodrig/gghstats/internal/version"
 	"github.com/hrodrig/gghstats/web"
 )
@@ -36,6 +37,8 @@ type Config struct {
 	BadgeCacheMaxAge int
 	// PublicURL is optional base URL for embed snippets (e.g. https://gghstats.example.com); empty uses request Host.
 	PublicURL string
+	// SyncCoordinator serializes background and manual sync runs (nil disables sync API).
+	SyncCoordinator *sync.Coordinator
 	// CustomCSSAbsPath, if non-empty, is the absolute path to a regular CSS file served at GET /theme/custom.css.
 	CustomCSSAbsPath string
 	// CustomCSSQuery is the cache-busting query for the layout link (e.g. "v=1715888123"); empty disables the link.
@@ -95,6 +98,10 @@ func New(cfg Config) http.Handler {
 	mux.HandleFunc("GET "+HealthzPath, handleHealthz)
 	mux.HandleFunc("GET /api/repos", apiMiddleware(cfg.APIToken, handleAPIRepos(cfg.Store)))
 	mux.HandleFunc("GET /api/v1/repos/{owner}/{repo}/traffic", apiMiddleware(cfg.APIToken, handleAPIRepoTraffic(cfg.Store)))
+	if cfg.SyncCoordinator != nil && cfg.APIToken != "" {
+		mux.HandleFunc("GET /api/v1/sync", apiMiddleware(cfg.APIToken, handleAPISyncStatus(cfg.SyncCoordinator)))
+		mux.HandleFunc("POST /api/v1/sync", apiMiddleware(cfg.APIToken, handleAPISyncStart(cfg.SyncCoordinator)))
+	}
 	badgeHandler := badgeMiddleware(cfg, handleBadge(cfg, cfg.Store))
 	mux.HandleFunc("GET /api/v1/badge/{owner}/{repo}", badgeHandler)
 
@@ -212,6 +219,10 @@ type layoutData struct {
 	Content          template.HTML
 	// CustomStylesheetURL is set when GGHSTATS_CUSTOM_CSS points to a valid file (safe for href).
 	CustomStylesheetURL template.URL
+	// SyncUIEnabled shows the sidebar “Sync now” control (requires API token + coordinator).
+	SyncUIEnabled bool
+	// SyncScopeRepo when set scopes the sidebar sync to this owner/repo (repo detail pages).
+	SyncScopeRepo string
 }
 
 const (
@@ -554,12 +565,16 @@ func handleRepoPage(cfg Config, db *store.Store, tmpl *template.Template) http.H
 		}
 
 		content := executeTemplate(tmpl, "repo", data)
-		renderLayout(w, tmpl, cfg, layoutData{
+		ld := layoutData{
 			Title:       fullName,
 			Version:     version.Version,
 			Breadcrumbs: []breadcrumb{{Label: fullName, URL: ""}},
 			Content:     content,
-		})
+		}
+		if cfg.SyncCoordinator != nil && cfg.APIToken != "" {
+			ld.SyncScopeRepo = fullName
+		}
+		renderLayout(w, tmpl, cfg, ld)
 	}
 }
 
@@ -596,6 +611,9 @@ func renderLayout(w http.ResponseWriter, tmpl *template.Template, cfg Config, da
 func renderLayoutStatus(w http.ResponseWriter, tmpl *template.Template, cfg Config, data layoutData, status int) {
 	if cfg.CustomCSSQuery != "" {
 		data.CustomStylesheetURL = template.URL("/theme/custom.css?" + cfg.CustomCSSQuery)
+	}
+	if cfg.SyncCoordinator != nil && cfg.APIToken != "" {
+		data.SyncUIEnabled = true
 	}
 	data = fillLayoutDefaults(data)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
