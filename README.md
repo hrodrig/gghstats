@@ -354,6 +354,8 @@ curl -sS http://localhost:8080/api/v1/healthz
 | `archived` | boolean | |
 | `total_views`, `total_uniques` | number | Lifetime sums of daily GitHub **view** traffic stored in SQLite. |
 | `total_clones`, `clone_uniques` | number | Lifetime sums of daily **clone** traffic. |
+| `clones_1d` | number | Sum of daily clone counts for **today (UTC)**; missing days count as `0`. |
+| `clones_7d` | number | Sum of daily clone counts in the **last 7 calendar days (UTC)**; missing days count as `0`. |
 | `clones_30d` | number | Sum of daily clone counts in the **last 30 calendar days (UTC)**; missing days count as `0`. |
 
 **Example request:**
@@ -386,6 +388,8 @@ curl -sS -H "x-api-token: $GGHSTATS_API_TOKEN" http://localhost:8080/api/repos
       "total_uniques": 80,
       "total_clones": 42,
       "clone_uniques": 12,
+      "clones_1d": 2,
+      "clones_7d": 5,
       "clones_30d": 7
     }
   ]

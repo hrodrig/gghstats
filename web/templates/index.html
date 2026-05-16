@@ -83,9 +83,11 @@
               <th scope="col" class="fw-semibold"><a href="{{.SortNameURL}}" class="text-decoration-none text-body" title="GitHub repository name (owner/repo). Opens this repository’s traffic page in gghstats.">Name{{if eq .Sort "name"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
               <th scope="col" class="text-end fw-semibold"><a href="{{.SortStarsURL}}" class="text-decoration-none text-body" title="GitHub star count for this repository (latest value synced by gghstats).">Stars{{if eq .Sort "stars"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
               <th scope="col" class="text-end fw-semibold"><a href="{{.SortForksURL}}" class="text-decoration-none text-body" title="GitHub fork count for this repository (latest value synced by gghstats).">Forks{{if eq .Sort "forks"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
-              <th scope="col" class="text-end fw-semibold"><a href="{{.SortClonesURL}}" class="text-decoration-none text-body" title="Sum of daily clone counts from GitHub traffic for all dates stored in gghstats (cumulative since you started syncing).">Clones{{if eq .Sort "total_clones"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
-              <th scope="col" class="text-end fw-semibold"><a href="{{.SortClones30dURL}}" class="text-decoration-none text-body" title="Sum of daily clone counts from GitHub traffic for the last 30 calendar days (UTC). Days with no traffic row count as 0.">Clones (30d){{if eq .Sort "clones_30d"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
               <th scope="col" class="text-end fw-semibold"><a href="{{.SortViewsURL}}" class="text-decoration-none text-body" title="Sum of daily view counts from GitHub traffic for all dates stored in gghstats (cumulative since you started syncing).">Views{{if eq .Sort "total_views"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
+              <th scope="col" class="text-end fw-semibold"><a href="{{.SortClonesURL}}" class="text-decoration-none text-body" title="Sum of daily clone counts from GitHub traffic for all dates stored in gghstats (cumulative since you started syncing).">Clones{{if eq .Sort "total_clones"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
+              <th scope="col" class="text-end fw-semibold"><a href="{{.SortClones1dURL}}" class="text-decoration-none text-body" title="Sum of daily clone counts for today (UTC). Days with no traffic row count as 0.">(1d){{if eq .Sort "clones_1d"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
+              <th scope="col" class="text-end fw-semibold"><a href="{{.SortClones7dURL}}" class="text-decoration-none text-body" title="Sum of daily clone counts for the last 7 calendar days (UTC). Days with no traffic row count as 0.">(7d){{if eq .Sort "clones_7d"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
+              <th scope="col" class="text-end fw-semibold"><a href="{{.SortClones30dURL}}" class="text-decoration-none text-body" title="Sum of daily clone counts for the last 30 calendar days (UTC). Days with no traffic row count as 0.">(30d){{if eq .Sort "clones_30d"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
             </tr>
           </thead>
           <tbody>
@@ -94,13 +96,15 @@
               <td><a href="/{{.Name}}" class="fw-medium" title="View traffic stats for {{.Name}} in gghstats">{{.Name}}</a></td>
               <td class="text-end">{{.Stars}}</td>
               <td class="text-end">{{.Forks}}</td>
-              <td class="text-end">{{.TotalClones}}</td>
-              <td class="text-end">{{.Clones30d}}</td>
               <td class="text-end">{{.TotalViews}}</td>
+              <td class="text-end">{{.TotalClones}}</td>
+              <td class="text-end">{{.Clones1d}}</td>
+              <td class="text-end">{{.Clones7d}}</td>
+              <td class="text-end">{{.Clones30d}}</td>
             </tr>
             {{else}}
             <tr>
-              <td colspan="6" class="text-center text-muted py-5">
+              <td colspan="8" class="text-center text-muted py-5">
                 <p class="mb-2">No repositories yet.</p>
                 <p class="small mb-0">Sync one repository with:</p>
                 <code class="d-inline-block mt-2 p-2 bg-body-secondary rounded small text-start">gghstats fetch --repo owner/repo --db ./data/gghstats.db --token $GGHSTATS_GITHUB_TOKEN</code>

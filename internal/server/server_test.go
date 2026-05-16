@@ -142,26 +142,33 @@ func TestFaviconEmbeddedFromAssets(t *testing.T) {
 	}
 }
 
-func TestIndexPage(t *testing.T) {
+func indexPageFixture(t *testing.T) http.Handler {
+	t.Helper()
 	db := testStore(t)
 	db.UpsertRepo("a/b", "test repo", 10, 2, 10, 1, 0, false, false, "")
 	db.UpsertView("a/b", "2026-03-20", 50, 20)
 	_ = db.UpsertClone("a/b", "2026-03-18", 5, 2)
 	_ = db.UpsertClone("a/b", "2026-03-19", 12, 4)
+	return New(Config{Store: db})
+}
 
-	handler := New(Config{Store: db})
-
+func indexPageBody(t *testing.T, handler http.Handler) string {
+	t.Helper()
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
-
 	if w.Code != 200 {
-		t.Errorf("status = %d, want 200", w.Code)
+		t.Fatalf("status = %d, want 200", w.Code)
 	}
 	body := w.Body.String()
 	if len(body) < 100 {
-		t.Error("response too short, expected HTML page")
+		t.Fatal("response too short, expected HTML page")
 	}
+	return body
+}
+
+func TestIndexPageShell(t *testing.T) {
+	body := indexPageBody(t, indexPageFixture(t))
 	if !strings.Contains(body, `/static/bootstrap.min.css`) {
 		t.Error("expected embedded Bootstrap stylesheet link in HTML")
 	}
@@ -171,20 +178,32 @@ func TestIndexPage(t *testing.T) {
 	if !strings.Contains(body, `offcanvas-lg`) || !strings.Contains(body, "Repositories") {
 		t.Error("expected app shell layout (sidebar + title)")
 	}
+}
+
+func TestIndexPageKPIAndSort(t *testing.T) {
+	body := indexPageBody(t, indexPageFixture(t))
 	if !strings.Contains(body, "total across list") || !strings.Contains(body, ">10<") {
 		t.Error("expected KPI summary for seeded repo (10 stars)")
 	}
+	if !strings.Contains(body, `name="sort" value="total_clones"`) {
+		t.Error("expected default index sort total_clones in search form hidden fields")
+	}
+}
+
+func TestIndexPageClonesChart(t *testing.T) {
+	body := indexPageBody(t, indexPageFixture(t))
 	if !strings.Contains(body, `id="chart_index_clones"`) {
 		t.Error("expected index clones-over-time chart canvas")
 	}
 	if !strings.Contains(body, "gghstatsListClonesData") || !strings.Contains(body, "2026-03-18") {
 		t.Error("expected embedded clone series JSON for chart")
 	}
-	if !strings.Contains(body, `name="sort" value="total_clones"`) {
-		t.Error("expected default index sort total_clones in search form hidden fields")
-	}
-	if !strings.Contains(body, "Clones (30d)") {
-		t.Error("expected Clones (30d) column label on index table")
+}
+
+func TestIndexPageCloneWindowColumns(t *testing.T) {
+	body := indexPageBody(t, indexPageFixture(t))
+	if !strings.Contains(body, ">(1d)<") || !strings.Contains(body, ">(7d)<") || !strings.Contains(body, ">(30d)<") {
+		t.Error("expected clone window column labels (1d), (7d), (30d) on index table")
 	}
 }
 

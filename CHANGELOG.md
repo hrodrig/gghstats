@@ -7,6 +7,11 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Web index (`/`):** table columns reordered to **Name | Stars | Forks | Views | Clones | (1d) | (7d) | (30d)**. Clone windows **(1d)** (today UTC) and **(7d)** (last 7 calendar days) are new; **(30d)** keeps the same 30-day sum as before. All three windows are sortable.
+- **`GET /api/repos`:** `clones_1d` and `clones_7d` on each repo summary (same UTC window semantics as the index).
+
 ## [0.2.1] - 2026-05-17
 
 ### Changed

@@ -353,6 +353,8 @@ type indexTemplatePayload struct {
 	SortStarsURL       string
 	SortForksURL       string
 	SortClonesURL      string
+	SortClones1dURL    string
+	SortClones7dURL    string
 	SortClones30dURL   string
 	SortViewsURL       string
 	ListClonesAggJSON  template.JS
@@ -387,6 +389,8 @@ func buildIndexTemplatePayload(
 		SortStarsURL:       buildSortURL("stars", sort, dir, query, perPage),
 		SortForksURL:       buildSortURL("forks", sort, dir, query, perPage),
 		SortClonesURL:      buildSortURL("total_clones", sort, dir, query, perPage),
+		SortClones1dURL:    buildSortURL("clones_1d", sort, dir, query, perPage),
+		SortClones7dURL:    buildSortURL("clones_7d", sort, dir, query, perPage),
 		SortClones30dURL:   buildSortURL("clones_30d", sort, dir, query, perPage),
 		SortViewsURL:       buildSortURL("total_views", sort, dir, query, perPage),
 		ListClonesAggJSON:  listClonesAggJSON,

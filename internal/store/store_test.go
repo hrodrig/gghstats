@@ -300,6 +300,10 @@ func TestListReposAllSortVariants(t *testing.T) {
 		{"total_views", "desc", "z/r"},
 		{"total_clones", "asc", "z/r"},
 		{"total_clones", "desc", "a/r"},
+		{"clones_1d", "desc", "a/r"},
+		{"clones_1d", "asc", "z/r"},
+		{"clones_7d", "desc", "a/r"},
+		{"clones_7d", "asc", "z/r"},
 		{"clones_30d", "desc", "a/r"},
 		{"clones_30d", "asc", "z/r"},
 	}
@@ -414,6 +418,12 @@ func TestRepoByName(t *testing.T) {
 	}
 	if r.Stars != 5 {
 		t.Errorf("stars = %d, want 5", r.Stars)
+	}
+	if r.Clones1d != 7 {
+		t.Errorf("clones_1d = %d, want 7", r.Clones1d)
+	}
+	if r.Clones7d != 7 {
+		t.Errorf("clones_7d = %d, want 7", r.Clones7d)
 	}
 	if r.Clones30d != 7 {
 		t.Errorf("clones_30d = %d, want 7", r.Clones30d)

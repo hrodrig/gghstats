@@ -481,9 +481,33 @@ type RepoSummary struct {
 	TotalUniques   int    `json:"total_uniques"`
 	TotalClones    int    `json:"total_clones"`
 	CloneUniques   int    `json:"clone_uniques"`
-	// Clones30d is the sum of daily clone counts from GitHub traffic for the last 30 calendar days (UTC).
+	// Clones1d, Clones7d, Clones30d: sum of daily clone counts in rolling UTC calendar windows (missing days = 0).
+	Clones1d  int `json:"clones_1d"`
+	Clones7d  int `json:"clones_7d"`
 	Clones30d int `json:"clones_30d"`
 }
+
+// repoSummaryCloneWindowJoins aggregates clone traffic for 1d (today UTC), 7d, and 30d windows.
+const repoSummaryCloneWindowJoins = `
+		LEFT JOIN (
+			SELECT repo, SUM(count) AS clones_1d
+			FROM clones
+			WHERE date = date('now')
+			GROUP BY repo
+		) c1 ON c1.repo = r.name
+		LEFT JOIN (
+			SELECT repo, SUM(count) AS clones_7d
+			FROM clones
+			WHERE date >= date('now', '-6 days') AND date <= date('now')
+			GROUP BY repo
+		) c7 ON c7.repo = r.name
+		LEFT JOIN (
+			SELECT repo, SUM(count) AS clones_30d
+			FROM clones
+			WHERE date >= date('now', '-29 days') AND date <= date('now')
+			GROUP BY repo
+		) c30 ON c30.repo = r.name
+`
 
 // Fixed SQL fragments for ListRepos: no dynamic string building from sort/direction reaches the DB (CodeQL-safe).
 const listReposSQLBase = `
@@ -492,7 +516,7 @@ const listReposSQLBase = `
 			r.fork, r.parent_full_name, r.archived,
 			COALESCE(v.total_views, 0), COALESCE(v.total_uniques, 0),
 			COALESCE(c.total_clones, 0), COALESCE(c.clone_uniques, 0),
-			COALESCE(c30.clones_30d, 0)
+			COALESCE(c1.clones_1d, 0), COALESCE(c7.clones_7d, 0), COALESCE(c30.clones_30d, 0)
 		FROM repos r
 		LEFT JOIN (
 			SELECT repo, SUM(count) AS total_views, SUM(uniques) AS total_uniques
@@ -502,12 +526,7 @@ const listReposSQLBase = `
 			SELECT repo, SUM(count) AS total_clones, SUM(uniques) AS clone_uniques
 			FROM clones GROUP BY repo
 		) c ON c.repo = r.name
-		LEFT JOIN (
-			SELECT repo, SUM(count) AS clones_30d
-			FROM clones
-			WHERE date >= date('now', '-29 days') AND date <= date('now')
-			GROUP BY repo
-		) c30 ON c30.repo = r.name
+` + repoSummaryCloneWindowJoins + `
 		WHERE r.hidden = 0
 `
 
@@ -522,6 +541,10 @@ const (
 	listReposOrderTotalViewsDesc  = `ORDER BY COALESCE(v.total_views, 0) DESC`
 	listReposOrderTotalClonesAsc  = `ORDER BY COALESCE(c.total_clones, 0) ASC`
 	listReposOrderTotalClonesDesc = `ORDER BY COALESCE(c.total_clones, 0) DESC`
+	listReposOrderClones1dAsc     = `ORDER BY COALESCE(c1.clones_1d, 0) ASC`
+	listReposOrderClones1dDesc    = `ORDER BY COALESCE(c1.clones_1d, 0) DESC`
+	listReposOrderClones7dAsc     = `ORDER BY COALESCE(c7.clones_7d, 0) ASC`
+	listReposOrderClones7dDesc    = `ORDER BY COALESCE(c7.clones_7d, 0) DESC`
 	listReposOrderClones30dAsc    = `ORDER BY COALESCE(c30.clones_30d, 0) ASC`
 	listReposOrderClones30dDesc   = `ORDER BY COALESCE(c30.clones_30d, 0) DESC`
 )
@@ -558,6 +581,18 @@ func (s *Store) queryListReposTotalClonesAsc() (*sql.Rows, error) {
 func (s *Store) queryListReposTotalClonesDesc() (*sql.Rows, error) {
 	return s.db.Query(listReposSQLBase + listReposOrderTotalClonesDesc)
 }
+func (s *Store) queryListReposClones1dAsc() (*sql.Rows, error) {
+	return s.db.Query(listReposSQLBase + listReposOrderClones1dAsc)
+}
+func (s *Store) queryListReposClones1dDesc() (*sql.Rows, error) {
+	return s.db.Query(listReposSQLBase + listReposOrderClones1dDesc)
+}
+func (s *Store) queryListReposClones7dAsc() (*sql.Rows, error) {
+	return s.db.Query(listReposSQLBase + listReposOrderClones7dAsc)
+}
+func (s *Store) queryListReposClones7dDesc() (*sql.Rows, error) {
+	return s.db.Query(listReposSQLBase + listReposOrderClones7dDesc)
+}
 func (s *Store) queryListReposClones30dAsc() (*sql.Rows, error) {
 	return s.db.Query(listReposSQLBase + listReposOrderClones30dAsc)
 }
@@ -565,49 +600,37 @@ func (s *Store) queryListReposClones30dDesc() (*sql.Rows, error) {
 	return s.db.Query(listReposSQLBase + listReposOrderClones30dDesc)
 }
 
+type listReposQueryPair [2]func(*Store) (*sql.Rows, error)
+
+// listReposQueryBySort maps whitelisted sort keys to asc/desc query methods (CodeQL-safe dispatch).
+var listReposQueryBySort = map[string]listReposQueryPair{
+	"name":         {(*Store).queryListReposNameAsc, (*Store).queryListReposNameDesc},
+	"stars":        {(*Store).queryListReposStarsAsc, (*Store).queryListReposStarsDesc},
+	"forks":        {(*Store).queryListReposForksAsc, (*Store).queryListReposForksDesc},
+	"total_views":  {(*Store).queryListReposTotalViewsAsc, (*Store).queryListReposTotalViewsDesc},
+	"total_clones": {(*Store).queryListReposTotalClonesAsc, (*Store).queryListReposTotalClonesDesc},
+	"clones_1d":    {(*Store).queryListReposClones1dAsc, (*Store).queryListReposClones1dDesc},
+	"clones_7d":    {(*Store).queryListReposClones7dAsc, (*Store).queryListReposClones7dDesc},
+	"clones_30d":   {(*Store).queryListReposClones30dAsc, (*Store).queryListReposClones30dDesc},
+}
+
 func (s *Store) queryListReposRows(sort, direction string) (*sql.Rows, error) {
-	asc := direction == "asc"
-	switch sort {
-	case "name":
-		if asc {
-			return s.queryListReposNameAsc()
-		}
-		return s.queryListReposNameDesc()
-	case "stars":
-		if asc {
-			return s.queryListReposStarsAsc()
-		}
-		return s.queryListReposStarsDesc()
-	case "forks":
-		if asc {
-			return s.queryListReposForksAsc()
-		}
-		return s.queryListReposForksDesc()
-	case "total_views":
-		if asc {
-			return s.queryListReposTotalViewsAsc()
-		}
-		return s.queryListReposTotalViewsDesc()
-	case "total_clones":
-		if asc {
-			return s.queryListReposTotalClonesAsc()
-		}
-		return s.queryListReposTotalClonesDesc()
-	case "clones_30d":
-		if asc {
-			return s.queryListReposClones30dAsc()
-		}
-		return s.queryListReposClones30dDesc()
-	default:
+	pair, ok := listReposQueryBySort[sort]
+	if !ok {
 		return s.queryListReposTotalViewsDesc()
 	}
+	if direction == "asc" {
+		return pair[0](s)
+	}
+	return pair[1](s)
 }
 
 // ListRepos returns all non-hidden repos with their aggregated traffic totals.
 func (s *Store) ListRepos(sort, direction string) ([]RepoSummary, error) {
 	allowed := map[string]bool{
 		"name": true, "stars": true, "forks": true,
-		"total_views": true, "total_clones": true, "clones_30d": true,
+		"total_views": true, "total_clones": true,
+		"clones_1d": true, "clones_7d": true, "clones_30d": true,
 	}
 	if !allowed[sort] {
 		sort = "total_views"
@@ -629,7 +652,7 @@ func (s *Store) ListRepos(sort, direction string) ([]RepoSummary, error) {
 			&r.Name, &r.Description, &r.Stars, &r.Forks, &r.Watchers,
 			&r.Issues, &r.PRs, &r.Fork, &r.ParentFullName, &r.Archived,
 			&r.TotalViews, &r.TotalUniques, &r.TotalClones, &r.CloneUniques,
-			&r.Clones30d,
+			&r.Clones1d, &r.Clones7d, &r.Clones30d,
 		); err != nil {
 			return nil, err
 		}
@@ -638,16 +661,13 @@ func (s *Store) ListRepos(sort, direction string) ([]RepoSummary, error) {
 	return result, rows.Err()
 }
 
-// RepoByName returns the summary for a single repo, or nil if not found.
-func (s *Store) RepoByName(name string) (*RepoSummary, error) {
-	var r RepoSummary
-	err := s.db.QueryRow(`
+const repoByNameSQL = `
 		SELECT
 			r.name, r.description, r.stars, r.forks, r.watchers, r.issues, r.prs,
 			r.fork, r.parent_full_name, r.archived,
 			COALESCE(v.total_views, 0), COALESCE(v.total_uniques, 0),
 			COALESCE(c.total_clones, 0), COALESCE(c.clone_uniques, 0),
-			COALESCE(c30.clones_30d, 0)
+			COALESCE(c1.clones_1d, 0), COALESCE(c7.clones_7d, 0), COALESCE(c30.clones_30d, 0)
 		FROM repos r
 		LEFT JOIN (
 			SELECT repo, SUM(count) AS total_views, SUM(uniques) AS total_uniques
@@ -657,19 +677,17 @@ func (s *Store) RepoByName(name string) (*RepoSummary, error) {
 			SELECT repo, SUM(count) AS total_clones, SUM(uniques) AS clone_uniques
 			FROM clones GROUP BY repo
 		) c ON c.repo = r.name
-		LEFT JOIN (
-			SELECT repo, SUM(count) AS clones_30d
-			FROM clones
-			WHERE date >= date('now', '-29 days') AND date <= date('now')
-			GROUP BY repo
-		) c30 ON c30.repo = r.name
-		WHERE r.name = ? AND r.hidden = 0`,
-		name,
-	).Scan(
+` + repoSummaryCloneWindowJoins + `
+		WHERE r.name = ? AND r.hidden = 0`
+
+// RepoByName returns the summary for a single repo, or nil if not found.
+func (s *Store) RepoByName(name string) (*RepoSummary, error) {
+	var r RepoSummary
+	err := s.db.QueryRow(repoByNameSQL, name).Scan(
 		&r.Name, &r.Description, &r.Stars, &r.Forks, &r.Watchers,
 		&r.Issues, &r.PRs, &r.Fork, &r.ParentFullName, &r.Archived,
 		&r.TotalViews, &r.TotalUniques, &r.TotalClones, &r.CloneUniques,
-		&r.Clones30d,
+		&r.Clones1d, &r.Clones7d, &r.Clones30d,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
