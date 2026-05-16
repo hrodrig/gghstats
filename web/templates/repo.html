@@ -45,6 +45,39 @@
   </div>
 </div>
 
+<div class="row g-4 mb-4" id="gghstats-badge-embed" data-base-url="{{.BadgeBaseURL}}" data-repo="{{.Repo.Name}}">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-header fw-semibold bg-body-secondary border-bottom">Embed badge</div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">Counts reflect data stored on this gghstats instance; they update after sync.</p>
+        <div class="row g-3 align-items-end">
+          <div class="col-md-4">
+            <label for="badge-metric" class="form-label small fw-semibold mb-1">Metric</label>
+            <select id="badge-metric" class="form-select form-select-sm">
+              <option value="clones" selected>Clones (total)</option>
+              <option value="clones_30d">Clones (30d)</option>
+              <option value="views">Views (total)</option>
+              <option value="stars">Stars</option>
+            </select>
+          </div>
+          <div class="col-md-8">
+            <div class="mb-2" id="badge-preview-wrap">
+              <img id="badge-preview" src="" alt="gghstats badge preview" height="20">
+            </div>
+          </div>
+        </div>
+        <label for="badge-markdown" class="form-label small fw-semibold mt-2 mb-1">Markdown</label>
+        <div class="input-group input-group-sm">
+          <textarea id="badge-markdown" class="form-control font-monospace" rows="2" readonly></textarea>
+          <button type="button" class="btn btn-outline-secondary" id="badge-copy-btn">Copy</button>
+        </div>
+        <p id="badge-copy-status" class="small text-success mb-0 mt-1 d-none" role="status">Copied to clipboard.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="row g-4 mb-4">
   <div class="col-lg-6">
     <div class="card shadow-sm border-0 h-100 app-brutal-chart-card">

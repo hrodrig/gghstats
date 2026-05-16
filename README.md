@@ -241,6 +241,9 @@ All runtime configuration uses env vars (`serve`) or flags (`fetch/report/export
 | `GGHSTATS_INCLUDE_PRIVATE` | `false` | Include private repos |
 | `GGHSTATS_SYNC_INTERVAL` | `1h` | Sync frequency |
 | `GGHSTATS_API_TOKEN` | (none) | If set, `GET /api/repos` requires matching `x-api-token` header (see [HTTP API (JSON)](#http-api-json)) |
+| `GGHSTATS_BADGE_PUBLIC` | `true` | Set to `false` to require `x-api-token` on badge URLs (breaks `![…](url)` in GitHub READMEs unless you use a proxy) |
+| `GGHSTATS_BADGE_CACHE_SECONDS` | `300` | `Cache-Control: max-age` for badge SVG responses |
+| `GGHSTATS_PUBLIC_URL` | (none) | Optional public base URL for embed snippets (e.g. `https://gghstats.example.com`); if unset, uses the request `Host` |
 | `GGHSTATS_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, or `error` (slog only; startup banner always prints) |
 | `GGHSTATS_METRICS` | (enabled) | Set to `false` to disable `GET /metrics` |
 | `GGHSTATS_CUSTOM_CSS` | (none) | Optional **regular** `.css` file: loaded **after** built-in `app.css` at `/theme/custom.css` so you can tone down neo-brutalism or replace accents (see [Custom UI theme](#custom-ui-theme-optional)) |
@@ -320,6 +323,35 @@ gghstats exposes a **small read-only JSON surface** for probes and integrations.
 curl -sS http://localhost:8080/api/v1/healthz
 # {"status":"ok"}
 ```
+
+#### `GET /api/v1/badge/{owner}/{repo}`
+
+| | |
+| --- | --- |
+| **Purpose** | shields.io-style **SVG badge** for embedding in a repository README (`![label](url)`). |
+| **Auth** | **Public by default** (`GGHSTATS_BADGE_PUBLIC` unset or not `false`). Set `GGHSTATS_BADGE_PUBLIC=false` to require the same `x-api-token` as `/api/repos` (not usable from GitHub image embeds without a proxy). |
+| **Response** | **`200`** `image/svg+xml` with `Cache-Control: public, max-age=…` (default 300s). |
+| **Alias** | Same handler for `…/repo.svg`. |
+
+**Query parameters:**
+
+| Parameter | Values | Default |
+| --- | --- | --- |
+| `metric` | `clones`, `clones_30d`, `views`, `stars` | `clones` |
+| `style` | `flat`, `flat-square` | `flat` |
+| `label` | Custom left label (URL-encoded) | Metric name (`clones`, `clones 30d`, …) |
+
+**Semantics** match the web UI / `GET /api/repos`: `clones` and `views` are lifetime sums in SQLite; `clones_30d` is the rolling 30-day UTC window; `stars` is the latest synced metadata value.
+
+```bash
+curl -sS 'http://localhost:8080/api/v1/badge/your-user/your-repo?metric=clones' -o /tmp/badge.svg
+```
+
+```markdown
+![gghstats clones](https://gghstats.example.com/api/v1/badge/your-user/your-repo?metric=clones)
+```
+
+On each repository page, the **Embed badge** card builds this Markdown (metric selector + copy button). Optional **`GGHSTATS_PUBLIC_URL`** sets the host in snippets when the app sits behind a reverse proxy.
 
 #### `GET /api/repos`
 
@@ -573,6 +605,8 @@ Thanks for using and contributing to `gghstats`.
 ## Acknowledgments
 
 Hats off to **[ghstats](https://github.com/vladkens/ghstats)** by [vladkens](https://github.com/vladkens): a self-hosted GitHub traffic dashboard in **Rust** that also keeps historical traffic beyond GitHub’s short default window, with SQLite and a small deployment story. `gghstats` is a separate **Go** implementation and design, but that project deserves credit as important prior work in the same problem space.
+
+Thanks also to **[git-clone-stats](https://github.com/taylorwilsdon/git-clone-stats)** by [taylorwilsdon](https://github.com/taylorwilsdon): a self-hosted GitHub clone and traffic analytics stack in **Python** with SQLite (or Firestore), a minimal HTML/JS dashboard, and **shields.io-style badges** for README embeds. The badge endpoint and “copy Markdown” embed flow in `gghstats` follow a similar idea; this project is independent Go code, not a port.
 
 [Back to top](#gghstats)
 

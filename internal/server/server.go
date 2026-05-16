@@ -30,6 +30,12 @@ type Config struct {
 	Store          *store.Store
 	APIToken       string // if empty, API is disabled
 	DisableMetrics bool   // if true, omit /metrics and Prometheus HTTP metrics (see GGHSTATS_METRICS)
+	// BadgePublic: when true (default), GET /api/v1/badge/* needs no auth (for README img embeds).
+	BadgePublic bool
+	// BadgeCacheMaxAge is Cache-Control max-age in seconds for badge SVG (default 300).
+	BadgeCacheMaxAge int
+	// PublicURL is optional base URL for embed snippets (e.g. https://gghstats.example.com); empty uses request Host.
+	PublicURL string
 	// CustomCSSAbsPath, if non-empty, is the absolute path to a regular CSS file served at GET /theme/custom.css.
 	CustomCSSAbsPath string
 	// CustomCSSQuery is the cache-busting query for the layout link (e.g. "v=1715888123"); empty disables the link.
@@ -88,6 +94,8 @@ func New(cfg Config) http.Handler {
 
 	mux.HandleFunc("GET "+HealthzPath, handleHealthz)
 	mux.HandleFunc("GET /api/repos", apiMiddleware(cfg.APIToken, handleAPIRepos(cfg.Store)))
+	badgeHandler := badgeMiddleware(cfg, handleBadge(cfg, cfg.Store))
+	mux.HandleFunc("GET /api/v1/badge/{owner}/{repo}", badgeHandler)
 
 	repoHandler := handleRepoPage(cfg, cfg.Store, tmpl)
 	indexHandler := handleIndex(cfg, cfg.Store, tmpl)
@@ -527,19 +535,21 @@ func handleRepoPage(cfg Config, db *store.Store, tmpl *template.Template) http.H
 		starsJSON, _ := json.Marshal(stars)
 
 		data := struct {
-			Repo       *store.RepoSummary
-			ViewsJSON  template.JS
-			ClonesJSON template.JS
-			StarsJSON  template.JS
-			Referrers  []store.PopularItem
-			Paths      []store.PopularItem
+			Repo          *store.RepoSummary
+			BadgeBaseURL  string
+			ViewsJSON     template.JS
+			ClonesJSON    template.JS
+			StarsJSON     template.JS
+			Referrers     []store.PopularItem
+			Paths         []store.PopularItem
 		}{
-			Repo:       summary,
-			ViewsJSON:  template.JS(viewsJSON),
-			ClonesJSON: template.JS(clonesJSON),
-			StarsJSON:  template.JS(starsJSON),
-			Referrers:  referrers,
-			Paths:      paths,
+			Repo:         summary,
+			BadgeBaseURL: publicBaseURL(r, cfg.PublicURL),
+			ViewsJSON:    template.JS(viewsJSON),
+			ClonesJSON:   template.JS(clonesJSON),
+			StarsJSON:    template.JS(starsJSON),
+			Referrers:    referrers,
+			Paths:        paths,
 		}
 
 		content := executeTemplate(tmpl, "repo", data)

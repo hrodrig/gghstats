@@ -34,7 +34,9 @@ Server env vars (serve):
   GGHSTATS_PORT            Listen port (default: 8080)
   GGHSTATS_FILTER          Repo filter (default: * = all)
   GGHSTATS_SYNC_INTERVAL   Sync frequency (default: 1h)
-  GGHSTATS_API_TOKEN       Protect /api/* endpoints
+  GGHSTATS_API_TOKEN       Protect /api/repos (and badges when GGHSTATS_BADGE_PUBLIC=false)
+  GGHSTATS_BADGE_PUBLIC    Badge SVG public (default true; set false to require x-api-token)
+  GGHSTATS_PUBLIC_URL      Optional public base URL for badge embed snippets
   GGHSTATS_LOG_LEVEL       Log level: debug, info (default), warn, error
   GGHSTATS_METRICS         Set to false to disable GET /metrics (Prometheus); default enabled
   GGHSTATS_CUSTOM_CSS      Optional .css path: overrides / extends neo-brutalist app.css (simpler UI, branding)

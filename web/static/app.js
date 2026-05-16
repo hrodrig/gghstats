@@ -195,10 +195,70 @@ function refreshIndexListCharts() {
   initIndexListCharts();
 }
 
+function initBadgeEmbed() {
+  const root = document.getElementById('gghstats-badge-embed');
+  if (!root) return;
+
+  const base = (root.dataset.baseUrl || window.location.origin).replace(/\/$/, '');
+  const repo = root.dataset.repo;
+  if (!repo) return;
+
+  const metricEl = document.getElementById('badge-metric');
+  const preview = document.getElementById('badge-preview');
+  const markdown = document.getElementById('badge-markdown');
+  const copyBtn = document.getElementById('badge-copy-btn');
+  const copyStatus = document.getElementById('badge-copy-status');
+  if (!metricEl || !preview || !markdown) return;
+
+  const metricLabels = {
+    clones: 'clones',
+    clones_30d: 'clones 30d',
+    views: 'views',
+    stars: 'stars'
+  };
+
+  function badgeURL(metric) {
+    const u = new URL(`${base}/api/v1/badge/${repo}`);
+    u.searchParams.set('metric', metric);
+    return u.toString();
+  }
+
+  function altText(metric) {
+    return `gghstats ${metricLabels[metric] || metric}`;
+  }
+
+  function update() {
+    const metric = metricEl.value;
+    const url = badgeURL(metric);
+    preview.src = url;
+    preview.alt = `${altText(metric)} for ${repo}`;
+    markdown.value = `![${altText(metric)}](${url})`;
+    if (copyStatus) copyStatus.classList.add('d-none');
+  }
+
+  metricEl.addEventListener('change', update);
+  update();
+
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      const text = markdown.value;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        markdown.focus();
+        markdown.select();
+        document.execCommand('copy');
+      }
+      if (copyStatus) copyStatus.classList.remove('d-none');
+    });
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initThemeToggle();
   initRepoCharts();
   initIndexListCharts();
+  initBadgeEmbed();
 });
 
 function renderMetrics(canvasId, data, uniqueCol, countCol) {

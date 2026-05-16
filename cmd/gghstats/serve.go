@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -20,14 +21,17 @@ import (
 )
 
 type serveConfig struct {
-	GithubToken    string
-	DB             string
-	Host           string
-	Port           string
-	Filter         string
-	IncludePrivate bool
-	APIToken       string
-	SyncInterval   time.Duration
+	GithubToken      string
+	DB               string
+	Host             string
+	Port             string
+	Filter           string
+	IncludePrivate   bool
+	APIToken         string
+	SyncInterval     time.Duration
+	BadgePublic      bool
+	BadgeCacheMaxAge int
+	PublicURL        string
 }
 
 func loadServeConfig() serveConfig {
@@ -38,8 +42,17 @@ func loadServeConfig() serveConfig {
 		Port:           envOr("GGHSTATS_PORT", "8080"),
 		Filter:         envOr("GGHSTATS_FILTER", "*"),
 		IncludePrivate: os.Getenv("GGHSTATS_INCLUDE_PRIVATE") == "true",
-		APIToken:       os.Getenv("GGHSTATS_API_TOKEN"),
-		SyncInterval:   1 * time.Hour,
+		APIToken:         os.Getenv("GGHSTATS_API_TOKEN"),
+		SyncInterval:     1 * time.Hour,
+		BadgePublic:      os.Getenv("GGHSTATS_BADGE_PUBLIC") != "false",
+		BadgeCacheMaxAge: 300,
+		PublicURL:        strings.TrimSpace(os.Getenv("GGHSTATS_PUBLIC_URL")),
+	}
+
+	if v := os.Getenv("GGHSTATS_BADGE_CACHE_SECONDS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			cfg.BadgeCacheMaxAge = n
+		}
 	}
 
 	if v := os.Getenv("GGHSTATS_SYNC_INTERVAL"); v != "" {
@@ -114,6 +127,9 @@ func runServe(args []string) error {
 	handler := server.New(server.Config{
 		Store:            db,
 		APIToken:         cfg.APIToken,
+		BadgePublic:      cfg.BadgePublic,
+		BadgeCacheMaxAge: cfg.BadgeCacheMaxAge,
+		PublicURL:        cfg.PublicURL,
 		DisableMetrics:   os.Getenv("GGHSTATS_METRICS") == "false",
 		CustomCSSAbsPath: cssAbs,
 		CustomCSSQuery:   cssQuery,

@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Badges (shields-style SVG):** `GET /api/v1/badge/{owner}/{repo}` with `metric` (`clones`, `clones_30d`, `views`, `stars`), optional `.svg` suffix, `Cache-Control`, and public-by-default auth (`GGHSTATS_BADGE_PUBLIC=false` requires `x-api-token`). Repo detail page: **Embed badge** block with preview and **Copy** Markdown. README **Acknowledgments** credit [git-clone-stats](https://github.com/taylorwilsdon/git-clone-stats) for the badge embed pattern.
+
 ### Changed
 
 - **Web index (`/`):** table columns reordered to **Name | Stars | Forks | Views | Clones | (1d) | (7d) | (30d)**. Clone windows **(1d)** (today UTC) and **(7d)** (last 7 calendar days) are new; **(30d)** keeps the same 30-day sum as before. All three windows are sortable.
