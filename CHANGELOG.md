@@ -7,6 +7,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-05-17
+
+### Changed
+
+- Bump **modernc.org/sqlite** from v1.47.0 to v1.50.1 (bundled SQLite **3.53.x**), with upstream fixes for pre-update hooks, `Deserialize`, allocator ownership, `Exec` with `RETURNING`, VFS reads, and related hardening (see [modernc.org/sqlite changelog](https://gitlab.com/cznic/sqlite/-/blob/master/CHANGELOG.md)).
+
 ## [0.2.0] - 2026-05-16
 
 ### Added
@@ -90,7 +96,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/hrodrig/gghstats/releases/tag/v0.2.1
 [0.2.0]: https://github.com/hrodrig/gghstats/releases/tag/v0.2.0
 [0.1.7]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.7
 [0.1.6]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.6
