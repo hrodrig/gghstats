@@ -36,12 +36,12 @@ type serveConfig struct {
 
 func loadServeConfig() serveConfig {
 	cfg := serveConfig{
-		GithubToken:    os.Getenv("GGHSTATS_GITHUB_TOKEN"),
-		DB:             envOr("GGHSTATS_DB", "./data/gghstats.db"),
-		Host:           envOr("GGHSTATS_HOST", "0.0.0.0"),
-		Port:           envOr("GGHSTATS_PORT", "8080"),
-		Filter:         envOr("GGHSTATS_FILTER", "*"),
-		IncludePrivate: os.Getenv("GGHSTATS_INCLUDE_PRIVATE") == "true",
+		GithubToken:      os.Getenv("GGHSTATS_GITHUB_TOKEN"),
+		DB:               envOr("GGHSTATS_DB", "./data/gghstats.db"),
+		Host:             envOr("GGHSTATS_HOST", "0.0.0.0"),
+		Port:             envOr("GGHSTATS_PORT", "8080"),
+		Filter:           envOr("GGHSTATS_FILTER", "*"),
+		IncludePrivate:   os.Getenv("GGHSTATS_INCLUDE_PRIVATE") == "true",
 		APIToken:         os.Getenv("GGHSTATS_API_TOKEN"),
 		SyncInterval:     1 * time.Hour,
 		BadgePublic:      os.Getenv("GGHSTATS_BADGE_PUBLIC") != "false",

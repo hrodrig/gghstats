@@ -353,6 +353,37 @@ curl -sS 'http://localhost:8080/api/v1/badge/your-user/your-repo?metric=clones' 
 
 On each repository page, the **Embed badge** card builds this Markdown (metric selector + copy button). Optional **`GGHSTATS_PUBLIC_URL`** sets the host in snippets when the app sits behind a reverse proxy.
 
+#### `GET /api/v1/repos/{owner}/{repo}/traffic`
+
+| | |
+| --- | --- |
+| **Purpose** | Daily **clone** and **view** time series for one repository (for Grafana, scripts, or external charts). |
+| **Auth** | Same as **`GET /api/repos`**: requires **`GGHSTATS_API_TOKEN`** and header **`x-api-token`**. Returns **`404`** when the API is disabled (token unset). |
+| **CORS** | **`Access-Control-Allow-Origin: *`** on success. |
+
+**Query parameters:**
+
+| Parameter | Meaning |
+| --- | --- |
+| `days` | Rolling window in **UTC calendar days**, inclusive of today. Default **`30`**. Use **`0`** for all dates stored in SQLite for this repo. Maximum **`3660`**. |
+
+**Response (`200`):**
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `name` | string | `owner/repo` |
+| `days` | number | Echo of the `days` query (after defaulting). |
+| `from`, `to` | string | `YYYY-MM-DD` bounds used for the query (inclusive). |
+| `clones` | array | Daily clone rows: `date`, `count`, `uniques` (GitHub traffic semantics). |
+| `views` | array | Daily view rows: same shape. |
+
+Missing days in the window are omitted (not zero-filled). This matches the repo detail charts, which only plot days with rows in the database.
+
+```bash
+curl -sS -H "x-api-token: $GGHSTATS_API_TOKEN" \
+  'http://localhost:8080/api/v1/repos/your-user/your-repo/traffic?days=30'
+```
+
 #### `GET /api/repos`
 
 | | |

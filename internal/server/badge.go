@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -83,29 +82,6 @@ func publicBaseURL(r *http.Request, configured string) string {
 		scheme = strings.ToLower(strings.TrimSpace(strings.Split(proto, ",")[0]))
 	}
 	return scheme + "://" + r.Host
-}
-
-func badgeURL(base, fullName string, m badgeMetric, customLabel string) string {
-	u, err := url.Parse(base + "/api/v1/badge/" + fullName)
-	if err != nil {
-		return base + "/api/v1/badge/" + fullName
-	}
-	q := u.Query()
-	switch m {
-	case badgeMetricClones30d:
-		q.Set("metric", "clones_30d")
-	case badgeMetricViews:
-		q.Set("metric", "views")
-	case badgeMetricStars:
-		q.Set("metric", "stars")
-	default:
-		q.Set("metric", "clones")
-	}
-	if customLabel != "" && customLabel != defaultBadgeLabel(m) {
-		q.Set("label", customLabel)
-	}
-	u.RawQuery = q.Encode()
-	return u.String()
 }
 
 func badgeMiddleware(cfg Config, next http.HandlerFunc) http.HandlerFunc {

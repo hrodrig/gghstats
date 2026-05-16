@@ -171,6 +171,34 @@ func TestCloneDateExtentForRepos_multiRepo(t *testing.T) {
 	}
 }
 
+func TestTrafficDateExtentForRepo(t *testing.T) {
+	s := tempDB(t)
+	s.UpsertClone("a/b", "2026-03-10", 1, 1)
+	s.UpsertView("a/b", "2026-01-15", 2, 1)
+
+	minD, maxD, ok, err := s.TrafficDateExtentForRepo("a/b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("expected extent")
+	}
+	if minD != "2026-01-15" {
+		t.Errorf("min = %q, want 2026-01-15", minD)
+	}
+	if maxD != "2026-03-10" {
+		t.Errorf("max = %q, want 2026-03-10", maxD)
+	}
+
+	_, _, ok2, err := s.TrafficDateExtentForRepo("none/here")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ok2 {
+		t.Error("expected no extent for missing repo")
+	}
+}
+
 func TestAggregatedClonesByDayForRepos_multiRepo(t *testing.T) {
 	s := tempDB(t)
 	seedTwoReposCloneFixture(t, s)

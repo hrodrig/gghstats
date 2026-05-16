@@ -94,6 +94,7 @@ func New(cfg Config) http.Handler {
 
 	mux.HandleFunc("GET "+HealthzPath, handleHealthz)
 	mux.HandleFunc("GET /api/repos", apiMiddleware(cfg.APIToken, handleAPIRepos(cfg.Store)))
+	mux.HandleFunc("GET /api/v1/repos/{owner}/{repo}/traffic", apiMiddleware(cfg.APIToken, handleAPIRepoTraffic(cfg.Store)))
 	badgeHandler := badgeMiddleware(cfg, handleBadge(cfg, cfg.Store))
 	mux.HandleFunc("GET /api/v1/badge/{owner}/{repo}", badgeHandler)
 
@@ -535,13 +536,13 @@ func handleRepoPage(cfg Config, db *store.Store, tmpl *template.Template) http.H
 		starsJSON, _ := json.Marshal(stars)
 
 		data := struct {
-			Repo          *store.RepoSummary
-			BadgeBaseURL  string
-			ViewsJSON     template.JS
-			ClonesJSON    template.JS
-			StarsJSON     template.JS
-			Referrers     []store.PopularItem
-			Paths         []store.PopularItem
+			Repo         *store.RepoSummary
+			BadgeBaseURL string
+			ViewsJSON    template.JS
+			ClonesJSON   template.JS
+			StarsJSON    template.JS
+			Referrers    []store.PopularItem
+			Paths        []store.PopularItem
 		}{
 			Repo:         summary,
 			BadgeBaseURL: publicBaseURL(r, cfg.PublicURL),

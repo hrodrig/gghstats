@@ -327,6 +327,27 @@ func (s *Store) CloneDateExtentForRepos(repos []string) (minDate, maxDate string
 	return minNS.String, maxNS.String, true, nil
 }
 
+// TrafficDateExtentForRepo returns the min and max date (YYYY-MM-DD) across views and clones for one repo.
+// ok is false when no traffic rows exist for the repo.
+func (s *Store) TrafficDateExtentForRepo(repo string) (minDate, maxDate string, ok bool, err error) {
+	var minNS, maxNS sql.NullString
+	err = s.db.QueryRow(`
+		SELECT MIN(d), MAX(d) FROM (
+			SELECT date AS d FROM views WHERE repo = ?
+			UNION ALL
+			SELECT date FROM clones WHERE repo = ?
+		)`,
+		repo, repo,
+	).Scan(&minNS, &maxNS)
+	if err != nil {
+		return "", "", false, err
+	}
+	if !minNS.Valid || !maxNS.Valid || minNS.String == "" || maxNS.String == "" {
+		return "", "", false, nil
+	}
+	return minNS.String, maxNS.String, true, nil
+}
+
 // AggregatedClonesByDayForRepos returns per-day sums of count and uniques across repos (inclusive dates).
 // repos must be non-empty; callers should use CloneDateExtentForRepos first when choosing the window.
 func (s *Store) AggregatedClonesByDayForRepos(repos []string, from, to string) ([]DayRow, error) {
