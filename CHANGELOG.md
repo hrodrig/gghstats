@@ -7,6 +7,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-16
+
 ### Added
 
 - **Badges (shields-style SVG):** `GET /api/v1/badge/{owner}/{repo}` with `metric` (`clones`, `clones_30d`, `views`, `stars`), optional `.svg` suffix, `Cache-Control`, and public-by-default auth (`GGHSTATS_BADGE_PUBLIC=false` requires `x-api-token`). Repo detail page: **Embed badge** block with preview and **Copy** Markdown. README **Acknowledgments** credit [git-clone-stats](https://github.com/taylorwilsdon/git-clone-stats) for the badge embed pattern.
@@ -15,6 +17,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **README:** live **gghstats** clone badge for `hrodrig/gghstats` (served from the [public demo](https://gghstats.hermesrodriguez.com); requires demo on **≥ 0.3.0** with the repo synced).
 - **Web index (`/`):** table columns reordered to **Name | Stars | Forks | Views | Clones | (1d) | (7d) | (30d)**. Clone windows **(1d)** (today UTC) and **(7d)** (last 7 calendar days) are new; **(30d)** keeps the same 30-day sum as before. All three windows are sortable.
 - **`GET /api/repos`:** `clones_1d` and `clones_7d` on each repo summary (same UTC window semantics as the index).
 
@@ -107,7 +110,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/hrodrig/gghstats/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/hrodrig/gghstats/releases/tag/v0.2.1
 [0.2.0]: https://github.com/hrodrig/gghstats/releases/tag/v0.2.0
 [0.1.7]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.7

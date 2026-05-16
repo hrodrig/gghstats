@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.2.1-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -11,6 +11,7 @@
 [![pkg.go.dev](https://pkg.go.dev/badge/github.com/hrodrig/gghstats)](https://pkg.go.dev/github.com/hrodrig/gghstats)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hrodrig/gghstats)](https://goreportcard.com/report/github.com/hrodrig/gghstats)
 [![deps.dev](https://img.shields.io/badge/deps.dev-go%20module-blue)](https://deps.dev/go/github.com%2Fhrodrig%2Fgghstats)
+[![gghstats clones](https://gghstats.hermesrodriguez.com/api/v1/badge/hrodrig/gghstats?metric=clones)](https://gghstats.hermesrodriguez.com/hrodrig/gghstats)
 
 **Repo:** [github.com/hrodrig/gghstats](https://github.com/hrodrig/gghstats) · **Releases:** [Releases](https://github.com/hrodrig/gghstats/releases)
 
@@ -18,7 +19,7 @@ Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only k
 
 If you want your **own self-hosted** deployment (Docker Compose, Traefik with TLS, Helm, optional Prometheus/Grafana/Loki), use the companion repo **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** — it lists the supported options and example manifests.
 
-**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.2.1`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
+**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.3.0`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
 
 ## Demo
 
@@ -96,7 +97,7 @@ docker run -d \
   -p 8080:8080 \
   -v ./data:/data \
   --name gghstats \
-  ghcr.io/hrodrig/gghstats:v0.2.1
+  ghcr.io/hrodrig/gghstats:v0.3.0
 ```
 
 [Back to top](#gghstats)
@@ -112,7 +113,7 @@ go install github.com/hrodrig/gghstats/cmd/gghstats@latest
 ### Pre-built binary and container
 
 - **Binary archives:** [Releases](https://github.com/hrodrig/gghstats/releases) (pick OS/arch; verify `checksums.txt`).
-- **OCI image:** `ghcr.io/hrodrig/gghstats:v0.2.1` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
+- **OCI image:** `ghcr.io/hrodrig/gghstats:v0.3.0` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
 
 ### Build from source
 
@@ -588,8 +589,8 @@ curl -H "x-api-token: $GGHSTATS_API_TOKEN" http://localhost:8080/api/repos
 ## Release workflow
 
 - Branch policy: day-to-day development on `develop`; **tagged releases** are cut from **`main`**.
-- **`VERSION`** file: semantic version **without** `v` (for example `0.2.1`). Must match the static **Version** badge at the top of this README.
-- **Git tags:** annotated tag **with** `v` prefix (for example `v0.2.1`), on the commit you want released.
+- **`VERSION`** file: semantic version **without** `v` (for example `0.3.0`). Must match the static **Version** badge at the top of this README.
+- **Git tags:** annotated tag **with** `v` prefix (for example `v0.3.0`), on the commit you want released.
 
 ### Default: publish from GitHub Actions (no local GoReleaser required)
 
@@ -608,11 +609,11 @@ git checkout main && git pull origin main
 git merge --ff-only develop           # or: merge via GitHub PR
 git push origin main
 
-git tag -a v0.2.1 -m "Release 0.2.1"
-git push origin v0.2.1                # triggers Release workflow — builds and publishes artifacts
+git tag -a v0.3.0 -m "Release 0.3.0"
+git push origin v0.3.0                # triggers Release workflow — builds and publishes artifacts
 ```
 
-For the **next** release after `0.2.1`, set `VERSION` to `0.2.2` (etc.), update the badge and [CHANGELOG](CHANGELOG.md), then repeat with `v0.2.2`.
+For the **next** release after `0.3.0`, set `VERSION` to `0.3.1` or `0.4.0` (etc.), update the badge and [CHANGELOG](CHANGELOG.md), then repeat with the matching `v*` tag.
 
 ### Optional: publish from your machine
 
