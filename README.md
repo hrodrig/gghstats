@@ -6,12 +6,12 @@
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
+[![gghstats clones](https://gghstats.hermesrodriguez.com/api/v1/badge/hrodrig/gghstats?metric=clones)](https://gghstats.hermesrodriguez.com/hrodrig/gghstats)
 [![Go 1.26.3](https://img.shields.io/badge/go-1.26.3-00ADD8?logo=go)](https://go.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![pkg.go.dev](https://pkg.go.dev/badge/github.com/hrodrig/gghstats)](https://pkg.go.dev/github.com/hrodrig/gghstats)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hrodrig/gghstats)](https://goreportcard.com/report/github.com/hrodrig/gghstats)
 [![deps.dev](https://img.shields.io/badge/deps.dev-go%20module-blue)](https://deps.dev/go/github.com%2Fhrodrig%2Fgghstats)
-[![gghstats clones](https://gghstats.hermesrodriguez.com/api/v1/badge/hrodrig/gghstats?metric=clones)](https://gghstats.hermesrodriguez.com/hrodrig/gghstats)
 
 **Repo:** [github.com/hrodrig/gghstats](https://github.com/hrodrig/gghstats) · **Releases:** [Releases](https://github.com/hrodrig/gghstats/releases)
 
@@ -48,6 +48,7 @@ If you want your **own self-hosted** deployment (Docker Compose, Traefik with TL
 - [Security and quality](#security-and-quality)
 - [Database](#database)
 - [Community standards](#community-standards)
+- [Star History](#star-history)
 - [Acknowledgments](#acknowledgments)
 - [License](#license)
 
@@ -669,6 +670,12 @@ SQLite path comes from `GGHSTATS_DB`. Main tables: `repos`, `views`, `clones`, `
 - CODEOWNERS: `.github/CODEOWNERS`
 
 Thanks for using and contributing to `gghstats`.
+
+[Back to top](#gghstats)
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/chart?repos=hrodrig/gghstats&type=date&legend=bottom-right)](https://www.star-history.com/?repos=hrodrig%2Fgghstats&type=date&legend=bottom-right)
 
 [Back to top](#gghstats)
 
