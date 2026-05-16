@@ -7,6 +7,18 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-16
+
+### Added
+
+- **Optional custom UI theme:** **`GGHSTATS_CUSTOM_CSS`** — path to a regular `.css` file on disk for operators who want a **simpler or custom look** than the default neo-brutalist UI; served at **`GET /theme/custom.css`** and linked **after** `app.css`. Invalid paths log a warning. **Official example gallery:** five starters under [`contrib/themes/`](contrib/themes/README.md) (including a **Bootstrap-plain** look and documentation screenshot).
+
+## [0.1.7] - 2026-05-16
+
+### Added
+
+- **Web index (`/`):** **Clones (30d)** column — sum of daily clone counts from GitHub traffic for the last 30 calendar days (UTC); days without a row count as 0. Sortable; default index sort remains **total clones descending**.
+
 ## [0.1.6] - 2026-05-11
 
 ### Changed
@@ -78,7 +90,9 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/hrodrig/gghstats/releases/tag/v0.2.0
+[0.1.7]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.7
 [0.1.6]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.6
 [0.1.5]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.5
 [0.1.4]: https://github.com/hrodrig/gghstats/releases/tag/v0.1.4

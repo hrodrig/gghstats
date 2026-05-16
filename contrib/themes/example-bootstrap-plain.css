@@ -1,0 +1,230 @@
+/*
+ * gghstats example theme — near-vanilla Bootstrap (no neo-brutalist chrome).
+ * Copy this file, set GGHSTATS_CUSTOM_CSS to its path, restart serve.
+ *
+ * Goal: system sans, 1px borders, no hard offset shadows, rounded corners like Bootstrap defaults.
+ * (Layout markup still uses brutalist class names; this sheet overrides their visual language.)
+ */
+
+body.app-brutalist {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  letter-spacing: normal !important;
+  --brutal-text: #212529;
+  --brutal-paper: #ffffff;
+  --brutal-surface: #f8f9fa;
+  --brutal-elevated: #ffffff;
+  --brutal-border-ink: #dee2e6;
+  --brutal-shadow-core: rgba(0, 0, 0, 0.08);
+  --brutal-accent: #0d6efd;
+  --brutal-accent-2: #0aa2c0;
+  --brutal-muted: #6c757d;
+  --brutal-chart-well: #ffffff;
+  --brutal-chart-rim: #dee2e6;
+  --brutal-nav-active-bg: #0d6efd;
+  --brutal-nav-active-fg: #ffffff;
+  --brutal-ink: var(--brutal-text);
+  --brutal-border: 1px solid var(--brutal-border-ink);
+  --brutal-shadow: none;
+  --brutal-primary-shadow: transparent;
+  --brutal-btn-shift-hover: 0;
+  --brutal-btn-shift-active: 0;
+  --brutal-search-cta: #0d6efd;
+  --brutal-search-cta-shadow: transparent;
+  --bs-border-color: #dee2e6;
+  --bs-body-bg: #ffffff;
+  --bs-body-color: #212529;
+  --bs-primary: #0d6efd;
+  --bs-info: #0dcaf0;
+  background-color: var(--brutal-paper) !important;
+  color: var(--brutal-text);
+}
+
+html[data-bs-theme="dark"] body.app-brutalist {
+  --brutal-text: #dee2e6;
+  --brutal-paper: #212529;
+  --brutal-surface: #2b3035;
+  --brutal-elevated: #343a40;
+  --brutal-border-ink: #495057;
+  --brutal-shadow-core: rgba(0, 0, 0, 0.35);
+  --brutal-accent: #6ea8fe;
+  --brutal-accent-2: #9eeaf9;
+  --brutal-muted: #adb5bd;
+  --brutal-chart-well: #2b3035;
+  --brutal-chart-rim: #495057;
+  --brutal-nav-active-bg: #0d6efd;
+  --brutal-nav-active-fg: #ffffff;
+  --brutal-border: 1px solid var(--brutal-border-ink);
+  --brutal-shadow: none;
+  --brutal-primary-shadow: transparent;
+  --brutal-btn-shift-hover: 0;
+  --brutal-btn-shift-active: 0;
+  --brutal-search-cta: #6ea8fe;
+  --brutal-search-cta-shadow: transparent;
+  --bs-border-color: #495057;
+  --bs-body-bg: #212529;
+  --bs-body-color: #dee2e6;
+  --bs-primary: #6ea8fe;
+  --bs-info: #9eeaf9;
+  background-color: var(--brutal-paper) !important;
+  color: var(--brutal-text);
+}
+
+.app-brutal-header h1 {
+  font-family: inherit !important;
+  font-weight: 600 !important;
+  letter-spacing: normal !important;
+}
+
+.app-brutalist .border-dark {
+  border-color: var(--bs-border-color) !important;
+}
+
+.app-brutal-toggler {
+  box-shadow: none !important;
+}
+
+html[data-bs-theme="dark"] .app-brutalist .navbar-toggler-icon {
+  filter: none;
+}
+
+.app-brutal-nav {
+  border-radius: 0.375rem !important;
+  border-width: 1px !important;
+}
+
+.app-brutal-btn {
+  border-radius: 0.375rem !important;
+  border: 1px solid var(--bs-border-color) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.app-brutal-btn:hover,
+.app-brutal-btn:active {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.app-brutalist .card,
+.app-brutal-stat {
+  border-radius: 0.375rem !important;
+  border: 1px solid var(--bs-border-color) !important;
+  box-shadow: none !important;
+}
+
+.app-brutalist .app-brutal-chart-card {
+  box-shadow: none !important;
+}
+
+html[data-bs-theme="dark"] .app-brutalist .app-brutal-chart-card {
+  box-shadow: none !important;
+}
+
+.app-brutalist .app-brutal-chart-well {
+  border: 1px solid var(--bs-border-color) !important;
+  box-shadow: none !important;
+}
+
+html[data-bs-theme="dark"] .app-brutalist .app-brutal-chart-well {
+  box-shadow: none !important;
+}
+
+.app-brutalist .table {
+  border: 1px solid var(--bs-border-color) !important;
+  font-size: 1rem !important;
+}
+
+.app-brutalist .table-bordered > :not(caption) > * > * {
+  border-width: 1px;
+}
+
+.app-brutalist .form-control,
+.app-brutalist .form-select {
+  border-radius: 0.375rem !important;
+  border: 1px solid var(--bs-border-color) !important;
+}
+
+.app-brutalist .btn-primary {
+  border-radius: 0.375rem !important;
+  border: 1px solid transparent !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.app-brutalist .btn-primary:hover,
+.app-brutalist .btn-primary:active {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+html[data-bs-theme="light"] .app-brutalist .app-repo-search-submit.btn-primary,
+html:not([data-bs-theme="dark"]) .app-brutalist .app-repo-search-submit.btn-primary,
+html[data-bs-theme="dark"] .app-brutalist .app-repo-search-submit.btn-primary,
+.app-brutalist .app-repo-search-submit.btn-primary {
+  border-color: transparent !important;
+}
+
+.app-brutalist .pagination .page-link {
+  border-radius: 0.375rem !important;
+  border: 1px solid var(--bs-border-color) !important;
+}
+
+.app-brutalist .card-header {
+  border-radius: 0 !important;
+  border-bottom: 1px solid var(--bs-border-color) !important;
+}
+
+.app-brutal-error-panel {
+  border-radius: 0.375rem !important;
+  border: 1px solid var(--bs-border-color) !important;
+  box-shadow: none !important;
+}
+
+.app-brutal-error-code {
+  letter-spacing: normal !important;
+  text-shadow: none !important;
+}
+
+html[data-bs-theme="dark"] .app-brutalist .app-brutal-error-code {
+  text-shadow: none !important;
+}
+
+.app-brutal-console-footer {
+  border-radius: 0.375rem !important;
+  border: 1px solid var(--bs-border-color) !important;
+  box-shadow: none !important;
+}
+
+.app-brutal-console-prompt,
+.app-brutal-console-spec {
+  font-family: inherit !important;
+}
+
+.app-brutal-console-manifest {
+  border-left-width: 2px !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.app-brutal-console-spec dt,
+.app-brutal-console-spec dd {
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.ls-tight,
+.letter-spacing-tight {
+  letter-spacing: normal !important;
+}
+
+/* Layout still uses Bootstrap border-3 / rounded-0 utilities — pull them toward defaults */
+.app-brutalist .border-3 {
+  border-width: 1px !important;
+}
+
+.app-brutalist .rounded-0 {
+  border-radius: 0.375rem !important;
+}
