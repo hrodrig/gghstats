@@ -658,6 +658,35 @@ SQLite path comes from `GGHSTATS_DB`. Main tables: `repos`, `views`, `clones`, `
 - Upserts are idempotent
 - Startup migration uses `PRAGMA user_version`
 
+### Concurrency (reads while sync writes)
+
+Clarification for operators and contributors — not a scalability guarantee.
+
+- **WAL mode** is enabled when the database is opened (`?_journal_mode=WAL`), so the HTTP UI and API can **read** while the background sync **writes** daily traffic rows.
+- **SQLite** allows many readers with WAL, but still **one writer at a time** per database file (not row-level locking like PostgreSQL).
+- **At most one sync cycle** runs at a time (`sync.Coordinator`): scheduled, startup, and manual sync share that lock; a tick is skipped if a run is already in progress.
+- **Single process, single DB file** is the intended deployment: one `gghstats serve` instance per `GGHSTATS_DB`. Do not point multiple writers at the same SQLite file.
+- **Consistency during a long sync:** each repo is upserted independently; the index may briefly show a mix of old and new rows until the run finishes. There is no snapshot transaction across the whole repo list.
+- **Pragmatic scope:** sync time is dominated by the **GitHub API**, not SQLite; typical self-hosted load (one dashboard, periodic sync) fits this model. Very high write concurrency or multi-instance writes would need extra tuning (for example `busy_timeout`) or a different store — out of scope for the default design.
+
+### Sync serialization (coordinator)
+
+Clarification — not a separate DB write lock.
+
+- **`sync.Coordinator` uses a `sync.Mutex`** so only **one full sync cycle** runs at a time (startup, scheduled tick, or `POST /api/v1/sync`). That is application-level **mutual exclusion between sync runs**, not a mutex around every `Upsert*`.
+- **Inside a run**, `sync.Run` iterates repos **sequentially** (`for _, repo := range repos`); each repo triggers several GitHub GETs, then SQLite upserts. There is **no** worker pool or parallel repo sync.
+- **SQLite** still enforces one writer at a time; the coordinator avoids overlapping sync goroutines, and the sequential loop avoids multiplying concurrent writers from a single process.
+
+### GitHub API usage and rate limits
+
+Clarification — no built-in backoff today.
+
+- **Authentication:** a **personal access token** via `GGHSTATS_GITHUB_TOKEN` (`Authorization: Bearer …` on REST calls). There is **no** GitHub App or OAuth flow in-tree.
+- **Scheduler:** `GGHSTATS_SYNC_INTERVAL` (default **`1h`**) starts the next cycle only when the previous one finished; if a run is still in progress, the tick is **skipped** (`ErrInProgress`).
+- **Per repo**, a typical sync issues several requests (metadata, open PRs, views, clones, referrers, paths; optional full stargazer history when star sync is enabled). Failures on individual endpoints are logged and the repo loop **continues** (`slog.Warn`, no abort of the whole run).
+- **No** explicit handling of `429`, `403` rate-limit responses, `Retry-After`, or exponential backoff in `internal/github`. A non-200 response becomes an error for that call; traffic endpoints are best-effort per repo.
+- **Pragmatic scope:** for a personal or small-org PAT and hourly (or slower) sync, GitHub limits are usually enough. Very large repo lists, aggressive intervals, or star-history on huge repos can hit limits — then increase the interval, narrow `GGHSTATS_FILTER`, or expect partial data until a later run succeeds.
+
 [Back to top](#gghstats)
 
 ## Community standards
