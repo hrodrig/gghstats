@@ -223,8 +223,18 @@ function initBadgeEmbed() {
     return u.toString();
   }
 
+  function repoPageURL() {
+    const path = repo.split('/').map(encodeURIComponent).join('/');
+    return `${base}/${path}`;
+  }
+
   function altText(metric) {
     return `gghstats ${metricLabels[metric] || metric}`;
+  }
+
+  function markdownSnippet(metric) {
+    const img = badgeURL(metric);
+    return `[![${altText(metric)}](${img})](${repoPageURL()})`;
   }
 
   function update() {
@@ -232,7 +242,11 @@ function initBadgeEmbed() {
     const url = badgeURL(metric);
     preview.src = url;
     preview.alt = `${altText(metric)} for ${repo}`;
-    markdown.value = `![${altText(metric)}](${url})`;
+    markdown.value = markdownSnippet(metric);
+    const previewLink = document.getElementById('badge-preview-link');
+    if (previewLink) {
+      previewLink.href = repoPageURL();
+    }
     if (copyStatus) copyStatus.classList.add('d-none');
   }
 
