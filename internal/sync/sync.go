@@ -128,7 +128,7 @@ func syncRepoTraffic(gh *github.Client, db *store.Store, name string) {
 		slog.Warn("views failed", "repo", name, "error", err)
 	} else {
 		for _, v := range views.Views {
-			d := v.Timestamp.Format("2006-01-02")
+			d := v.Timestamp.UTC().Format("2006-01-02")
 			db.UpsertView(name, d, v.Count, v.Uniques)
 		}
 	}
@@ -137,7 +137,7 @@ func syncRepoTraffic(gh *github.Client, db *store.Store, name string) {
 		slog.Warn("clones failed", "repo", name, "error", err)
 	} else {
 		for _, c := range clones.Clones {
-			d := c.Timestamp.Format("2006-01-02")
+			d := c.Timestamp.UTC().Format("2006-01-02")
 			db.UpsertClone(name, d, c.Count, c.Uniques)
 		}
 	}

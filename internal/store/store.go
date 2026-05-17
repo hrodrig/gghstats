@@ -502,7 +502,8 @@ type RepoSummary struct {
 	TotalUniques   int    `json:"total_uniques"`
 	TotalClones    int    `json:"total_clones"`
 	CloneUniques   int    `json:"clone_uniques"`
-	// Clones1d, Clones7d, Clones30d: sum of daily clone counts in rolling UTC calendar windows (missing days = 0).
+	// Clones1d: clone count for the latest UTC day with data among today and yesterday (GitHub often lags today's bucket).
+	// Clones7d, Clones30d: sum of daily clone counts in rolling UTC calendar windows (missing days = 0).
 	Clones1d  int `json:"clones_1d"`
 	Clones7d  int `json:"clones_7d"`
 	Clones30d int `json:"clones_30d"`
@@ -511,10 +512,15 @@ type RepoSummary struct {
 // repoSummaryCloneWindowJoins aggregates clone traffic for 1d (today UTC), 7d, and 30d windows.
 const repoSummaryCloneWindowJoins = `
 		LEFT JOIN (
-			SELECT repo, SUM(count) AS clones_1d
-			FROM clones
-			WHERE date = date('now')
-			GROUP BY repo
+			SELECT c.repo, SUM(c.count) AS clones_1d
+			FROM clones c
+			INNER JOIN (
+				SELECT repo, MAX(date) AS latest
+				FROM clones
+				WHERE date >= date('now', '-1 day') AND date <= date('now')
+				GROUP BY repo
+			) latest ON latest.repo = c.repo AND c.date = latest.latest
+			GROUP BY c.repo
 		) c1 ON c1.repo = r.name
 		LEFT JOIN (
 			SELECT repo, SUM(count) AS clones_7d

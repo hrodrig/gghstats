@@ -466,6 +466,38 @@ func TestRepoByName(t *testing.T) {
 	}
 }
 
+func TestClones1dUsesYesterdayWhenTodayMissing(t *testing.T) {
+	s := tempDB(t)
+	s.UpsertRepo("a/b", "", 0, 0, 0, 0, 0, false, false, "")
+	yesterday := time.Now().UTC().AddDate(0, 0, -1).Format("2006-01-02")
+	s.UpsertClone("a/b", yesterday, 42, 10)
+
+	r, err := s.RepoByName("a/b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Clones1d != 42 {
+		t.Errorf("clones_1d = %d, want 42 (yesterday when today row missing)", r.Clones1d)
+	}
+}
+
+func TestClones1dPrefersTodayOverYesterday(t *testing.T) {
+	s := tempDB(t)
+	s.UpsertRepo("a/b", "", 0, 0, 0, 0, 0, false, false, "")
+	today := time.Now().UTC().Format("2006-01-02")
+	yesterday := time.Now().UTC().AddDate(0, 0, -1).Format("2006-01-02")
+	s.UpsertClone("a/b", yesterday, 10, 5)
+	s.UpsertClone("a/b", today, 99, 20)
+
+	r, err := s.RepoByName("a/b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Clones1d != 99 {
+		t.Errorf("clones_1d = %d, want 99 (today when both exist)", r.Clones1d)
+	}
+}
+
 func TestUpsertForkWithParent(t *testing.T) {
 	s := tempDB(t)
 
