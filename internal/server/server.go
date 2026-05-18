@@ -13,10 +13,12 @@ import (
 	"time"
 
 	"github.com/hrodrig/gghstats/assets"
+	"github.com/hrodrig/gghstats/internal/metrics"
 	"github.com/hrodrig/gghstats/internal/store"
 	"github.com/hrodrig/gghstats/internal/sync"
 	"github.com/hrodrig/gghstats/internal/version"
 	"github.com/hrodrig/gghstats/web"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // HealthzPath is the Kubernetes-style liveness/readiness probe path (public, no auth).
@@ -39,6 +41,10 @@ type Config struct {
 	PublicURL string
 	// SyncCoordinator serializes background and manual sync runs (nil disables sync API).
 	SyncCoordinator *sync.Coordinator
+	// MetricsRegistry, when set with metrics enabled, is used instead of a minimal registry (see NewMetricsRegistry).
+	MetricsRegistry *prometheus.Registry
+	// DomainMetrics refreshes store gauges on scrape when non-nil.
+	DomainMetrics *metrics.Domain
 	// CustomCSSAbsPath, if non-empty, is the absolute path to a regular CSS file served at GET /theme/custom.css.
 	CustomCSSAbsPath string
 	// CustomCSSQuery is the cache-busting query for the layout link (e.g. "v=1715888123"); empty disables the link.
@@ -136,8 +142,12 @@ func New(cfg Config) http.Handler {
 	if cfg.DisableMetrics {
 		return logMiddleware(mux)
 	}
-	reg := newMetricsRegistry()
-	mux.Handle("GET "+MetricsPath, metricsExporter(reg))
+	reg := cfg.MetricsRegistry
+	if reg == nil {
+		reg = newMetricsRegistry()
+	}
+	dom := cfg.DomainMetrics
+	mux.Handle("GET "+MetricsPath, metricsScrapeHandler(reg, dom))
 	return logMiddleware(wrapWithHTTPMetrics(reg, mux))
 }
 

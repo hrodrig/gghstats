@@ -2,6 +2,7 @@ package sync
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -10,7 +11,9 @@ import (
 	"time"
 
 	"github.com/hrodrig/gghstats/internal/github"
+	"github.com/hrodrig/gghstats/internal/metrics"
 	"github.com/hrodrig/gghstats/internal/store"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func testCoordinator(t *testing.T) *Coordinator {
@@ -149,4 +152,97 @@ func TestCoordinatorStartRepo(t *testing.T) {
 	if c.Status().Running {
 		t.Fatal("expected repo sync done")
 	}
+}
+
+func TestCoordinatorSetMetricsObserveSync(t *testing.T) {
+	reg := prometheus.NewRegistry()
+	dom := metrics.RegisterDomain(reg, metrics.DomainConfig{})
+	c := testCoordinator(t)
+	c.SetMetrics(dom)
+
+	if err := c.Run(); err != nil {
+		t.Fatal(err)
+	}
+	if !coordinatorHasSyncSample(reg, "success") {
+		t.Fatal("expected success sync duration after Run")
+	}
+	st := c.Status()
+	if st.LastError != "" {
+		t.Fatalf("LastError = %q, want empty", st.LastError)
+	}
+}
+
+func TestCoordinatorObserveSyncOnFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/user/repos" {
+			http.Error(w, "upstream down", http.StatusInternalServerError)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer srv.Close()
+
+	db, err := store.Open(filepath.Join(t.TempDir(), "fail.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	gh := github.NewClient("tok")
+	gh.BaseURL = srv.URL
+	reg := prometheus.NewRegistry()
+	dom := metrics.RegisterDomain(reg, metrics.DomainConfig{})
+	c := NewCoordinator(gh, db, Options{Filter: "*"})
+	c.SetMetrics(dom)
+
+	if err := c.Run(); err == nil {
+		t.Fatal("expected sync error")
+	}
+	if !coordinatorHasSyncSample(reg, "error") {
+		t.Fatal("expected error sync duration after failed Run")
+	}
+	if c.Status().LastError == "" {
+		t.Fatal("expected LastError on failed sync")
+	}
+}
+
+func TestCoordinatorFinishRunDirect(t *testing.T) {
+	reg := prometheus.NewRegistry()
+	dom := metrics.RegisterDomain(reg, metrics.DomainConfig{})
+	c := NewCoordinator(nil, nil, Options{})
+	c.SetMetrics(dom)
+
+	c.finishRun(nil)
+	if coordinatorHasSyncSample(reg, "success") {
+		t.Fatal("finishRun without markRunning should not observe sync")
+	}
+
+	c.markRunningLocked("all", "")
+	c.finishRun(errors.New("sync failed"))
+	if !coordinatorHasSyncSample(reg, "error") {
+		t.Fatal("expected error sync observation")
+	}
+	if c.Status().LastError != "sync failed" {
+		t.Fatalf("LastError = %q", c.Status().LastError)
+	}
+}
+
+func coordinatorHasSyncSample(reg *prometheus.Registry, status string) bool {
+	mfs, err := reg.Gather()
+	if err != nil {
+		return false
+	}
+	for _, mf := range mfs {
+		if mf.GetName() != "gghstats_sync_duration_seconds" {
+			continue
+		}
+		for _, m := range mf.GetMetric() {
+			for _, lp := range m.GetLabel() {
+				if lp.GetName() == "status" && lp.GetValue() == status && m.GetHistogram().GetSampleCount() > 0 {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }

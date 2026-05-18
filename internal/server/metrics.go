@@ -10,14 +10,44 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	"github.com/hrodrig/gghstats/internal/metrics"
+	"github.com/hrodrig/gghstats/internal/store"
 	"github.com/hrodrig/gghstats/internal/version"
 )
 
 // MetricsPath is the Prometheus scrape endpoint (GET only).
 const MetricsPath = "/metrics"
 
-func newMetricsRegistry() *prometheus.Registry {
+// MetricsRegistryConfig configures the Prometheus registry and domain metrics.
+type MetricsRegistryConfig struct {
+	Store          *store.Store
+	DBPath         string
+	Filter         string
+	PerRepoEnabled bool
+}
+
+// NewMetricsRegistry creates a registry with build/runtime collectors and domain metrics.
+func NewMetricsRegistry(cfg MetricsRegistryConfig) (*prometheus.Registry, *metrics.Domain) {
 	reg := prometheus.NewRegistry()
+	registerBuildAndRuntime(reg)
+	var dom *metrics.Domain
+	if cfg.Store != nil {
+		st := cfg.Store
+		dom = metrics.RegisterDomain(reg, metrics.DomainConfig{
+			Filter:         cfg.Filter,
+			DBPath:         cfg.DBPath,
+			StoreRepoCount: st.RepoCount,
+			PerRepoEnabled: cfg.PerRepoEnabled,
+			ListRepos: func() ([]store.RepoSummary, error) {
+				return st.ListRepos("name", "asc")
+			},
+		})
+		dom.RefreshStoreGauges()
+	}
+	return reg, dom
+}
+
+func registerBuildAndRuntime(reg prometheus.Registerer) {
 	reg.MustRegister(collectors.NewGoCollector())
 	reg.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
 	build := prometheus.NewGaugeVec(
@@ -29,12 +59,27 @@ func newMetricsRegistry() *prometheus.Registry {
 	)
 	build.WithLabelValues(version.Version, version.Commit).Set(1)
 	reg.MustRegister(build)
+}
+
+func newMetricsRegistry() *prometheus.Registry {
+	reg := prometheus.NewRegistry()
+	registerBuildAndRuntime(reg)
 	return reg
 }
 
 func metricsExporter(reg prometheus.Gatherer) http.Handler {
 	return promhttp.HandlerFor(reg, promhttp.HandlerOpts{
 		EnableOpenMetrics: true,
+	})
+}
+
+func metricsScrapeHandler(reg prometheus.Gatherer, dom *metrics.Domain) http.Handler {
+	inner := metricsExporter(reg)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if dom != nil {
+			dom.RefreshStoreGauges()
+		}
+		inner.ServeHTTP(w, r)
 	})
 }
 

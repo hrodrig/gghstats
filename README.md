@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.3.2-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.4.0-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -19,7 +19,7 @@ Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only k
 
 If you want your **own self-hosted** deployment (Docker Compose, Traefik with TLS, Helm, optional Prometheus/Grafana/Loki), use the companion repo **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** — it lists the supported options and example manifests.
 
-**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.3.2`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
+**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.4.0`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
 
 ## Demo
 
@@ -98,7 +98,7 @@ docker run -d \
   -p 8080:8080 \
   -v ./data:/data \
   --name gghstats \
-  ghcr.io/hrodrig/gghstats:v0.3.2
+  ghcr.io/hrodrig/gghstats:v0.4.0
 ```
 
 [Back to top](#gghstats)
@@ -114,7 +114,7 @@ go install github.com/hrodrig/gghstats/cmd/gghstats@latest
 ### Pre-built binary and container
 
 - **Binary archives:** [Releases](https://github.com/hrodrig/gghstats/releases) (pick OS/arch; verify `checksums.txt`).
-- **OCI image:** `ghcr.io/hrodrig/gghstats:v0.3.2` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
+- **OCI image:** `ghcr.io/hrodrig/gghstats:v0.4.0` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
 
 ### Build from source
 
@@ -248,6 +248,7 @@ All runtime configuration uses env vars (`serve`) or flags (`fetch/report/export
 | `GGHSTATS_PUBLIC_URL` | (none) | Optional public base URL for embed snippets (e.g. `https://gghstats.example.com`); if unset, uses the request `Host` |
 | `GGHSTATS_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, or `error` (slog only; startup banner always prints) |
 | `GGHSTATS_METRICS` | (enabled) | Set to `false` to disable `GET /metrics` |
+| `GGHSTATS_METRICS_PER_REPO` | `false` | Set to `true` to expose per-repo Prometheus gauges (`owner`, `repo` labels); higher cardinality |
 | `GGHSTATS_CUSTOM_CSS` | (none) | Optional **regular** `.css` file: loaded **after** built-in `app.css` at `/theme/custom.css` so you can tone down neo-brutalism or replace accents (see [Custom UI theme](#custom-ui-theme-optional)) |
 
 ### Custom UI theme (optional)
@@ -506,6 +507,10 @@ curl -sS -H "x-api-token: $GGHSTATS_API_TOKEN" http://localhost:8080/api/repos
 | **Purpose** | [Prometheus](https://prometheus.io/) text / OpenMetrics exposition for scraping. |
 | **Auth** | None — treat network access like any other unauthenticated metrics endpoint. |
 | **Disabled** | When `GGHSTATS_METRICS=false`, the route is omitted (returns **`404`**). |
+
+**Domain series** (besides HTTP and Go runtime): `gghstats_repos_total`, `gghstats_db_size_bytes`, `gghstats_last_sync_timestamp_seconds`, `gghstats_sync_duration_seconds`, `gghstats_github_api_requests_total`, `gghstats_github_rate_limit_remaining`. Refreshed on each scrape and after each successful sync.
+
+**Per-repo gauges** (optional, `GGHSTATS_METRICS_PER_REPO=true`): `gghstats_repo_stars`, `gghstats_repo_forks`, `gghstats_repo_clones`, `gghstats_repo_views`, `gghstats_repo_clones_1d`, `gghstats_repo_clones_7d`, `gghstats_repo_clones_30d` — same semantics as the dashboard **(1d)/(7d)/(30d)** columns. Use with [gghstats-selfhosted observability](https://github.com/hrodrig/gghstats-selfhosted/tree/main/run/docker-compose/observability).
 
 See [Security and quality](#security-and-quality) for the local tooling that scans this surface in CI.
 

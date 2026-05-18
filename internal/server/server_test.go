@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hrodrig/gghstats/internal/store"
 )
@@ -69,6 +70,50 @@ func TestMetricsEndpoint(t *testing.T) {
 	}
 	if !strings.Contains(body, "gghstats_http_requests_total") {
 		t.Fatal("expected gghstats_http_requests_total in exposition")
+	}
+}
+
+func TestMetricsEndpointDomainSeries(t *testing.T) {
+	t.Helper()
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "test.db")
+	db, err := store.Open(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	reg, dom := NewMetricsRegistry(MetricsRegistryConfig{
+		Store:  db,
+		DBPath: dbPath,
+		Filter: "*",
+	})
+	// Counters, histograms, and rate-limit gauges are omitted until first observation.
+	dom.ObserveGitHubRequest("user_repos", "success")
+	dom.SetGitHubRateLimitRemaining(4999)
+	dom.ObserveSync(50*time.Millisecond, true)
+
+	handler := New(Config{Store: db, MetricsRegistry: reg, DomainMetrics: dom})
+
+	req := httptest.NewRequest(http.MethodGet, MetricsPath, nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d", w.Code)
+	}
+	body := w.Body.String()
+
+	for _, name := range []string{
+		"gghstats_repos_total",
+		"gghstats_db_size_bytes",
+		"gghstats_last_sync_timestamp_seconds",
+		"gghstats_github_api_requests_total",
+		"gghstats_sync_duration_seconds",
+		"gghstats_github_rate_limit_remaining",
+	} {
+		if !strings.Contains(body, name) {
+			t.Errorf("expected %s in /metrics", name)
+		}
 	}
 }
 

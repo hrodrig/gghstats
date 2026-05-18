@@ -7,6 +7,13 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-18
+
+### Added
+
+- **Prometheus domain metrics** on `GET /metrics`: `gghstats_repos_total`, `gghstats_db_size_bytes`, `gghstats_last_sync_timestamp_seconds`, `gghstats_sync_duration_seconds`, `gghstats_github_api_requests_total`, `gghstats_github_rate_limit_remaining`. Refreshed on scrape and after each successful sync.
+- **Optional per-repo gauges** (`GGHSTATS_METRICS_PER_REPO=true`): `gghstats_repo_stars`, `_forks`, `_clones`, `_views`, `_clones_1d`, `_clones_7d`, `_clones_30d` (aligned with dashboard windows).
+
 ## [0.3.2] - 2026-05-17
 
 ### Fixed
@@ -123,7 +130,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/hrodrig/gghstats/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/hrodrig/gghstats/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/hrodrig/gghstats/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/hrodrig/gghstats/compare/v0.2.1...v0.3.0

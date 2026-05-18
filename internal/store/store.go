@@ -727,9 +727,15 @@ func (s *Store) RepoByName(name string) (*RepoSummary, error) {
 
 // HasRepos returns true if there is at least one non-hidden repo in the database.
 func (s *Store) HasRepos() (bool, error) {
+	n, err := s.RepoCount()
+	return n > 0, err
+}
+
+// RepoCount returns the number of non-hidden repositories in the database.
+func (s *Store) RepoCount() (int, error) {
 	var count int
 	err := s.db.QueryRow("SELECT COUNT(*) FROM repos WHERE hidden = 0").Scan(&count)
-	return count > 0, err
+	return count, err
 }
 
 // DateRange returns the earliest and latest dates in the views table for a repo.

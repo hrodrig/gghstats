@@ -15,9 +15,11 @@ import (
 	"time"
 
 	"github.com/hrodrig/gghstats/internal/github"
+	"github.com/hrodrig/gghstats/internal/metrics"
 	"github.com/hrodrig/gghstats/internal/server"
 	"github.com/hrodrig/gghstats/internal/store"
 	"github.com/hrodrig/gghstats/internal/sync"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type serveConfig struct {
@@ -106,12 +108,27 @@ func runServe(args []string) error {
 	gh := github.NewClient(cfg.GithubToken)
 	applyOptionalGitHubBaseURL(gh)
 
+	var metricsReg *prometheus.Registry
+	var domainMetrics *metrics.Domain
+	if os.Getenv("GGHSTATS_METRICS") != "false" {
+		metricsReg, domainMetrics = server.NewMetricsRegistry(server.MetricsRegistryConfig{
+			Store:          db,
+			DBPath:         cfg.DB,
+			Filter:         cfg.Filter,
+			PerRepoEnabled: os.Getenv("GGHSTATS_METRICS_PER_REPO") == "true",
+		})
+		gh.SetMetrics(domainMetrics)
+	}
+
 	syncOpts := sync.Options{
 		IncludePrivate: cfg.IncludePrivate,
 		Filter:         cfg.Filter,
 		SyncStars:      true,
 	}
 	coord := sync.NewCoordinator(gh, db, syncOpts)
+	if domainMetrics != nil {
+		coord.SetMetrics(domainMetrics)
+	}
 
 	// Start scheduler in background
 	ctx, cancel := context.WithCancel(context.Background())
@@ -133,6 +150,8 @@ func runServe(args []string) error {
 		BadgeCacheMaxAge: cfg.BadgeCacheMaxAge,
 		PublicURL:        cfg.PublicURL,
 		DisableMetrics:   os.Getenv("GGHSTATS_METRICS") == "false",
+		MetricsRegistry:  metricsReg,
+		DomainMetrics:    domainMetrics,
 		CustomCSSAbsPath: cssAbs,
 		CustomCSSQuery:   cssQuery,
 	})

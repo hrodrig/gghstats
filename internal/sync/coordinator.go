@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/hrodrig/gghstats/internal/github"
+	"github.com/hrodrig/gghstats/internal/metrics"
 	"github.com/hrodrig/gghstats/internal/store"
 )
 
@@ -29,12 +30,20 @@ type Coordinator struct {
 	db  *store.Store
 	opt Options
 
+	metrics *metrics.Domain
+
 	running        bool
 	scope          string
 	repo           string
+	syncStartedAt  time.Time
 	lastStartedAt  time.Time
 	lastFinishedAt time.Time
 	lastError      string
+}
+
+// SetMetrics attaches optional Prometheus domain metrics.
+func (c *Coordinator) SetMetrics(m *metrics.Domain) {
+	c.metrics = m
 }
 
 // NewCoordinator wires a GitHub client and store for serialized sync runs.
@@ -118,18 +127,26 @@ func (c *Coordinator) markRunningLocked(scope, repo string) {
 	c.running = true
 	c.scope = scope
 	c.repo = repo
-	c.lastStartedAt = time.Now().UTC()
+	now := time.Now().UTC()
+	c.syncStartedAt = now
+	c.lastStartedAt = now
 	c.lastError = ""
 }
 
 func (c *Coordinator) finishRun(err error) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
+	started := c.syncStartedAt
+	dom := c.metrics
 	c.running = false
 	c.scope = ""
 	c.repo = ""
 	c.lastFinishedAt = time.Now().UTC()
 	if err != nil {
 		c.lastError = err.Error()
+	}
+	c.mu.Unlock()
+
+	if dom != nil && !started.IsZero() {
+		dom.ObserveSync(time.Since(started), err == nil)
 	}
 }

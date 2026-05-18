@@ -39,6 +39,7 @@ Server env vars (serve):
   GGHSTATS_PUBLIC_URL      Optional public base URL for badge embed snippets
   GGHSTATS_LOG_LEVEL       Log level: debug, info (default), warn, error
   GGHSTATS_METRICS         Set to false to disable GET /metrics (Prometheus); default enabled
+  GGHSTATS_METRICS_PER_REPO Set to true to expose per-repo gauges (higher cardinality)
   GGHSTATS_CUSTOM_CSS      Optional .css path: overrides / extends neo-brutalist app.css (simpler UI, branding)
 
 Run 'gghstats <command> --help' for command-specific flags.`

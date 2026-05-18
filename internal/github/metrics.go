@@ -1,0 +1,32 @@
+package github
+
+import (
+	"net/http"
+
+	"github.com/hrodrig/gghstats/internal/metrics"
+)
+
+// MetricsRecorder records GitHub API calls (implemented by metrics.Domain).
+type MetricsRecorder interface {
+	ObserveGitHubRequest(endpoint, status string)
+	SetGitHubRateLimitRemaining(remaining int)
+}
+
+// SetMetrics attaches an optional Prometheus recorder to the client.
+func (c *Client) SetMetrics(rec MetricsRecorder) {
+	c.metrics = rec
+}
+
+func (c *Client) recordResponse(path string, resp *http.Response, err error) {
+	if c.metrics == nil {
+		return
+	}
+	endpoint := metrics.NormalizeGitHubEndpoint(path)
+	status := metrics.ClassifyGitHubOutcome(resp, err)
+	c.metrics.ObserveGitHubRequest(endpoint, status)
+	if resp != nil {
+		if rem, ok := metrics.GitHubRateLimitRemaining(resp); ok {
+			c.metrics.SetGitHubRateLimitRemaining(rem)
+		}
+	}
+}

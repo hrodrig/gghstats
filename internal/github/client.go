@@ -16,6 +16,7 @@ type Client struct {
 	BaseURL    string
 	Token      string
 	HTTPClient *http.Client
+	metrics    MetricsRecorder
 }
 
 // NewClient returns a Client configured with the given token.
@@ -115,19 +116,7 @@ func (c *Client) get(path string, dest interface{}) error {
 }
 
 func (c *Client) getWithAccept(path, accept string, dest interface{}) error {
-	url := c.BaseURL + path
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Accept", accept)
-	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	if c.Token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.Token)
-	}
-
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.doGet(path, accept)
 	if err != nil {
 		return err
 	}
@@ -139,6 +128,27 @@ func (c *Client) getWithAccept(path, accept string, dest interface{}) error {
 	}
 
 	return json.NewDecoder(resp.Body).Decode(dest)
+}
+
+func (c *Client) doGet(path, accept string) (*http.Response, error) {
+	url := c.BaseURL + path
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", accept)
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+	}
+
+	resp, err := c.HTTPClient.Do(req)
+	c.recordResponse(path, resp, err)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 // getPaginated follows Link headers to collect all pages into a single slice.
@@ -154,19 +164,7 @@ func (c *Client) getPaginatedWithAccept(path, accept string, dest interface{}) e
 	currentPath := path
 
 	for currentPath != "" {
-		url := c.BaseURL + currentPath
-
-		req, err := http.NewRequest(http.MethodGet, url, nil)
-		if err != nil {
-			return err
-		}
-		req.Header.Set("Accept", accept)
-		req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-		if c.Token != "" {
-			req.Header.Set("Authorization", "Bearer "+c.Token)
-		}
-
-		resp, err := c.HTTPClient.Do(req)
+		resp, err := c.doGet(currentPath, accept)
 		if err != nil {
 			return err
 		}
