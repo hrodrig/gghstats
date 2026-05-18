@@ -19,7 +19,7 @@ LDFLAGS     := -s -w \
 
 .DEFAULT_GOAL := help
 
-.PHONY: build clean compose-down compose-up cover docker-build docker-build-amd64 docker-export-amd64 docker-run docker-scan gocyclo govulncheck grype help install lint lint-fix release release-check security server snapshot test test-release tools
+.PHONY: build clean compose-down compose-up cover docker-build docker-build-amd64 docker-export-amd64 docker-run docker-scan gocyclo govulncheck grype help install lint lint-fix release release-check security server server-metrics snapshot test test-release tools
 
 help:
 	@echo "gghstats — GitHub traffic dashboard and CLI"
@@ -33,6 +33,7 @@ help:
 	@echo "  compose-up         Start stack with docker compose"
 	@echo "  install            Install binary with ldflags"
 	@echo "  server             Run gghstats serve locally (go run)"
+	@echo "  server-metrics     Same as server with GGHSTATS_METRICS_PER_REPO=true"
 	@echo ""
 	@echo "Quality:"
 	@echo "  cover              Run tests with coverage profile and total % (stdout + coverage.out)"
@@ -66,6 +67,10 @@ install:
 
 server:
 	go run -ldflags "$(LDFLAGS)" ./cmd/gghstats serve
+
+# Local dev: expose per-repo Prometheus gauges (higher cardinality).
+server-metrics:
+	GGHSTATS_METRICS_PER_REPO=true go run -ldflags "$(LDFLAGS)" ./cmd/gghstats serve
 
 compose-up:
 	docker compose up -d
