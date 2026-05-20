@@ -14,6 +14,7 @@ func TestLoadServeConfigDefaults(t *testing.T) {
 	t.Setenv("GGHSTATS_INCLUDE_PRIVATE", "")
 	t.Setenv("GGHSTATS_API_TOKEN", "")
 	t.Setenv("GGHSTATS_SYNC_INTERVAL", "")
+	t.Setenv("GGHSTATS_SYNC_ON_STARTUP", "")
 
 	cfg := loadServeConfig()
 	if cfg.Host != "0.0.0.0" || cfg.Port != "8080" {
@@ -24,6 +25,17 @@ func TestLoadServeConfigDefaults(t *testing.T) {
 	}
 	if cfg.SyncInterval != time.Hour {
 		t.Errorf("SyncInterval = %v", cfg.SyncInterval)
+	}
+	if !cfg.SyncOnStartup {
+		t.Error("SyncOnStartup default want true")
+	}
+}
+
+func TestLoadServeConfigSyncOnStartupFalse(t *testing.T) {
+	t.Setenv("GGHSTATS_SYNC_ON_STARTUP", "false")
+	cfg := loadServeConfig()
+	if cfg.SyncOnStartup {
+		t.Error("SyncOnStartup want false")
 	}
 }
 

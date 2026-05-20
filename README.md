@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.4.0-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.5.0-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -19,7 +19,7 @@ Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only k
 
 If you want your **own self-hosted** deployment (Docker Compose, Traefik with TLS, Helm, optional Prometheus/Grafana/Loki), use the companion repo **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** — it lists the supported options and example manifests.
 
-**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.4.0`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
+**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.5.0`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
 
 ## Demo
 
@@ -57,6 +57,7 @@ If you want your **own self-hosted** deployment (Docker Compose, Traefik with TL
 - Collects views, clones, referrers, popular paths, and star history
 - Auto-discovers repositories (or filters by org/repo rules)
 - Web dashboard with Chart.js graphs
+- **Head to Head (H2H)** at `/h2h` — compare two repos with weighted share scores (0–100, sum to 100); open *How the H2H score is calculated* on that page for the formula
 - JSON API for external integrations
 - CLI mode for fetch/report/export
 - Single binary, SQLite storage, no external DB dependency
@@ -98,7 +99,7 @@ docker run -d \
   -p 8080:8080 \
   -v ./data:/data \
   --name gghstats \
-  ghcr.io/hrodrig/gghstats:v0.4.0
+  ghcr.io/hrodrig/gghstats:v0.5.0
 ```
 
 [Back to top](#gghstats)
@@ -114,7 +115,7 @@ go install github.com/hrodrig/gghstats/cmd/gghstats@latest
 ### Pre-built binary and container
 
 - **Binary archives:** [Releases](https://github.com/hrodrig/gghstats/releases) (pick OS/arch; verify `checksums.txt`).
-- **OCI image:** `ghcr.io/hrodrig/gghstats:v0.4.0` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
+- **OCI image:** `ghcr.io/hrodrig/gghstats:v0.5.0` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
 
 ### Build from source
 
@@ -215,10 +216,14 @@ make release-check STRICT_RELEASE=1
 
 ### Local release dry-run flow
 
+Snapshot and test-release versions come from the repo **`VERSION`** file (for example `0.5.0` → artifacts `0.5.0-next`), not from the latest git tag. Same pattern as [pgwd](https://github.com/hrodrig/pgwd).
+
 ```bash
-make snapshot
-make test-release
+make snapshot        # GoReleaser snapshot → dist/ (no Docker; no publish)
+make test-release    # same version source; --skip=publish; still no Docker on snapshot
 ```
+
+On a real release, push tag **`v<VERSION>`** (must match **`VERSION`**) so GoReleaser and CI use that semver.
 
 [Back to top](#gghstats)
 
@@ -242,6 +247,7 @@ All runtime configuration uses env vars (`serve`) or flags (`fetch/report/export
 | `GGHSTATS_FILTER` | `*` | Repo filter expression |
 | `GGHSTATS_INCLUDE_PRIVATE` | `false` | Include private repos |
 | `GGHSTATS_SYNC_INTERVAL` | `1h` | Sync frequency |
+| `GGHSTATS_SYNC_ON_STARTUP` | `true` | Full sync when the process starts; set `false` to serve immediately using existing SQLite data |
 | `GGHSTATS_API_TOKEN` | (none) | If set, `GET /api/repos` requires matching `x-api-token` header (see [HTTP API (JSON)](#http-api-json)) |
 | `GGHSTATS_BADGE_PUBLIC` | `true` | Set to `false` to require `x-api-token` on badge URLs (breaks `![…](url)` in GitHub READMEs unless you use a proxy) |
 | `GGHSTATS_BADGE_CACHE_SECONDS` | `300` | `Cache-Control: max-age` for badge SVG responses |
@@ -606,7 +612,7 @@ Pushing a tag matching `v*` runs [`.github/workflows/release.yml`](.github/workf
 # 1) On develop: land changes, bump version if needed
 git checkout develop
 make release-check                    # optional: STRICT_RELEASE=1 (adds docker image scan)
-make test-release                     # optional: dry-run GoReleaser + local Docker build
+make test-release                     # optional: dry-run GoReleaser (VERSION → *-next; no publish)
 
 # 2) Update VERSION, README version badge, CHANGELOG; commit on develop
 
@@ -619,7 +625,7 @@ git tag -a v0.3.2 -m "Release 0.3.2"
 git push origin v0.3.2                # triggers Release workflow — builds and publishes artifacts
 ```
 
-For the **next** release after `0.3.2`, set `VERSION` to `0.3.3` or `0.4.0` (etc.), update the badge and [CHANGELOG](CHANGELOG.md), then repeat with the matching `v*` tag.
+For the **next** release after `0.5.0`, bump `VERSION`, update the badge and [CHANGELOG](CHANGELOG.md), then tag `main` with the matching `v*` tag.
 
 ### Optional: publish from your machine
 
@@ -687,7 +693,7 @@ Clarification — not a separate DB write lock.
 Clarification — no built-in backoff today.
 
 - **Authentication:** a **personal access token** via `GGHSTATS_GITHUB_TOKEN` (`Authorization: Bearer …` on REST calls). There is **no** GitHub App or OAuth flow in-tree.
-- **Scheduler:** `GGHSTATS_SYNC_INTERVAL` (default **`1h`**) starts the next cycle only when the previous one finished; if a run is still in progress, the tick is **skipped** (`ErrInProgress`).
+- **Scheduler:** `GGHSTATS_SYNC_INTERVAL` (default **`1h`**) starts the next cycle only when the previous one finished; if a run is still in progress, the tick is **skipped** (`ErrInProgress`). Set **`GGHSTATS_SYNC_ON_STARTUP=false`** to skip the blocking full sync at process start (UI uses existing DB; trigger sync via the dashboard or `POST /api/v1/sync`).
 - **Per repo**, a typical sync issues several requests (metadata, open PRs, views, clones, referrers, paths; optional full stargazer history when star sync is enabled). Failures on individual endpoints are logged and the repo loop **continues** (`slog.Warn`, no abort of the whole run).
 - **No** explicit handling of `429`, `403` rate-limit responses, `Retry-After`, or exponential backoff in `internal/github`. A non-200 response becomes an error for that call; traffic endpoints are best-effort per repo.
 - **Pragmatic scope:** for a personal or small-org PAT and hourly (or slower) sync, GitHub limits are usually enough. Very large repo lists, aggressive intervals, or star-history on huge repos can hit limits — then increase the interval, narrow `GGHSTATS_FILTER`, or expect partial data until a later run succeeds.

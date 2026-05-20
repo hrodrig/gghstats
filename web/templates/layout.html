@@ -53,6 +53,7 @@
         </div>
         <nav class="nav flex-column px-2 py-4 gap-1 flex-grow-1" aria-label="Main navigation">
           <a class="nav-link app-brutal-nav px-3 py-2 text-uppercase fw-semibold small{{if not .Breadcrumbs}} active{{end}}" href="/" title="Back to repository list">Repositories</a>
+          <a class="nav-link app-brutal-nav px-3 py-2 text-uppercase fw-semibold small{{if eq .Title "Head to Head"}} active{{end}}" href="/h2h" title="Compare two repositories">H2H</a>
         </nav>
         <div class="p-3 border-top border-3 border-dark mt-auto">
           {{if .SyncUIEnabled}}

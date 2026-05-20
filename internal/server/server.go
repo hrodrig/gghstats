@@ -61,15 +61,23 @@ func withCacheControl(directive string, next http.Handler) http.Handler {
 // New returns an http.Handler with all routes configured.
 func New(cfg Config) http.Handler {
 	mux := http.NewServeMux()
-
 	tmpl := template.Must(template.ParseFS(web.TemplateFS, "templates/*.html"))
+	mountStaticRoutes(mux, mustFaviconFS(), cfg.CustomCSSAbsPath)
+	mountAPIRoutes(mux, cfg)
+	mountHTMLRoutes(mux, cfg, tmpl)
+	return finalizeHandler(cfg, mux)
+}
 
+func mustFaviconFS() fs.FS {
 	favFS, err := fs.Sub(assets.FaviconsFS, "favicons")
 	if err != nil {
 		panic("assets/favicons: " + err.Error())
 	}
-	const favCache = "no-cache, must-revalidate"
-	for _, name := range []string{
+	return favFS
+}
+
+func faviconAssetNames() []string {
+	return []string{
 		"favicon.ico",
 		"favicon.svg",
 		"favicon-16x16.png",
@@ -77,13 +85,18 @@ func New(cfg Config) http.Handler {
 		"apple-touch-icon.png",
 		"android-chrome-192x192.png",
 		"android-chrome-512x512.png",
-	} {
+	}
+}
+
+func mountStaticRoutes(mux *http.ServeMux, favFS fs.FS, customCSSPath string) {
+	const cache = "no-cache, must-revalidate"
+	for _, name := range faviconAssetNames() {
 		n := name
-		mux.Handle("GET /static/"+n, withCacheControl(favCache, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mux.Handle("GET /static/"+n, withCacheControl(cache, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFileFS(w, r, favFS, n)
 		})))
 	}
-	mux.Handle("GET /static/manifest.json", withCacheControl(favCache, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("GET /static/manifest.json", withCacheControl(cache, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, err := fs.ReadFile(favFS, "manifest.json")
 		if err != nil {
 			http.NotFound(w, r)
@@ -96,11 +109,12 @@ func New(cfg Config) http.Handler {
 	})))
 
 	staticSub, _ := fs.Sub(web.StaticFS, "static")
-	staticHandler := withCacheControl("no-cache, must-revalidate", http.FileServer(http.FS(staticSub)))
+	staticHandler := withCacheControl(cache, http.FileServer(http.FS(staticSub)))
 	mux.Handle("GET /static/", http.StripPrefix("/static/", staticHandler))
+	mux.Handle("GET /theme/custom.css", withCacheControl(cache, handleCustomCSSEndpoint(customCSSPath)))
+}
 
-	mux.Handle("GET /theme/custom.css", withCacheControl("no-cache, must-revalidate", handleCustomCSSEndpoint(cfg.CustomCSSAbsPath)))
-
+func mountAPIRoutes(mux *http.ServeMux, cfg Config) {
 	mux.HandleFunc("GET "+HealthzPath, handleHealthz)
 	mux.HandleFunc("GET /api/repos", apiMiddleware(cfg.APIToken, handleAPIRepos(cfg.Store)))
 	mux.HandleFunc("GET /api/v1/repos/{owner}/{repo}/traffic", apiMiddleware(cfg.APIToken, handleAPIRepoTraffic(cfg.Store)))
@@ -110,9 +124,12 @@ func New(cfg Config) http.Handler {
 	}
 	badgeHandler := badgeMiddleware(cfg, handleBadge(cfg, cfg.Store))
 	mux.HandleFunc("GET /api/v1/badge/{owner}/{repo}", badgeHandler)
+}
 
+func mountHTMLRoutes(mux *http.ServeMux, cfg Config, tmpl *template.Template) {
 	repoHandler := handleRepoPage(cfg, cfg.Store, tmpl)
 	indexHandler := handleIndex(cfg, cfg.Store, tmpl)
+	mux.HandleFunc("GET /h2h", handleH2HPage(cfg, cfg.Store, tmpl))
 	htmlNotFound := func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 		if strings.HasPrefix(path, "/api/") {
@@ -128,9 +145,8 @@ func New(cfg Config) http.Handler {
 			indexHandler(w, r)
 			return
 		}
-		// Route /{owner}/{repo} — must have exactly two segments
 		parts := strings.SplitN(strings.Trim(path, "/"), "/", 3)
-		if len(parts) == 2 && parts[0] != "static" && parts[0] != "api" && parts[0] != "theme" {
+		if len(parts) == 2 && parts[0] != "static" && parts[0] != "api" && parts[0] != "theme" && parts[0] != "h2h" {
 			r.SetPathValue("owner", parts[0])
 			r.SetPathValue("repo", parts[1])
 			repoHandler(w, r)
@@ -138,7 +154,9 @@ func New(cfg Config) http.Handler {
 		}
 		htmlNotFound(w, r)
 	})
+}
 
+func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 	if cfg.DisableMetrics {
 		return logMiddleware(mux)
 	}
@@ -146,8 +164,7 @@ func New(cfg Config) http.Handler {
 	if reg == nil {
 		reg = newMetricsRegistry()
 	}
-	dom := cfg.DomainMetrics
-	mux.Handle("GET "+MetricsPath, metricsScrapeHandler(reg, dom))
+	mux.Handle("GET "+MetricsPath, metricsScrapeHandler(reg, cfg.DomainMetrics))
 	return logMiddleware(wrapWithHTTPMetrics(reg, mux))
 }
 

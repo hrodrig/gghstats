@@ -31,6 +31,7 @@ type serveConfig struct {
 	IncludePrivate   bool
 	APIToken         string
 	SyncInterval     time.Duration
+	SyncOnStartup    bool
 	BadgePublic      bool
 	BadgeCacheMaxAge int
 	PublicURL        string
@@ -46,6 +47,7 @@ func loadServeConfig() serveConfig {
 		IncludePrivate:   os.Getenv("GGHSTATS_INCLUDE_PRIVATE") == "true",
 		APIToken:         os.Getenv("GGHSTATS_API_TOKEN"),
 		SyncInterval:     1 * time.Hour,
+		SyncOnStartup:    envBool("GGHSTATS_SYNC_ON_STARTUP", true),
 		BadgePublic:      os.Getenv("GGHSTATS_BADGE_PUBLIC") != "false",
 		BadgeCacheMaxAge: 300,
 		PublicURL:        strings.TrimSpace(os.Getenv("GGHSTATS_PUBLIC_URL")),
@@ -97,6 +99,7 @@ func runServe(args []string) error {
 		"db", cfg.DB,
 		"filter", cfg.Filter,
 		"sync_interval", cfg.SyncInterval,
+		"sync_on_startup", cfg.SyncOnStartup,
 	)
 
 	db, err := store.Open(cfg.DB)
@@ -133,7 +136,7 @@ func runServe(args []string) error {
 	// Start scheduler in background
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go startScheduler(ctx, coord, cfg.SyncInterval)
+	go startScheduler(ctx, coord, cfg.SyncInterval, cfg.SyncOnStartup)
 
 	cssAbs, cssQuery := server.ResolveCustomCSS(os.Getenv("GGHSTATS_CUSTOM_CSS"))
 	if strings.TrimSpace(os.Getenv("GGHSTATS_CUSTOM_CSS")) != "" && cssAbs == "" {
@@ -183,15 +186,19 @@ func runServe(args []string) error {
 	return srv.Shutdown(shutdownCtx)
 }
 
-func startScheduler(ctx context.Context, coord *sync.Coordinator, interval time.Duration) {
-	// Full sync on startup so repo discovery matches the current filter without waiting for the interval.
-	slog.Info("startup sync starting")
-	if err := coord.Run(); err != nil {
-		if errors.Is(err, sync.ErrInProgress) {
-			slog.Warn("startup sync skipped", "reason", err)
-		} else {
-			slog.Error("startup sync failed", "error", err)
+func startScheduler(ctx context.Context, coord *sync.Coordinator, interval time.Duration, syncOnStartup bool) {
+	if syncOnStartup {
+		// Optional: full sync on startup so discovery matches the current filter without waiting for the interval.
+		slog.Info("startup sync starting")
+		if err := coord.Run(); err != nil {
+			if errors.Is(err, sync.ErrInProgress) {
+				slog.Warn("startup sync skipped", "reason", err)
+			} else {
+				slog.Error("startup sync failed", "error", err)
+			}
 		}
+	} else {
+		slog.Info("startup sync disabled", "hint", "set GGHSTATS_SYNC_ON_STARTUP=true or use POST /api/v1/sync")
 	}
 
 	ticker := time.NewTicker(interval)

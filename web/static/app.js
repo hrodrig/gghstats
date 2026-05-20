@@ -76,6 +76,7 @@ function toggleTheme() {
   requestAnimationFrame(() => {
     refreshRepoCharts();
     refreshIndexListCharts();
+    refreshH2HCharts();
   });
 }
 
@@ -103,14 +104,52 @@ function destroyRepoCharts() {
   }
 }
 
+function repoChartLegendLabel(metricLabel, repoName) {
+  const base = String(metricLabel || '').trim();
+  const repo = String(repoName || '').trim();
+  if (!base) return repo;
+  if (!repo) return base;
+  return `${base} - ${repo}`;
+}
+
+function repoChartLegendOptions(c) {
+  return {
+    display: true,
+    position: 'bottom',
+    labels: {
+      color: c.fg,
+      boxWidth: 12,
+      padding: 14,
+      font: { size: 11, family: "'JetBrains Mono', monospace" }
+    }
+  };
+}
+
+function repoChartTooltipOptions(chartTitle, repoName) {
+  const chartLabel = repoChartLegendLabel(chartTitle, repoName);
+  const base = chartTooltipOptions();
+  return {
+    ...base,
+    callbacks: {
+      ...base.callbacks,
+      title(tooltipItems) {
+        const date = tooltipItems?.[0]?.label || '';
+        if (!chartLabel) return date;
+        return date ? `${chartLabel} · ${date}` : chartLabel;
+      }
+    }
+  };
+}
+
 function initRepoCharts() {
   const payload = window.gghstatsChartData;
   if (!payload) return;
 
-  renderMetrics('chart_clones', payload.clones, 'uniques', 'count');
-  renderMetrics('chart_views', payload.views, 'uniques', 'count');
+  const repoName = payload.repoName || '';
+  renderMetrics('chart_clones', payload.clones, 'uniques', 'count', 'Clones', repoName);
+  renderMetrics('chart_views', payload.views, 'uniques', 'count', 'Views', repoName);
   if (payload.stars && payload.stars.length > 0) {
-    renderStars('chart_stars', payload.stars);
+    renderStars('chart_stars', payload.stars, repoName);
   }
 }
 
@@ -118,6 +157,209 @@ function refreshRepoCharts() {
   if (!window.gghstatsChartData) return;
   destroyRepoCharts();
   initRepoCharts();
+}
+
+let h2hCloneChart;
+let h2hViewChart;
+let h2hMomentumChart;
+
+function destroyH2HCharts() {
+  if (h2hCloneChart) {
+    h2hCloneChart.destroy();
+    h2hCloneChart = null;
+  }
+  if (h2hViewChart) {
+    h2hViewChart.destroy();
+    h2hViewChart = null;
+  }
+  if (h2hMomentumChart) {
+    h2hMomentumChart.destroy();
+    h2hMomentumChart = null;
+  }
+}
+
+function coerceSeries(values) {
+  if (!Array.isArray(values)) return [];
+  return values.map(v => {
+    if (v === null || v === undefined) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  });
+}
+
+function seriesMax(values) {
+  let max = 0;
+  for (const v of values) {
+    if (v === null || v === undefined) continue;
+    if (v > max) max = v;
+  }
+  return max;
+}
+
+function formatChartTick(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '';
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (abs >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k`;
+  return String(Math.round(n));
+}
+
+function formatMomentumTick(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '';
+  const pct = n * 100;
+  const rounded = Math.round(pct);
+  return `${rounded > 0 ? '+' : ''}${rounded}%`;
+}
+
+function h2hDualAxisNeeded(seriesA, seriesB) {
+  const maxA = seriesMax(seriesA);
+  const maxB = seriesMax(seriesB);
+  if (maxA < 1 || maxB < 1) return false;
+  const ratio = maxA > maxB ? maxA / maxB : maxB / maxA;
+  return ratio >= 8;
+}
+
+function renderH2HLineChart(canvasId, labels, seriesA, seriesB, labelA, labelB, opts = {}) {
+  const el = document.getElementById(canvasId);
+  if (!el || !labels || labels.length === 0) return null;
+
+  const asPercent = opts.asPercent === true;
+  const dataA = coerceSeries(seriesA);
+  const dataB = coerceSeries(seriesB);
+  const dualAxis = !asPercent && h2hDualAxisNeeded(dataA, dataB);
+
+  const c = chartThemeColors();
+  const tickFormatter = asPercent ? formatMomentumTick : formatChartTick;
+  const tickStyle = {
+    color: c.fg,
+    font: { size: 11, family: "'JetBrains Mono', monospace" },
+    callback: tickFormatter
+  };
+
+  const yAxis = {
+    beginAtZero: !asPercent,
+    grace: '8%',
+    ticks: tickStyle,
+    grid: { color: c.grid },
+    border: { display: true, color: c.border, width: 1 }
+  };
+
+  const showPoints = opts.showPoints === true || asPercent;
+
+  const scales = {
+    x: {
+      ticks: {
+        color: c.fg,
+        maxRotation: 45,
+        minRotation: 45,
+        autoSkip: true,
+        maxTicksLimit: 14,
+        font: { size: 11, family: "'JetBrains Mono', monospace" }
+      },
+      grid: { color: c.grid },
+      border: { display: true, color: c.border, width: 1 }
+    },
+    y: { ...yAxis }
+  };
+
+  const datasets = [
+    {
+      label: labelA,
+      data: dataA,
+      borderColor: c.primary,
+      backgroundColor: 'transparent',
+      pointStyle: showPoints ? 'circle' : false,
+      pointRadius: showPoints ? 3 : 0,
+      pointHoverRadius: showPoints ? 4 : 0,
+      tension: 0.15,
+      borderWidth: 2,
+      spanGaps: !asPercent,
+      yAxisID: 'y'
+    },
+    {
+      label: labelB,
+      data: dataB,
+      borderColor: c.info,
+      backgroundColor: 'transparent',
+      pointStyle: showPoints ? 'circle' : false,
+      pointRadius: showPoints ? 3 : 0,
+      pointHoverRadius: showPoints ? 4 : 0,
+      tension: 0.15,
+      borderWidth: 2,
+      spanGaps: !asPercent,
+      yAxisID: dualAxis ? 'y1' : 'y'
+    }
+  ];
+
+  if (dualAxis) {
+    scales.y1 = {
+      ...yAxis,
+      position: 'right',
+      grid: { drawOnChartArea: false, color: c.grid },
+      ticks: { ...tickStyle, color: c.info }
+    };
+  }
+
+  return new Chart(el, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index' },
+      scales,
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: c.fg, font: { family: "'JetBrains Mono', monospace", size: 11 } }
+        },
+        tooltip: chartTooltipOptions()
+      }
+    },
+    plugins: [mouseLinePlugin]
+  });
+}
+
+function initH2HCharts() {
+  const payload = window.gghstatsH2HChartData;
+  if (!payload) return;
+
+  destroyH2HCharts();
+  h2hCloneChart = renderH2HLineChart(
+    'h2h-clones-chart',
+    payload.cloneLabels,
+    payload.clonesA,
+    payload.clonesB,
+    payload.repoA,
+    payload.repoB
+  );
+  h2hViewChart = renderH2HLineChart(
+    'h2h-views-chart',
+    payload.viewLabels,
+    payload.viewsA,
+    payload.viewsB,
+    payload.repoA,
+    payload.repoB
+  );
+  if (payload.showMomentum && payload.momentumLabels && payload.momentumLabels.length > 0) {
+    h2hMomentumChart = renderH2HLineChart(
+      'h2h-momentum-chart',
+      payload.momentumLabels,
+      payload.momentumA,
+      payload.momentumB,
+      payload.repoA,
+      payload.repoB,
+      { asPercent: true, showPoints: true }
+    );
+  }
+}
+
+function refreshH2HCharts() {
+  if (!window.gghstatsH2HChartData) return;
+  destroyH2HCharts();
+  initH2HCharts();
 }
 
 const indexListChartCanvasIds = ['chart_index_clones'];
@@ -464,11 +706,12 @@ document.addEventListener('DOMContentLoaded', () => {
   initThemeToggle();
   initRepoCharts();
   initIndexListCharts();
+  initH2HCharts();
   initBadgeEmbed();
   initSyncControl();
 });
 
-function renderMetrics(canvasId, data, uniqueCol, countCol) {
+function renderMetrics(canvasId, data, uniqueCol, countCol, chartTitle, repoName) {
   const el = document.getElementById(canvasId);
   if (!el || !data || data.length === 0) return;
 
@@ -519,15 +762,15 @@ function renderMetrics(canvasId, data, uniqueCol, countCol) {
         }
       },
       plugins: {
-        legend: { display: false },
-        tooltip: chartTooltipOptions()
+        legend: repoChartLegendOptions(c),
+        tooltip: repoChartTooltipOptions(chartTitle, repoName)
       }
     },
     plugins: [mouseLinePlugin]
   });
 }
 
-function renderStars(canvasId, data) {
+function renderStars(canvasId, data, repoName) {
   const el = document.getElementById(canvasId);
   if (!el || !data || data.length === 0) return;
 
@@ -537,7 +780,7 @@ function renderStars(canvasId, data) {
     data: {
       labels: data.map(d => d.date),
       datasets: [{
-        label: 'Stars',
+        label: repoChartLegendLabel('Stars over time', repoName),
         data: data.map(d => d.total),
         borderColor: c.primary,
         backgroundColor: 'transparent',
@@ -571,8 +814,8 @@ function renderStars(canvasId, data) {
         }
       },
       plugins: {
-        legend: { display: false },
-        tooltip: chartTooltipOptions()
+        legend: repoChartLegendOptions(c),
+        tooltip: repoChartTooltipOptions('Stars over time', repoName)
       }
     },
     plugins: [mouseLinePlugin]

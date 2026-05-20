@@ -83,17 +83,17 @@
 <div class="row g-4 mb-4">
   <div class="col-lg-6">
     <div class="card shadow-sm border-0 h-100 app-brutal-chart-card">
-      <div class="card-header fw-semibold bg-body-secondary border-bottom">Clones</div>
+      <div class="card-header fw-semibold bg-body-secondary border-bottom">Clones - {{.Repo.Name}}</div>
       <div class="card-body app-brutal-chart-well">
-        <canvas id="chart_clones" class="chart-canvas"></canvas>
+        <canvas id="chart_clones" class="chart-canvas" aria-label="Clones - {{.Repo.Name}}"></canvas>
       </div>
     </div>
   </div>
   <div class="col-lg-6">
     <div class="card shadow-sm border-0 h-100 app-brutal-chart-card">
-      <div class="card-header fw-semibold bg-body-secondary border-bottom">Views</div>
+      <div class="card-header fw-semibold bg-body-secondary border-bottom">Views - {{.Repo.Name}}</div>
       <div class="card-body app-brutal-chart-well">
-        <canvas id="chart_views" class="chart-canvas"></canvas>
+        <canvas id="chart_views" class="chart-canvas" aria-label="Views - {{.Repo.Name}}"></canvas>
       </div>
     </div>
   </div>
@@ -103,9 +103,9 @@
 <div class="row g-4 mb-4">
   <div class="col-12">
     <div class="card shadow-sm border-0 app-brutal-chart-card">
-      <div class="card-header fw-semibold bg-body-secondary border-bottom">Stars over time</div>
+      <div class="card-header fw-semibold bg-body-secondary border-bottom">Stars over time - {{.Repo.Name}}</div>
       <div class="card-body chart-card-stars app-brutal-chart-well">
-        <canvas id="chart_stars" class="chart-canvas chart-canvas-stars"></canvas>
+        <canvas id="chart_stars" class="chart-canvas chart-canvas-stars" aria-label="Stars over time - {{.Repo.Name}}"></canvas>
       </div>
     </div>
   </div>
@@ -155,6 +155,7 @@
 
 <script>
   window.gghstatsChartData = {
+    repoName: {{printf "%q" .Repo.Name}},
     clones: {{.ClonesJSON}},
     views: {{.ViewsJSON}},
     stars: {{.StarsJSON}}

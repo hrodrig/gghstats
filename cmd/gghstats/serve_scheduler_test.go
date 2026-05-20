@@ -39,7 +39,7 @@ func TestStartSchedulerStopsOnCancel(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		startScheduler(ctx, sync.NewCoordinator(c, s, sync.Options{Filter: "*"}), 24*time.Hour)
+		startScheduler(ctx, sync.NewCoordinator(c, s, sync.Options{Filter: "*"}), 24*time.Hour, true)
 	}()
 
 	time.Sleep(100 * time.Millisecond)
@@ -81,7 +81,7 @@ func TestStartSchedulerRunsScheduledSync(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		startScheduler(ctx, sync.NewCoordinator(c, s, sync.Options{Filter: "*"}), 25*time.Millisecond)
+		startScheduler(ctx, sync.NewCoordinator(c, s, sync.Options{Filter: "*"}), 25*time.Millisecond, true)
 	}()
 
 	time.Sleep(90 * time.Millisecond)

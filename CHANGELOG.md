@@ -7,6 +7,17 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-19
+
+### Added
+
+- **Head to Head (H2H):** compare two repositories at `/h2h` with weighted share scores (7d / 30d / all time), metrics table, Chart.js charts, and an in-page explanation of how scores are calculated.
+- **`GGHSTATS_SYNC_ON_STARTUP`:** set `false` (or `0` / `no` / `off`) to skip the blocking full sync when the process starts; default `true`. Scheduled sync and manual `POST /api/v1/sync` are unchanged.
+
+### Changed
+
+- **Repository detail:** chart card headers, legends, tooltips, and canvas labels include the repository name (e.g. `Clones - owner/repo`).
+
 ## [0.4.0] - 2026-05-18
 
 ### Added
@@ -130,7 +141,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/hrodrig/gghstats/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/hrodrig/gghstats/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/hrodrig/gghstats/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/hrodrig/gghstats/compare/v0.3.0...v0.3.1

@@ -46,15 +46,17 @@ changelog:
       - "^test:"
       - "^chore:"
 
-# Snapshot / test-release: version from VERSION + bumped patch + -next (same idea as pgwd).
+# Snapshot / test-release: version from repo VERSION file via Makefile (GGHSTATS_SNAPSHOT_VERSION=<semver>-next).
+# Same pattern as pgwd (PGWD_SNAPSHOT_VERSION). Release on a git tag still uses the tag (e.g. v0.5.0).
 snapshot:
-  version_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ .Env.GGHSTATS_SNAPSHOT_VERSION }}"
 
 # Docker: multi-arch image to ghcr.io (same pattern as pgwd: dockers_v2 + Dockerfile.release).
 # sbom: false — GitHub-hosted runners use the docker buildx driver without attestation support;
 # otherwise build fails with: "Attestation is not supported for the docker driver".
 dockers_v2:
-  - dockerfile: Dockerfile.release
+  - disable: "{{ .IsSnapshot }}"
+    dockerfile: Dockerfile.release
     sbom: false
     ids:
       - gghstats

@@ -54,8 +54,8 @@ help:
 	@echo "Release:"
 	@echo "  release            Publish release (main branch only)"
 	@echo "  release-check      Validate semver, tooling, lint, test and security"
-	@echo "  snapshot           Goreleaser snapshot build (local artifacts)"
-	@echo "  test-release       Simulate release without publishing"
+	@echo "  snapshot           Goreleaser snapshot (VERSION → <semver>-next, dist/, no Docker)"
+	@echo "  test-release       Snapshot dry-run (--skip=publish; same VERSION source)"
 	@echo ""
 	@echo "Current version: $(VERSION) (tag: $(TAG))"
 
@@ -169,10 +169,23 @@ release-check:
 	fi
 	@echo "All release checks passed."
 
+# Snapshot version from VERSION (e.g. 0.5.0 => 0.5.0-next), independent of latest git tag (same as pgwd).
+define export_gghstats_snapshot_version
+	set -e; \
+	ver_raw=$$(cat VERSION 2>/dev/null | tr -d '\n\r'); \
+	[ -n "$$ver_raw" ] || { echo "Error: VERSION file is required"; exit 1; }; \
+	ver=$${ver_raw#v}; \
+	echo "$$ver" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$$' || { echo "Error: VERSION must be semantic MAJOR.MINOR.PATCH (got: $$ver_raw)"; exit 1; }; \
+	export GGHSTATS_SNAPSHOT_VERSION="$$ver-next"; \
+	echo "Snapshot version: $$GGHSTATS_SNAPSHOT_VERSION (from VERSION)"
+endef
+
 snapshot: release-check
-	goreleaser build --snapshot --clean
+	@$(export_gghstats_snapshot_version); \
+	goreleaser release --snapshot --clean
 
 test-release: release-check
+	@$(export_gghstats_snapshot_version); \
 	goreleaser release --snapshot --skip=publish --clean
 
 release: release-check

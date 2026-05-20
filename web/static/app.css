@@ -558,3 +558,23 @@ html[data-bs-theme="dark"] .app-brutalist .pagination .page-item.active .page-li
   min-height: 240px;
   max-height: 360px;
 }
+
+/* H2H: fixed-height well prevents Chart.js resize feedback loop at large Y values */
+.chart-h2h-wrap {
+  position: relative;
+  height: 260px;
+  max-height: 320px;
+  overflow: hidden;
+}
+
+.chart-canvas-h2h {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 320px;
+}
+
+.chart-h2h-footnote {
+  line-height: 1.45;
+  padding-bottom: 0.15rem;
+}

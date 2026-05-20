@@ -136,6 +136,8 @@ func metricsRouteLabel(r *http.Request) string {
 		return "theme_custom_css"
 	case p == "/":
 		return "index"
+	case p == "/h2h":
+		return "h2h"
 	}
 	parts := strings.Split(strings.Trim(p, "/"), "/")
 	if len(parts) == 2 && parts[0] != "" && parts[0] != "static" && parts[0] != "api" && parts[0] != "theme" {
