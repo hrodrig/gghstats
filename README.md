@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.6.2-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.6.3-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)

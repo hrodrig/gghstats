@@ -86,3 +86,108 @@ func TestTfmt(t *testing.T) {
 		t.Fatalf("got %q want %q", got, want)
 	}
 }
+
+func TestGermanH2HTitleLocalized(t *testing.T) {
+	b, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := b.T("de", "h2h.title")
+	want := "Direktvergleich (H2H)"
+	if got != want {
+		t.Fatalf("de h2h.title: got %q want %q", got, want)
+	}
+	if got == b.T("en", "h2h.title") {
+		t.Fatal("de h2h.title must not match English")
+	}
+}
+
+func TestMustLoad(t *testing.T) {
+	b := MustLoad()
+	if b.T("en", "nav.home") == "nav.home" {
+		t.Fatal("MustLoad bundle should resolve keys")
+	}
+}
+
+func TestNormalizeLocale(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"", DefaultLocale},
+		{"  de-DE  ", "de"},
+		{"pt-BR", "pt-br"},
+		{"PT-br", "pt-br"},
+		{"es,en;q=0.8", "es"},
+		{"fr;foo", "fr"},
+	}
+	for _, tc := range tests {
+		if got := NormalizeLocale(tc.in); got != tc.want {
+			t.Fatalf("NormalizeLocale(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestParseEnabledAndDefaultLocales(t *testing.T) {
+	if got := ParseEnabledLocales(""); len(got) != 3 {
+		t.Fatalf("empty enabled: %v", got)
+	}
+	got := ParseEnabledLocales(" fr , pt-br ")
+	if len(got) != 2 || got[0] != "fr" || got[1] != "pt-br" {
+		t.Fatalf("got %v", got)
+	}
+	if ParseDefaultLocale("") != DefaultLocale {
+		t.Fatal("default empty")
+	}
+	if ParseDefaultLocale("DE") != "de" {
+		t.Fatal("default de")
+	}
+}
+
+func TestTFallback(t *testing.T) {
+	b, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := b.T("en", "no.such.key"); got != "no.such.key" {
+		t.Fatalf("missing key: %q", got)
+	}
+	if got := b.T("xx", "nav.home"); got == "xx" {
+		t.Fatalf("unknown locale should fall back to en: %q", got)
+	}
+}
+
+func TestLangAttr(t *testing.T) {
+	if LangAttr("pt-br") != "pt-BR" {
+		t.Fatal("pt-br")
+	}
+	if LangAttr("de") != "de" {
+		t.Fatal("de")
+	}
+	if LangAttr("zz") != "zz" {
+		t.Fatal("default passthrough")
+	}
+}
+
+func TestEnvLocaleHelpers(t *testing.T) {
+	t.Setenv("GGHSTATS_DEFAULT_LOCALE", "de")
+	if got := EnvDefaultLocale(); got != "de" {
+		t.Fatalf("default: %q", got)
+	}
+	t.Setenv("GGHSTATS_ENABLED_LOCALES", "en,fr")
+	if got := EnvEnabledLocales(); len(got) != 2 || got[1] != "fr" {
+		t.Fatalf("enabled: %v", got)
+	}
+}
+
+func TestResolveLocaleFallbackEnabled(t *testing.T) {
+	enabled := []string{"de"}
+	r := httptest.NewRequest("GET", "/?lang=fr", nil)
+	got := ResolveLocale(r, "de", enabled)
+	if got != "de" {
+		t.Fatalf("unsupported lang picks enabled locale: got %q", got)
+	}
+
+	r = httptest.NewRequest("GET", "/", nil)
+	got = ResolveLocale(r, "de", enabled)
+	if got != "de" {
+		t.Fatalf("default: got %q", got)
+	}
+}

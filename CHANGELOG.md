@@ -7,6 +7,16 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-05-21
+
+### Fixed
+
+- **German (de) UI:** complete pass on leftover English — H2H title **Direktvergleich (H2H)**, **Repositorien** labels, footer **Motor**, chart legend **Eindeutig**, embed **Badge einbetten**, and related copy (formulas in the score help remain English, same as other locales).
+
+### Added
+
+- **`internal/i18n` tests:** locale resolution, env helpers, and H2H localization helpers — statement coverage back above **86%** project-wide (`make cover`).
+
 ## [0.6.2] - 2026-05-21
 
 ### Added
@@ -182,7 +192,11 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.6.3...HEAD
+[0.6.3]: https://github.com/hrodrig/gghstats/compare/v0.6.2...v0.6.3
+[0.6.2]: https://github.com/hrodrig/gghstats/compare/v0.6.1...v0.6.2
+[0.6.1]: https://github.com/hrodrig/gghstats/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/hrodrig/gghstats/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/hrodrig/gghstats/compare/v0.5.0...v0.5.2
 [0.5.0]: https://github.com/hrodrig/gghstats/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/hrodrig/gghstats/compare/v0.3.2...v0.4.0
