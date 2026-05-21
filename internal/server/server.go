@@ -288,7 +288,7 @@ func normalizeLocaleConfig(cfg Config) Config {
 		cfg.DefaultLocale = i18n.NormalizeLocale(cfg.DefaultLocale)
 	}
 	if len(cfg.EnabledLocales) == 0 {
-		cfg.EnabledLocales = []string{"en", "es", "de"}
+		cfg.EnabledLocales = []string{"en", "es", "de", "fr", "pt-br"}
 	} else {
 		for i, loc := range cfg.EnabledLocales {
 			cfg.EnabledLocales[i] = i18n.NormalizeLocale(loc)

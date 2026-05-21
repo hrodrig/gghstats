@@ -7,6 +7,13 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-05-21
+
+### Added
+
+- **UI locales:** French (`fr`) and Brazilian Portuguese (`pt-br`); sidebar **EN | ES | DE | FR | PT** when enabled.
+- Default **`GGHSTATS_ENABLED_LOCALES`:** `en,es,de,fr,pt-br`.
+
 ## [0.6.1] - 2026-05-21
 
 ### Fixed

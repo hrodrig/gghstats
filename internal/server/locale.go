@@ -57,9 +57,11 @@ func maybeSetLocaleCookie(w http.ResponseWriter, r *http.Request, cfg Config) {
 
 func buildLocaleLinks(r *http.Request, cfg Config, current string) []localeLink {
 	labels := map[string]string{
-		"en": "EN",
-		"es": "ES",
-		"de": "DE",
+		"en":    "EN",
+		"es":    "ES",
+		"de":    "DE",
+		"fr":    "FR",
+		"pt-br": "PT",
 	}
 	var links []localeLink
 	for _, code := range cfg.EnabledLocales {

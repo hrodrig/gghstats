@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.6.1-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.6.2-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -58,7 +58,7 @@ If you want your **own self-hosted** deployment (Docker Compose, Traefik with TL
 - Collects views, clones, referrers, popular paths, and star history
 - Auto-discovers repositories (or filters by org/repo rules)
 - Web dashboard with Chart.js graphs
-- **Web UI languages (i18n):** English (default), Spanish, and German — sidebar selector **EN | ES | DE**, cookie `gghstats_locale`, env defaults (see [Web UI languages](#web-ui-languages-i18n))
+- **Web UI languages (i18n):** English (default), Spanish, German, French, and Brazilian Portuguese — sidebar **EN | ES | DE | FR | PT**, cookie `gghstats_locale`, env defaults (see [Web UI languages](#web-ui-languages-i18n))
 - **Head to Head (H2H)** at `/h2h` — compare two repos with weighted share scores (0–100, sum to 100); open *How the H2H score is calculated* on that page for the formula
 - JSON API for external integrations
 - CLI mode for fetch/report/export
@@ -265,7 +265,7 @@ All runtime configuration uses env vars (`serve`) or flags (`fetch/report/export
 
 **Scope:** dashboard HTML and a small set of **browser UI strings** (sync modal, theme toggle label, chart legends). **Not** translated: HTTP API JSON, CLI output, structured logs, or embed badge SVG text.
 
-**Shipped locales (v0.6.0):** `en`, `es`, `de`. **Next recommended addition:** `pt-br` (Portuguese, Brazil).
+**Shipped locales:** `en`, `es`, `de`, `fr`, `pt-br` (enable via `GGHSTATS_ENABLED_LOCALES`; default list includes all five).
 
 #### How the active locale is chosen
 

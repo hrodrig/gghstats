@@ -234,6 +234,8 @@ func LangAttr(locale string) string {
 		return "es"
 	case "de":
 		return "de"
+	case "fr":
+		return "fr"
 	case "pt-br":
 		return "pt-BR"
 	default:

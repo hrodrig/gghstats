@@ -14,16 +14,26 @@ func TestLoadAndKeyParity(t *testing.T) {
 	en := b.Keys("en")
 	es := b.Keys("es")
 	de := b.Keys("de")
+	fr := b.Keys("fr")
+	pt := b.Keys("pt-br")
 	if len(en) == 0 {
 		t.Fatal("en has no keys")
 	}
 	missingES := diffKeys(en, es)
 	missingDE := diffKeys(en, de)
+	missingFR := diffKeys(en, fr)
+	missingPT := diffKeys(en, pt)
 	if len(missingES) > 0 {
 		t.Errorf("es missing keys: %v", missingES)
 	}
 	if len(missingDE) > 0 {
 		t.Errorf("de missing keys: %v", missingDE)
+	}
+	if len(missingFR) > 0 {
+		t.Errorf("fr missing keys: %v", missingFR)
+	}
+	if len(missingPT) > 0 {
+		t.Errorf("pt-br missing keys: %v", missingPT)
 	}
 }
 
