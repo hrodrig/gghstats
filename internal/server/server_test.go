@@ -285,7 +285,7 @@ func TestIndexPagePagination(t *testing.T) {
 		t.Fatalf("status = %d, want 200", w.Code)
 	}
 	body := w.Body.String()
-	if !strings.Contains(body, `<strong>11</strong>–<strong>20</strong> of <strong>30</strong> repositories`) {
+	if !strings.Contains(body, "Showing 11–20 of 30 repositories") {
 		t.Fatalf("unexpected pagination summary: %s", body)
 	}
 	if !strings.Contains(body, "Page 2") {
@@ -322,7 +322,7 @@ func TestIndexPerPageCappedAtMax(t *testing.T) {
 		t.Fatalf("status = %d", w.Code)
 	}
 	body := w.Body.String()
-	if !strings.Contains(body, "Showing <strong>1</strong>–<strong>100</strong> of <strong>150</strong>") {
+	if !strings.Contains(body, "Showing 1–100 of 150 repositories") {
 		t.Fatal("expected per_page capped at 100 in summary")
 	}
 }

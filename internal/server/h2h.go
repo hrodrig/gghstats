@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/hrodrig/gghstats/internal/h2h"
+	"github.com/hrodrig/gghstats/internal/i18n"
 	"github.com/hrodrig/gghstats/internal/store"
 	"github.com/hrodrig/gghstats/internal/version"
 )
@@ -18,6 +19,7 @@ type h2hRepoOption struct {
 }
 
 type h2hPageData struct {
+	localeBinder
 	Repos              []h2hRepoOption
 	RepoA              string
 	RepoB              string
@@ -25,11 +27,17 @@ type h2hPageData struct {
 	IntervalLabel      string
 	ShowMomentumChart  bool
 	ChartSpanLabel     string
+	ChartClonesLabel   string
+	ChartViewsLabel    string
 	MomentumChartLabel string
+	MomentumFootnote   string
 	Error              string
 	Compared           bool
 	Result             h2h.Result
 	LeadsLabel         string
+	ScoreALeadLine     string
+	ScoreBLeadLine     string
+	ConfidenceLabel    string
 	ChartJSON          template.JS
 	HasCharts          bool
 	FormAction         string
@@ -38,10 +46,14 @@ type h2hPageData struct {
 func handleH2HPage(cfg Config, db *store.Store, tmpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/h2h" {
-			writeBrutalistNotFound(w, tmpl, cfg, "Not found", "Page not found", r.URL.Path,
-				"The requested page does not exist, or the URL may be incorrect.")
+			lb := bindPageLocale(r, cfg)
+			writeBrutalistNotFound(w, r, tmpl, cfg, lb.T("not_found.title"), lb.T("not_found.heading"), r.URL.Path, lb.T("not_found.detail"))
 			return
 		}
+
+		lb := bindPageLocale(r, cfg)
+		bundle := i18n.MustLoad()
+		loc := lb.Locale
 
 		repos, err := db.ListRepos("name", "asc")
 		if err != nil {
@@ -52,63 +64,75 @@ func handleH2HPage(cfg Config, db *store.Store, tmpl *template.Template) http.Ha
 		rawA := r.URL.Query().Get("a")
 		rawB := r.URL.Query().Get("b")
 		interval := h2h.ParseInterval(r.URL.Query().Get("w"))
-		data := newH2HPageData(repos, rawA, rawB, interval)
+		data := newH2HPageData(lb, repos, rawA, rawB, interval)
 
-		if err := applyH2HComparison(&data, db, rawA, rawB, interval); err != nil {
+		if err := applyH2HComparison(&data, bundle, loc, db, rawA, rawB, interval); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		content := executeTemplate(tmpl, "h2h", data)
-		renderLayout(w, tmpl, cfg, layoutData{
-			Title:   "Head to Head",
+		renderLayout(w, r, tmpl, cfg, layoutData{
+			Title:   lb.T("h2h.title"),
+			PageID:  "h2h",
 			Version: version.Version,
 			Breadcrumbs: []breadcrumb{
-				{Label: "Home", URL: "/"},
-				{Label: "H2H", URL: ""},
+				{Label: lb.T("nav.home"), URL: "/"},
+				{Label: lb.T("nav.h2h"), URL: ""},
 			},
 			Content: content,
 		})
 	}
 }
 
-func newH2HPageData(repos []store.RepoSummary, rawA, rawB string, interval h2h.Interval) h2hPageData {
+func newH2HPageData(lb localeBinder, repos []store.RepoSummary, rawA, rawB string, interval h2h.Interval) h2hPageData {
 	opts := make([]h2hRepoOption, len(repos))
 	for i, rp := range repos {
 		opts[i] = h2hRepoOption{Name: rp.Name}
 	}
+	span := lb.T("h2h.interval_7d")
+	switch interval {
+	case h2h.Interval30d:
+		span = lb.T("h2h.interval_30d")
+	case h2h.IntervalTotal:
+		span = lb.T("h2h.interval_total")
+	}
 	return h2hPageData{
+		localeBinder:       lb,
 		Repos:              opts,
 		RepoA:              strings.TrimSpace(rawA),
 		RepoB:              strings.TrimSpace(rawB),
 		Interval:           string(interval),
-		IntervalLabel:      interval.Label(),
+		IntervalLabel:      lb.T("h2h.interval_" + string(interval)),
 		ShowMomentumChart:  interval.HasMomentum(),
-		ChartSpanLabel:     h2hChartSpanLabel(interval),
-		MomentumChartLabel: h2hMomentumChartLabel(interval),
+		ChartSpanLabel:     span,
+		ChartClonesLabel:   lb.Tfmt("h2h.chart_clones", map[string]string{"span": span}),
+		ChartViewsLabel:    lb.Tfmt("h2h.chart_views", map[string]string{"span": span}),
+		MomentumChartLabel: i18n.MustLoad().MomentumChartLabel(lb.Locale, interval),
+		MomentumFootnote:   lb.T("h2h.chart_momentum_footnote"),
 		FormAction:         "/h2h",
 	}
 }
 
 // applyH2HComparison fills comparison fields when query params request a pair. Returns an error for load failures.
-func applyH2HComparison(data *h2hPageData, db *store.Store, rawA, rawB string, interval h2h.Interval) error {
+func applyH2HComparison(data *h2hPageData, bundle *i18n.Bundle, locale string, db *store.Store, rawA, rawB string, interval h2h.Interval) error {
 	if rawA == "" && rawB == "" {
 		return nil
 	}
 	repoA, okA := h2h.ParseRepoFullName(rawA)
 	repoB, okB := h2h.ParseRepoFullName(rawB)
 	if !okA || !okB {
-		data.Error = "Enter valid owner/repo names for both repositories."
+		data.Error = bundle.H2HError(locale, "invalid")
 		return nil
 	}
 	if repoA == repoB {
-		data.Error = "Choose two different repositories."
+		data.Error = bundle.H2HError(locale, "same")
 		return nil
 	}
-	return populateH2HComparison(data, db, repoA, repoB, interval)
+	return populateH2HComparison(data, bundle, locale, db, repoA, repoB, interval)
 }
 
-func populateH2HComparison(data *h2hPageData, db *store.Store, repoA, repoB string, interval h2h.Interval) error {
+func populateH2HComparison(data *h2hPageData, bundle *i18n.Bundle, locale string, db *store.Store, repoA, repoB string, interval h2h.Interval) error {
 	mA, err := h2h.LoadRepoMetrics(db, repoA)
 	if err != nil {
 		return err
@@ -118,47 +142,33 @@ func populateH2HComparison(data *h2hPageData, db *store.Store, repoA, repoB stri
 		return err
 	}
 	if mA == nil || mB == nil {
-		data.Error = "One or both repositories were not found in the database."
+		data.Error = bundle.H2HError(locale, "not_found")
 		return nil
 	}
 	res, ok := h2h.Compare(mA, mB, interval)
 	if !ok {
 		return nil
 	}
+	res = bundle.LocalizeResult(locale, res, repoA, repoB, interval)
 	data.Compared = true
 	data.Result = res
 	data.RepoA = repoA
 	data.RepoB = repoB
+	data.IntervalLabel = bundle.IntervalLabel(locale, interval)
+	shareFull := bundle.Tfmt(locale, "h2h.h2h_share", map[string]string{"interval": data.IntervalLabel})
+	data.ScoreALeadLine = shareFull + " · " + bundle.LeadPtsLabel(locale, res.DeltaPct)
+	leader := repoB
 	if res.LeadsA {
-		data.LeadsLabel = repoA
-	} else {
-		data.LeadsLabel = repoB
+		leader = repoA
 	}
+	data.LeadsLabel = bundle.LeadsLabel(locale, leader)
+	data.ScoreBLeadLine = bundle.T(locale, "h2h.h2h_share_short") + " · " + data.LeadsLabel
+	data.ConfidenceLabel = bundle.ConfidenceLabel(locale, res.Suggest.Confidence)
 	if chartJS, ok := buildH2HChartJSON(db, repoA, repoB, interval); ok {
 		data.ChartJSON = chartJS
 		data.HasCharts = true
 	}
 	return nil
-}
-
-func h2hChartSpanLabel(interval h2h.Interval) string {
-	switch interval {
-	case h2h.Interval30d:
-		return "30 days"
-	case h2h.IntervalTotal:
-		return "all time"
-	default:
-		return "7 days"
-	}
-}
-
-func h2hMomentumChartLabel(interval h2h.Interval) string {
-	switch interval {
-	case h2h.Interval30d:
-		return "Momentum (30d vs prev 30d)"
-	default:
-		return "Momentum (7d vs prev 7d)"
-	}
 }
 
 func buildH2HChartJSON(db *store.Store, repoA, repoB string, interval h2h.Interval) (template.JS, bool) {

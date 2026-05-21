@@ -3,46 +3,46 @@
   <div class="col-12">
     <div class="card shadow-sm border-0">
       <div class="card-body">
-        <h1 class="h4 mb-1">Head to Head (H2H)</h1>
-        <p class="text-muted small mb-2">Compare two repositories for the selected interval. Large numbers are <strong>H2H shares</strong> for this pair only (they sum to 100, not counts from GitHub).</p>
+        <h1 class="h4 mb-1">{{call .T "h2h.title"}}</h1>
+        <p class="text-muted small mb-2">{{call .T "h2h.intro"}}</p>
         <details class="small text-muted mb-3">
-          <summary class="user-select-none">How the H2H score is calculated</summary>
+          <summary class="user-select-none">{{call .T "h2h.score_help_title"}}</summary>
           <div class="mt-2 ps-2 border-start border-secondary border-opacity-25">
-            <p class="mb-2">Each metric row uses the <strong>raw values</strong> in the table below. For that row only:</p>
-            <p class="mb-2 font-monospace small">share<sub>A</sub> = value<sub>A</sub> ÷ (value<sub>A</sub> + value<sub>B</sub>) &nbsp;·&nbsp; share<sub>B</sub> = 1 − share<sub>A</sub> &nbsp;(50/50 if both are zero)</p>
-            <p class="mb-2">The headline score is the weighted sum of those shares, scaled to 0–100 and rounded:</p>
-            <p class="mb-2 font-monospace small">score<sub>A</sub> = round(100 × (w<sub>1</sub>×share<sub>A,1</sub> + w<sub>2</sub>×share<sub>A,2</sub> + …))</p>
-            <p class="mb-2"><strong>Weights by interval</strong></p>
+            <p class="mb-2">{{call .T "h2h.help_p1"}}</p>
+            <p class="mb-2 font-monospace small">{{call .T "h2h.help_formula_share"}}</p>
+            <p class="mb-2">{{call .T "h2h.help_p2"}}</p>
+            <p class="mb-2 font-monospace small">{{call .T "h2h.help_formula_score"}}</p>
+            <p class="mb-2"><strong>{{call .T "h2h.help_weights_title"}}</strong></p>
             <ul class="mb-2">
-              <li><strong>7 days</strong> — Clones (7d) 50%, Views (7d) 30%, Momentum (7d vs previous 7d) 20%</li>
-              <li><strong>30 days</strong> — Clones (30d) 50%, Views (30d) 30%, Momentum (30d vs previous 30d) 20%</li>
-              <li><strong>All time</strong> — Total clones 50%, Total views 50% (no momentum)</li>
+              <li>{{call .T "h2h.help_w_7d"}}</li>
+              <li>{{call .T "h2h.help_w_30d"}}</li>
+              <li>{{call .T "h2h.help_w_total"}}</li>
             </ul>
-            <p class="mb-2"><strong>Momentum</strong> is clone growth: (clones in the window − clones in the prior window) ÷ max(prior window clones, 1). The table shows it as a percentage (×100).</p>
-            <p class="mb-2"><strong>Very high momentum (e.g. thousands of %)</strong> is expected, not a calculation bug: the <em>prior</em> window had few or zero clones and the <em>current</em> window has a recent spike. Example: 819 clones this period vs ~0 last period → about (819 ÷ 1) × 100 ≈ 81,900%. That means “traffic jumped from almost nothing,” not “819× better than the other repo.” After more stable history, momentum usually moves to ordinary ranges (tens of %).</p>
-            <p class="mb-0"><strong>Lead X pts</strong> is the gap vs the leader: |score<sub>A</sub> − score<sub>B</sub>| ÷ max(score) × 100. It is not “repo B has X% more clones than A”.</p>
+            <p class="mb-2">{{call .T "h2h.help_momentum_def"}}</p>
+            <p class="mb-2">{{call .T "h2h.momentum_extreme_help"}}</p>
+            <p class="mb-0">{{call .T "h2h.help_lead_pts"}}</p>
           </div>
         </details>
         <form method="get" action="{{.FormAction}}" class="row g-2 align-items-end">
           <div class="col-md-3">
-            <label for="h2h-a" class="form-label small">Repository A</label>
-            <input type="text" class="form-control form-control-sm" id="h2h-a" name="a" value="{{.RepoA}}" placeholder="owner/repo" list="h2h-repo-list" autocomplete="off">
+            <label for="h2h-a" class="form-label small">{{call .T "h2h.repo_a"}}</label>
+            <input type="text" class="form-control form-control-sm" id="h2h-a" name="a" value="{{.RepoA}}" placeholder="{{call .T "index.search_placeholder"}}" list="h2h-repo-list" autocomplete="off">
           </div>
           <div class="col-md-3">
-            <label for="h2h-b" class="form-label small">Repository B</label>
-            <input type="text" class="form-control form-control-sm" id="h2h-b" name="b" value="{{.RepoB}}" placeholder="owner/repo" list="h2h-repo-list" autocomplete="off">
+            <label for="h2h-b" class="form-label small">{{call .T "h2h.repo_b"}}</label>
+            <input type="text" class="form-control form-control-sm" id="h2h-b" name="b" value="{{.RepoB}}" placeholder="{{call .T "index.search_placeholder"}}" list="h2h-repo-list" autocomplete="off">
           </div>
           <div class="col-md-3">
-            <label for="h2h-w" class="form-label small">Interval</label>
+            <label for="h2h-w" class="form-label small">{{call .T "h2h.interval"}}</label>
             <select class="form-select form-select-sm" id="h2h-w" name="w">
-              <option value="7d" {{if eq .Interval "7d"}}selected{{end}}>7 days</option>
-              <option value="30d" {{if eq .Interval "30d"}}selected{{end}}>30 days</option>
-              <option value="total" {{if eq .Interval "total"}}selected{{end}}>All time</option>
+              <option value="7d" {{if eq .Interval "7d"}}selected{{end}}>{{call .T "h2h.interval_7d"}}</option>
+              <option value="30d" {{if eq .Interval "30d"}}selected{{end}}>{{call .T "h2h.interval_30d"}}</option>
+              <option value="total" {{if eq .Interval "total"}}selected{{end}}>{{call .T "h2h.interval_total"}}</option>
             </select>
           </div>
           <div class="col-md-3">
             <label class="form-label small d-none d-md-block">&nbsp;</label>
-            <button type="submit" class="btn btn-primary btn-sm w-100">Compare</button>
+            <button type="submit" class="btn btn-primary btn-sm w-100">{{call .T "common.compare"}}</button>
           </div>
         </form>
         {{if .Repos}}
@@ -66,7 +66,7 @@
       <div class="card-body text-center">
         <h2 class="h5 mb-1"><a href="/{{.Result.RepoA}}">{{.Result.RepoA}}</a></h2>
         <p class="display-6 mb-0 {{if and .Result.LeadsA (ge .Result.DeltaPct 10.0)}}text-success{{else if and (not .Result.LeadsA) (ge .Result.DeltaPct 10.0)}}text-muted{{else}}text-warning{{end}}">{{.Result.ScoreA}}</p>
-        <p class="small text-muted mb-0">H2H share ({{.IntervalLabel}}) · lead {{printf "%.0f" .Result.DeltaPct}} pts</p>
+        <p class="small text-muted mb-0">{{.ScoreALeadLine}}</p>
       </div>
     </div>
   </div>
@@ -75,7 +75,7 @@
       <div class="card-body text-center">
         <h2 class="h5 mb-1"><a href="/{{.Result.RepoB}}">{{.Result.RepoB}}</a></h2>
         <p class="display-6 mb-0 {{if and (not .Result.LeadsA) (ge .Result.DeltaPct 10.0)}}text-success{{else if and .Result.LeadsA (ge .Result.DeltaPct 10.0)}}text-muted{{else}}text-warning{{end}}">{{.Result.ScoreB}}</p>
-        <p class="small text-muted mb-0">H2H share{{if .LeadsLabel}} · leads: {{.LeadsLabel}}{{end}}</p>
+        <p class="small text-muted mb-0">{{.ScoreBLeadLine}}</p>
       </div>
     </div>
   </div>
@@ -86,8 +86,8 @@
   <div class="col-12">
     <div class="card shadow-sm border-0 border-start border-4 border-info">
       <div class="card-body">
-        <h3 class="h6 text-uppercase text-muted mb-2">Summary</h3>
-        <p class="mb-1"><span class="badge text-bg-secondary text-uppercase">{{.Result.Suggest.Confidence}} confidence</span></p>
+        <h3 class="h6 text-uppercase text-muted mb-2">{{call .T "h2h.summary_title"}}</h3>
+        <p class="mb-1"><span class="badge text-bg-secondary text-uppercase">{{.ConfidenceLabel}}</span></p>
         <p class="small text-muted mb-0">{{.Result.Suggest.Rationale}}</p>
       </div>
     </div>
@@ -99,12 +99,12 @@
   <div class="col-12">
     <div class="card shadow-sm border-0">
       <div class="card-body">
-        <h3 class="h6 mb-3">Metrics comparison</h3>
+        <h3 class="h6 mb-3">{{call .T "h2h.metrics_title"}}</h3>
         <div class="table-responsive">
           <table class="table table-sm table-striped mb-0">
             <thead>
               <tr>
-                <th>Metric</th>
+                <th>{{call .T "common.metric"}}</th>
                 <th class="text-end">{{.Result.RepoA}}</th>
                 <th class="text-end">{{.Result.RepoB}}</th>
               </tr>
@@ -129,10 +129,10 @@
 <div class="row g-4 mb-4 h2h-charts-row align-items-stretch">
   <div class="{{if .ShowMomentumChart}}col-lg-4{{else}}col-lg-6{{end}} d-flex">
     <div class="card shadow-sm border-0 app-brutal-chart-card h-100 w-100">
-      <div class="card-header fw-semibold bg-body-secondary border-bottom">Clones ({{.ChartSpanLabel}})</div>
+      <div class="card-header fw-semibold bg-body-secondary border-bottom">{{.ChartClonesLabel}}</div>
       <div class="card-body app-brutal-chart-well pb-2 d-flex flex-column">
         <div class="chart-h2h-wrap flex-grow-1">
-          <canvas id="h2h-clones-chart" class="chart-canvas chart-canvas-h2h" aria-label="Clones comparison chart"></canvas>
+          <canvas id="h2h-clones-chart" class="chart-canvas chart-canvas-h2h" aria-label="{{.ChartClonesLabel}}"></canvas>
         </div>
         <p class="small text-muted mb-0 mt-2 chart-h2h-footnote chart-h2h-footnote-reserve" aria-hidden="true"></p>
       </div>
@@ -140,10 +140,10 @@
   </div>
   <div class="{{if .ShowMomentumChart}}col-lg-4{{else}}col-lg-6{{end}} d-flex">
     <div class="card shadow-sm border-0 app-brutal-chart-card h-100 w-100">
-      <div class="card-header fw-semibold bg-body-secondary border-bottom">Views ({{.ChartSpanLabel}})</div>
+      <div class="card-header fw-semibold bg-body-secondary border-bottom">{{.ChartViewsLabel}}</div>
       <div class="card-body app-brutal-chart-well pb-2 d-flex flex-column">
         <div class="chart-h2h-wrap flex-grow-1">
-          <canvas id="h2h-views-chart" class="chart-canvas chart-canvas-h2h" aria-label="Views comparison chart"></canvas>
+          <canvas id="h2h-views-chart" class="chart-canvas chart-canvas-h2h" aria-label="{{.ChartViewsLabel}}"></canvas>
         </div>
         <p class="small text-muted mb-0 mt-2 chart-h2h-footnote chart-h2h-footnote-reserve" aria-hidden="true"></p>
       </div>
@@ -155,9 +155,9 @@
       <div class="card-header fw-semibold bg-body-secondary border-bottom">{{.MomentumChartLabel}}</div>
       <div class="card-body app-brutal-chart-well pb-2 d-flex flex-column">
         <div class="chart-h2h-wrap flex-grow-1">
-          <canvas id="h2h-momentum-chart" class="chart-canvas chart-canvas-h2h" aria-label="Clone momentum comparison chart"></canvas>
+          <canvas id="h2h-momentum-chart" class="chart-canvas chart-canvas-h2h" aria-label="{{.MomentumChartLabel}}"></canvas>
         </div>
-        <p class="small text-muted mb-0 mt-2 chart-h2h-footnote">Rolling clone momentum from daily clones (missing days = 0). Each repo uses its own axis (left = A, right = B). Extreme % after a first spike with little prior traffic is normal — see <strong>How the H2H score is calculated</strong> above.</p>
+        <p class="small text-muted mb-0 mt-2 chart-h2h-footnote">{{.MomentumFootnote}}</p>
       </div>
     </div>
   </div>

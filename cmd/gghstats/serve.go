@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/hrodrig/gghstats/internal/github"
+	"github.com/hrodrig/gghstats/internal/i18n"
 	"github.com/hrodrig/gghstats/internal/metrics"
 	"github.com/hrodrig/gghstats/internal/server"
 	"github.com/hrodrig/gghstats/internal/store"
@@ -157,6 +158,8 @@ func runServe(args []string) error {
 		DomainMetrics:    domainMetrics,
 		CustomCSSAbsPath: cssAbs,
 		CustomCSSQuery:   cssQuery,
+		DefaultLocale:    i18n.EnvDefaultLocale(),
+		EnabledLocales:   i18n.EnvEnabledLocales(),
 	})
 
 	addr := cfg.Host + ":" + cfg.Port

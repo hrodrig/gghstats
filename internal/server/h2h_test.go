@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/hrodrig/gghstats/internal/h2h"
+	"github.com/hrodrig/gghstats/internal/i18n"
 	"github.com/hrodrig/gghstats/internal/store"
 )
 
@@ -88,13 +89,14 @@ func TestH2HPage_validationErrors(t *testing.T) {
 }
 
 func TestH2HHelpers(t *testing.T) {
-	if h2hChartSpanLabel(h2h.Interval30d) != "30 days" {
+	b := i18n.MustLoad()
+	if b.IntervalLabel("en", h2h.Interval30d) != "30 days" {
 		t.Error("chart span label 30d")
 	}
-	if h2hChartSpanLabel(h2h.IntervalTotal) != "all time" {
+	if b.IntervalLabel("en", h2h.IntervalTotal) != "All time" {
 		t.Error("chart span label total")
 	}
-	if !strings.Contains(h2hMomentumChartLabel(h2h.Interval30d), "30d") {
+	if !strings.Contains(b.MomentumChartLabel("en", h2h.Interval30d), "30d") {
 		t.Error("momentum label 30d")
 	}
 	if h2hQueryURL("a/r", "b/r", "30d") != "/h2h?a=a%2Fr&b=b%2Fr&w=30d" {

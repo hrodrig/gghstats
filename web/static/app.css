@@ -156,6 +156,30 @@ a.app-brutal-site-brand:focus-visible {
   border-color: var(--brutal-nav-active-bg) !important;
 }
 
+/* Language selector: extra gap so 4px hard shadows do not overlap */
+.app-brutal-lang-group {
+  gap: 0.625rem;
+}
+
+.app-brutal-lang-group .app-brutal-lang-btn {
+  margin: 0;
+}
+
+/* Language selector: same active treatment as main nav */
+.app-brutal-lang-btn.active {
+  color: var(--brutal-nav-active-fg) !important;
+  background: var(--brutal-nav-active-bg) !important;
+  border-color: var(--brutal-nav-active-bg) !important;
+  box-shadow: 2px 2px 0 var(--brutal-shadow-core);
+  transform: none;
+  cursor: default;
+}
+
+.app-brutal-lang-btn.active:hover {
+  transform: none;
+  box-shadow: 2px 2px 0 var(--brutal-shadow-core);
+}
+
 /* Theme toggle: hard shadow + tactile press */
 .app-brutal-btn {
   border: 2px solid var(--brutal-border-ink) !important;

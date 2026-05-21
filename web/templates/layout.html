@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{.Lang}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,7 +12,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/static/android-chrome-192x192.png?v={{.Version}}">
   <link rel="icon" type="image/png" sizes="512x512" href="/static/android-chrome-512x512.png?v={{.Version}}">
   <link rel="manifest" href="/static/manifest.json?v={{.Version}}">
-  <title>{{.Title}} · gghstats</title>
+  <title>{{.Title}} · {{call .T "layout.title_suffix"}}</title>
   <script>
     (() => {
       const saved = localStorage.getItem('gghstats-theme');
@@ -35,8 +35,8 @@
   <div class="app-shell d-lg-flex min-vh-100">
     <nav class="navbar app-brutal-topbar d-lg-none border-bottom border-3 border-dark">
       <div class="container-fluid">
-        <a href="/" class="navbar-brand fw-bold mb-0 text-uppercase ls-tight text-decoration-none app-brutal-site-brand" title="Back to home" aria-label="gghstats — back to home">gghstats</a>
-        <button class="navbar-toggler app-brutal-toggler border-3 border-dark rounded-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#brutalSidebar" aria-controls="brutalSidebar" aria-label="Open navigation">
+        <a href="/" class="navbar-brand fw-bold mb-0 text-uppercase ls-tight text-decoration-none app-brutal-site-brand" title="{{call .T "nav.home"}}" aria-label="gghstats — {{call .T "nav.home"}}">gghstats</a>
+        <button class="navbar-toggler app-brutal-toggler border-3 border-dark rounded-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#brutalSidebar" aria-controls="brutalSidebar" aria-label="{{call .T "nav.open_nav"}}">
           <span class="navbar-toggler-icon"></span>
         </button>
       </div>
@@ -44,23 +44,33 @@
 
     <div class="offcanvas-lg offcanvas-start app-brutal-sidebar border-end border-3 border-dark" tabindex="-1" id="brutalSidebar" aria-labelledby="brutalSidebarLabel">
       <div class="offcanvas-header border-bottom border-3 border-dark d-lg-none py-3">
-        <span id="brutalSidebarLabel" class="offcanvas-title fw-bold text-uppercase">Menu</span>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        <span id="brutalSidebarLabel" class="offcanvas-title fw-bold text-uppercase">{{call .T "nav.menu"}}</span>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="{{call .T "nav.close"}}"></button>
       </div>
       <div class="offcanvas-body d-flex flex-column p-0">
         <div class="d-none d-lg-flex align-items-center px-3 py-4 border-bottom border-3 border-dark">
-          <a href="/" class="fs-4 fw-bold text-uppercase ls-tight text-decoration-none app-brutal-site-brand" title="Back to home" aria-label="gghstats — back to home">gghstats</a>
+          <a href="/" class="fs-4 fw-bold text-uppercase ls-tight text-decoration-none app-brutal-site-brand" title="{{call .T "nav.home"}}" aria-label="gghstats — {{call .T "nav.home"}}">gghstats</a>
         </div>
         <nav class="nav flex-column px-2 py-4 gap-1 flex-grow-1" aria-label="Main navigation">
-          <a class="nav-link app-brutal-nav px-3 py-2 text-uppercase fw-semibold small{{if not .Breadcrumbs}} active{{end}}" href="/" title="Back to repository list">Repositories</a>
-          <a class="nav-link app-brutal-nav px-3 py-2 text-uppercase fw-semibold small{{if eq .Title "Head to Head"}} active{{end}}" href="/h2h" title="Compare two repositories">H2H</a>
+          <a class="nav-link app-brutal-nav px-3 py-2 text-uppercase fw-semibold small{{if or (eq .PageID "index") (eq .PageID "repo")}} active{{end}}" href="/" title="{{call .T "nav.repositories"}}">{{call .T "nav.repositories"}}</a>
+          <a class="nav-link app-brutal-nav px-3 py-2 text-uppercase fw-semibold small{{if eq .PageID "h2h"}} active{{end}}" href="/h2h" title="{{call .T "h2h.title"}}">{{call .T "nav.h2h"}}</a>
         </nav>
+        {{if .LocaleLinks}}
+        <div class="px-3 pb-2">
+          <div class="small text-uppercase fw-semibold app-brutal-muted mb-1">{{call .T "nav.language"}}</div>
+          <div class="d-flex flex-wrap app-brutal-lang-group" role="group" aria-label="{{call .T "nav.language"}}">
+            {{range .LocaleLinks}}
+            <a href="{{.URL}}" class="btn btn-sm app-brutal-btn app-brutal-lang-btn text-uppercase fw-bold{{if .Active}} active{{end}}" lang="{{.Code}}" hreflang="{{.Code}}"{{if .Active}} aria-current="true"{{end}}>{{.Label}}</a>
+            {{end}}
+          </div>
+        </div>
+        {{end}}
         <div class="p-3 border-top border-3 border-dark mt-auto">
           {{if .SyncUIEnabled}}
-          <button id="sync-now-btn" type="button" class="btn app-brutal-btn btn-sm w-100 mb-2 text-uppercase fw-bold"{{if .SyncScopeRepo}} data-sync-repo="{{.SyncScopeRepo}}" aria-label="Sync {{.SyncScopeRepo}} with GitHub now"{{else}} aria-label="Sync all repositories with GitHub now"{{end}}>{{if .SyncScopeRepo}}Sync this repo{{else}}Sync all{{end}}</button>
+          <button id="sync-now-btn" type="button" class="btn app-brutal-btn btn-sm w-100 mb-2 text-uppercase fw-bold"{{if .SyncScopeRepo}} data-sync-repo="{{.SyncScopeRepo}}" aria-label="{{call .Tfmt "common.sync_repo_aria" (dict "repo" .SyncScopeRepo)}}"{{else}} aria-label="{{call .T "common.sync_all_aria"}}"{{end}}>{{if .SyncScopeRepo}}{{call .T "common.sync_repo"}}{{else}}{{call .T "common.sync_all"}}{{end}}</button>
           <p id="sync-status" class="small app-brutal-muted mb-2" aria-live="polite"></p>
           {{end}}
-          <button id="theme-toggle" type="button" class="btn app-brutal-btn btn-sm w-100 mb-2 text-uppercase fw-bold" aria-label="Toggle color theme">Theme</button>
+          <button id="theme-toggle" type="button" class="btn app-brutal-btn btn-sm w-100 mb-2 text-uppercase fw-bold" aria-label="{{call .T "common.theme"}}">{{call .T "common.theme"}}</button>
           <div class="small app-brutal-muted">v{{.Version}}</div>
         </div>
       </div>
@@ -72,9 +82,8 @@
         {{if .Breadcrumbs}}
         <nav class="mt-2" aria-label="breadcrumb">
           <ol class="breadcrumb mb-0 small app-brutal-breadcrumb">
-            <li class="breadcrumb-item"><a href="/" title="Back to repository list">Repositories</a></li>
             {{range .Breadcrumbs}}
-            <li class="breadcrumb-item active" aria-current="page">{{.Label}}</li>
+            {{if .URL}}<li class="breadcrumb-item"><a href="{{.URL}}" title="{{.Label}}">{{.Label}}</a></li>{{else}}<li class="breadcrumb-item active" aria-current="page">{{.Label}}</li>{{end}}
             {{end}}
           </ol>
         </nav>
@@ -89,26 +98,26 @@
         <div class="app-brutal-console-footer" role="contentinfo" aria-label="System footer">
           <div class="app-brutal-console-prompt" aria-hidden="true"><span class="app-brutal-console-gt">&gt;</span></div>
           <div class="app-brutal-console-body flex-grow-1 min-w-0">
-            <p class="app-brutal-console-manifest mb-2 mb-md-3">Repository metrics without noise. Neobrutalist stack. Raw data only—no soft shadows.</p>
+            <p class="app-brutal-console-manifest mb-2 mb-md-3">{{call .T "layout.footer_manifest"}}</p>
             <dl class="app-brutal-console-spec mb-3 mb-md-0">
               <div class="app-brutal-console-spec-row">
-                <dt>System</dt>
+                <dt>{{call .T "layout.footer_system"}}</dt>
                 <dd>GGHSTATS v{{.Version}}</dd>
               </div>
               <div class="app-brutal-console-spec-row">
-                <dt>Engine</dt>
-                <dd>Bootstrap {{.BootstrapVersion}} grid</dd>
+                <dt>{{call .T "layout.footer_engine"}}</dt>
+                <dd>{{call .Tfmt "layout.footer_engine_val" (dict "version" .BootstrapVersion)}}</dd>
               </div>
               <div class="app-brutal-console-spec-row">
-                <dt>Aesthetic</dt>
-                <dd>Neobrutalist</dd>
+                <dt>{{call .T "layout.footer_aesthetic"}}</dt>
+                <dd>{{call .T "layout.footer_aesthetic_val"}}</dd>
               </div>
               <div class="app-brutal-console-spec-row">
-                <dt>Status</dt>
-                <dd class="app-brutal-console-ok">Operational</dd>
+                <dt>{{call .T "layout.footer_status"}}</dt>
+                <dd class="app-brutal-console-ok">{{call .T "layout.footer_status_val"}}</dd>
               </div>
             </dl>
-            <a href="https://github.com/hrodrig/gghstats" class="app-brutal-console-github d-inline-block text-uppercase fw-bold small" target="_blank" rel="noopener noreferrer" title="Open the gghstats project on GitHub in a new tab">View on GitHub</a>
+            <a href="https://github.com/hrodrig/gghstats" class="app-brutal-console-github d-inline-block text-uppercase fw-bold small" target="_blank" rel="noopener noreferrer" title="{{call .T "layout.footer_github"}}">{{call .T "layout.footer_github"}}</a>
           </div>
         </div>
       </footer>
@@ -120,24 +129,25 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content app-brutal-modal border-3 border-dark rounded-0">
         <div class="modal-header border-bottom border-3 border-dark">
-          <h2 class="modal-title h6 text-uppercase fw-bold mb-0" id="sync-token-modal-label">API token</h2>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h2 class="modal-title h6 text-uppercase fw-bold mb-0" id="sync-token-modal-label">{{call .T "layout.sync_modal_title"}}</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{call .T "common.close_modal"}}"></button>
         </div>
         <div class="modal-body">
-          <p class="small app-brutal-muted mb-3">Enter the same value as <code class="text-body">GGHSTATS_API_TOKEN</code> on the server. Sent as header <code class="text-body">x-api-token</code> and stored in this browser only (<code class="text-body">sessionStorage</code>).</p>
+          <p class="small app-brutal-muted mb-3">{{call .T "layout.sync_modal_help"}}</p>
           <label for="sync-token-input" class="form-label text-uppercase small fw-semibold">Token</label>
           <input type="password" class="form-control font-monospace" id="sync-token-input" name="sync-token" autocomplete="off" spellcheck="false" required>
           <p id="sync-token-error" class="small text-danger mt-2 mb-0 d-none" role="alert"></p>
         </div>
         <div class="modal-footer border-top border-3 border-dark gap-2">
-          <button type="button" class="btn app-brutal-btn btn-sm text-uppercase fw-bold" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn app-brutal-btn btn-sm text-uppercase fw-bold" id="sync-token-submit">Save &amp; sync</button>
+          <button type="button" class="btn app-brutal-btn btn-sm text-uppercase fw-bold" data-bs-dismiss="modal">{{call .T "common.cancel"}}</button>
+          <button type="button" class="btn app-brutal-btn btn-sm text-uppercase fw-bold" id="sync-token-submit">{{call .T "js.token_save_sync"}}</button>
         </div>
       </div>
     </div>
   </div>
   {{end}}
 
+  <script>window.gghstatsI18n = {{.JSI18n}};</script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@{{.BootstrapVersion}}/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <script src="/static/app.js"></script>
 </body>

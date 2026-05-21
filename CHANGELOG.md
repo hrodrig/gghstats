@@ -7,6 +7,22 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-05-20
+
+### Added
+
+- **Web UI i18n:** English (default), Spanish, and German via JSON locales under `internal/i18n/locales/`.
+- **Language selector** in the sidebar (EN | ES | DE); preference stored in cookie `gghstats_locale` (theme stays in `localStorage`).
+- **Locale resolution:** `?lang=` → cookie → `Accept-Language` → `GGHSTATS_DEFAULT_LOCALE`.
+- **`GGHSTATS_ENABLED_LOCALES`** and **`GGHSTATS_DEFAULT_LOCALE`** environment variables.
+- **README:** [Web UI languages (i18n)](README.md#web-ui-languages-i18n) — operator examples and a step-by-step guide to add a locale (e.g. `pt-br`).
+
+### Changed
+
+- **H2H** metric labels, suggestions, and chart titles are localized with the rest of the UI.
+- **Chart legends** (Unique / Count, index clones series) and repo chart titles follow the active locale via server + `window.gghstatsI18n`.
+- **H2H help formulas** (`share_A`, `score_A`, …) stay in English in all locales; surrounding paragraphs are translated.
+
 ## [0.5.2] - 2026-05-20
 
 ### Fixed

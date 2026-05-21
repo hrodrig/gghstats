@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/hrodrig/gghstats/assets"
+	"github.com/hrodrig/gghstats/internal/i18n"
 	"github.com/hrodrig/gghstats/internal/metrics"
 	"github.com/hrodrig/gghstats/internal/store"
 	"github.com/hrodrig/gghstats/internal/sync"
@@ -49,6 +50,10 @@ type Config struct {
 	CustomCSSAbsPath string
 	// CustomCSSQuery is the cache-busting query for the layout link (e.g. "v=1715888123"); empty disables the link.
 	CustomCSSQuery string
+	// DefaultLocale is the fallback UI locale (GGHSTATS_DEFAULT_LOCALE, default en).
+	DefaultLocale string
+	// EnabledLocales lists UI locales offered in the language selector (GGHSTATS_ENABLED_LOCALES).
+	EnabledLocales []string
 }
 
 func withCacheControl(directive string, next http.Handler) http.Handler {
@@ -60,8 +65,12 @@ func withCacheControl(directive string, next http.Handler) http.Handler {
 
 // New returns an http.Handler with all routes configured.
 func New(cfg Config) http.Handler {
+	cfg = normalizeLocaleConfig(cfg)
+	i18n.MustLoad()
 	mux := http.NewServeMux()
-	tmpl := template.Must(template.ParseFS(web.TemplateFS, "templates/*.html"))
+	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
+		"dict": templateDict,
+	}).ParseFS(web.TemplateFS, "templates/*.html"))
 	mountStaticRoutes(mux, mustFaviconFS(), cfg.CustomCSSAbsPath)
 	mountAPIRoutes(mux, cfg)
 	mountHTMLRoutes(mux, cfg, tmpl)
@@ -136,8 +145,8 @@ func mountHTMLRoutes(mux *http.ServeMux, cfg Config, tmpl *template.Template) {
 			writeJSONNotFound(w)
 			return
 		}
-		writeBrutalistNotFound(w, tmpl, cfg, "Not found", "Page not found", path,
-			"The requested page does not exist, or the URL may be incorrect.")
+		lb := bindPageLocale(r, cfg)
+		writeBrutalistNotFound(w, r, tmpl, cfg, lb.T("not_found.title"), lb.T("not_found.heading"), path, lb.T("not_found.detail"))
 	}
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
@@ -238,18 +247,54 @@ type breadcrumb struct {
 }
 
 type layoutData struct {
+	localeBinder
 	Title            string
 	Version          string
 	BootstrapVersion string // Bootstrap line (JS CDN + footer), e.g. 5.3.3
 	StylesheetFile   string // main CSS under /static/ (go:embed), e.g. bootstrap.min.css
 	Breadcrumbs      []breadcrumb
 	Content          template.HTML
+	PageID           string // index, h2h, repo, not_found — sidebar active state
+	LocaleLinks      []localeLink
+	JSI18n           template.JS
 	// CustomStylesheetURL is set when GGHSTATS_CUSTOM_CSS points to a valid file (safe for href).
 	CustomStylesheetURL template.URL
 	// SyncUIEnabled shows the sidebar “Sync now” control (requires API token + coordinator).
 	SyncUIEnabled bool
 	// SyncScopeRepo when set scopes the sidebar sync to this owner/repo (repo detail pages).
 	SyncScopeRepo string
+}
+
+// templateDict builds a map for {{call .Tfmt "key" (dict "a" 1)}} in templates.
+func templateDict(values ...interface{}) (map[string]string, error) {
+	if len(values)%2 != 0 {
+		return nil, fmt.Errorf("dict: expected even number of arguments")
+	}
+	m := make(map[string]string, len(values)/2)
+	for i := 0; i < len(values); i += 2 {
+		key, ok := values[i].(string)
+		if !ok {
+			return nil, fmt.Errorf("dict: key at index %d is not a string", i)
+		}
+		m[key] = fmt.Sprint(values[i+1])
+	}
+	return m, nil
+}
+
+func normalizeLocaleConfig(cfg Config) Config {
+	if cfg.DefaultLocale == "" {
+		cfg.DefaultLocale = i18n.DefaultLocale
+	} else {
+		cfg.DefaultLocale = i18n.NormalizeLocale(cfg.DefaultLocale)
+	}
+	if len(cfg.EnabledLocales) == 0 {
+		cfg.EnabledLocales = []string{"en", "es", "de"}
+	} else {
+		for i, loc := range cfg.EnabledLocales {
+			cfg.EnabledLocales[i] = i18n.NormalizeLocale(loc)
+		}
+	}
+	return cfg
 }
 
 const (
@@ -381,6 +426,8 @@ func clampIndexPage(page, totalPages int) int {
 }
 
 type indexTemplatePayload struct {
+	localeBinder
+	ShowingLine        string
 	Repos              []store.RepoSummary
 	Sort               string
 	Dir                string
@@ -458,8 +505,8 @@ func buildIndexTemplatePayload(
 func handleIndex(cfg Config, db *store.Store, tmpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
-			writeBrutalistNotFound(w, tmpl, cfg, "Not found", "Page not found", r.URL.Path,
-				"The requested page does not exist, or the URL may be incorrect.")
+			lb := bindPageLocale(r, cfg)
+			writeBrutalistNotFound(w, r, tmpl, cfg, lb.T("not_found.title"), lb.T("not_found.heading"), r.URL.Path, lb.T("not_found.detail"))
 			return
 		}
 
@@ -480,14 +527,22 @@ func handleIndex(cfg Config, db *store.Store, tmpl *template.Template) http.Hand
 		totalPages := indexTotalPages(total, perPage)
 		page = clampIndexPage(page, totalPages)
 
+		lb := bindPageLocale(r, cfg)
 		data := buildIndexTemplatePayload(
 			reposPage, sort, dir, query, page, perPage, total, start, end, totalPages,
 			kpiStars, kpiForks, kpiClones, kpiViews, listClonesAggJSON, listClonesAggCount,
 		)
+		data.localeBinder = lb
+		data.ShowingLine = lb.Tfmt("index.showing", map[string]string{
+			"from":  strconv.Itoa(data.From),
+			"to":    strconv.Itoa(data.To),
+			"total": strconv.Itoa(data.Total),
+		})
 
 		content := executeTemplate(tmpl, "index", data)
-		renderLayout(w, tmpl, cfg, layoutData{
-			Title:   "Repositories",
+		renderLayout(w, r, tmpl, cfg, layoutData{
+			Title:   lb.T("index.title"),
+			PageID:  "index",
 			Version: version.Version,
 			Content: content,
 		})
@@ -555,8 +610,8 @@ func handleRepoPage(cfg Config, db *store.Store, tmpl *template.Template) http.H
 		}
 		if summary == nil {
 			fullPath := "/" + owner + "/" + repo
-			writeBrutalistNotFound(w, tmpl, cfg, "Repository not found", "Repository not found", fullPath,
-				"This repository is not in the database. Check the name or run a sync so it is collected.")
+			lb := bindPageLocale(r, cfg)
+			writeBrutalistNotFound(w, r, tmpl, cfg, lb.T("not_found.repo_title"), lb.T("not_found.repo_heading"), fullPath, lb.T("not_found.repo_detail"))
 			return
 		}
 
@@ -573,39 +628,52 @@ func handleRepoPage(cfg Config, db *store.Store, tmpl *template.Template) http.H
 		clonesJSON, _ := json.Marshal(clones)
 		starsJSON, _ := json.Marshal(stars)
 
+		lb := bindPageLocale(r, cfg)
 		data := struct {
-			Repo         *store.RepoSummary
-			BadgeBaseURL string
-			ViewsJSON    template.JS
-			ClonesJSON   template.JS
-			StarsJSON    template.JS
-			Referrers    []store.PopularItem
-			Paths        []store.PopularItem
+			localeBinder
+			Repo             *store.RepoSummary
+			BadgeBaseURL     string
+			ViewsJSON        template.JS
+			ClonesJSON       template.JS
+			StarsJSON        template.JS
+			Referrers        []store.PopularItem
+			Paths            []store.PopularItem
+			ChartClonesTitle string
+			ChartViewsTitle  string
+			ChartStarsTitle  string
+			SyncRepoAria     string
 		}{
-			Repo:         summary,
-			BadgeBaseURL: publicBaseURL(r, cfg.PublicURL),
-			ViewsJSON:    template.JS(viewsJSON),
-			ClonesJSON:   template.JS(clonesJSON),
-			StarsJSON:    template.JS(starsJSON),
-			Referrers:    referrers,
-			Paths:        paths,
+			localeBinder:     lb,
+			Repo:             summary,
+			BadgeBaseURL:     publicBaseURL(r, cfg.PublicURL),
+			ViewsJSON:        template.JS(viewsJSON),
+			ClonesJSON:       template.JS(clonesJSON),
+			StarsJSON:        template.JS(starsJSON),
+			Referrers:        referrers,
+			Paths:            paths,
+			ChartClonesTitle: lb.Tfmt("repo.chart_clones", map[string]string{"repo": fullName}),
+			ChartViewsTitle:  lb.Tfmt("repo.chart_views", map[string]string{"repo": fullName}),
+			ChartStarsTitle:  lb.Tfmt("repo.chart_stars", map[string]string{"repo": fullName}),
+			SyncRepoAria:     lb.Tfmt("common.sync_repo_aria", map[string]string{"repo": fullName}),
 		}
 
 		content := executeTemplate(tmpl, "repo", data)
 		ld := layoutData{
 			Title:       fullName,
+			PageID:      "repo",
 			Version:     version.Version,
-			Breadcrumbs: []breadcrumb{{Label: fullName, URL: ""}},
+			Breadcrumbs: []breadcrumb{{Label: lb.T("nav.repositories"), URL: "/"}, {Label: fullName, URL: ""}},
 			Content:     content,
 		}
 		if cfg.SyncCoordinator != nil && cfg.APIToken != "" {
 			ld.SyncScopeRepo = fullName
 		}
-		renderLayout(w, tmpl, cfg, ld)
+		renderLayout(w, r, tmpl, cfg, ld)
 	}
 }
 
 type notFoundContentData struct {
+	localeBinder
 	Heading string
 	Path    string
 	Detail  string
@@ -617,25 +685,30 @@ func writeJSONNotFound(w http.ResponseWriter) {
 	fmt.Fprint(w, `{"error":"not_found"}`)
 }
 
-func writeBrutalistNotFound(w http.ResponseWriter, tmpl *template.Template, cfg Config, layoutTitle, heading, path, detail string) {
+func writeBrutalistNotFound(w http.ResponseWriter, r *http.Request, tmpl *template.Template, cfg Config, layoutTitle, heading, path, detail string) {
+	lb := bindPageLocale(r, cfg)
 	content := executeTemplate(tmpl, "not_found", notFoundContentData{
-		Heading: heading,
-		Path:    path,
-		Detail:  detail,
+		localeBinder: lb,
+		Heading:      heading,
+		Path:         path,
+		Detail:       detail,
 	})
-	renderLayoutStatus(w, tmpl, cfg, layoutData{
+	renderLayoutStatus(w, r, tmpl, cfg, layoutData{
 		Title:       layoutTitle,
+		PageID:      "not_found",
 		Version:     version.Version,
 		Breadcrumbs: []breadcrumb{{Label: layoutTitle, URL: ""}},
 		Content:     content,
 	}, http.StatusNotFound)
 }
 
-func renderLayout(w http.ResponseWriter, tmpl *template.Template, cfg Config, data layoutData) {
-	renderLayoutStatus(w, tmpl, cfg, data, http.StatusOK)
+func renderLayout(w http.ResponseWriter, r *http.Request, tmpl *template.Template, cfg Config, data layoutData) {
+	renderLayoutStatus(w, r, tmpl, cfg, data, http.StatusOK)
 }
 
-func renderLayoutStatus(w http.ResponseWriter, tmpl *template.Template, cfg Config, data layoutData, status int) {
+func renderLayoutStatus(w http.ResponseWriter, r *http.Request, tmpl *template.Template, cfg Config, data layoutData, status int) {
+	maybeSetLocaleCookie(w, r, cfg)
+	data = mergeLayoutLocale(r, cfg, data)
 	if cfg.CustomCSSQuery != "" {
 		data.CustomStylesheetURL = template.URL("/theme/custom.css?" + cfg.CustomCSSQuery)
 	}

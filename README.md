@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.5.2-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.6.0-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -19,7 +19,7 @@ Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only k
 
 If you want your **own self-hosted** deployment (Docker Compose, Traefik with TLS, Helm, optional Prometheus/Grafana/Loki), use the companion repo **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** — it lists the supported options and example manifests.
 
-**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.5.0`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
+**Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.6.0`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
 
 ## Demo
 
@@ -38,6 +38,7 @@ If you want your **own self-hosted** deployment (Docker Compose, Traefik with TL
 - [Usage](#usage)
 - [Examples](#examples)
 - [Configuration](#configuration)
+- [Web UI languages (i18n)](#web-ui-languages-i18n)
 - [Environment file](#environment-file)
 - [Custom UI theme (optional)](#custom-ui-theme-optional)
 - [HTTP API (JSON)](#http-api-json)
@@ -57,6 +58,7 @@ If you want your **own self-hosted** deployment (Docker Compose, Traefik with TL
 - Collects views, clones, referrers, popular paths, and star history
 - Auto-discovers repositories (or filters by org/repo rules)
 - Web dashboard with Chart.js graphs
+- **Web UI languages (i18n):** English (default), Spanish, and German — sidebar selector **EN | ES | DE**, cookie `gghstats_locale`, env defaults (see [Web UI languages](#web-ui-languages-i18n))
 - **Head to Head (H2H)** at `/h2h` — compare two repos with weighted share scores (0–100, sum to 100); open *How the H2H score is calculated* on that page for the formula
 - JSON API for external integrations
 - CLI mode for fetch/report/export
@@ -72,7 +74,7 @@ On each repository’s detail page, the **Clones** and **Views** bar charts are 
 | **Lower** (theme primary color) | Unique visitors or cloners that day | `uniques` |
 | **Upper** (theme info color) | Total views or total clones that day | `count` |
 
-Exact colors depend on light/dark theme (Bootstrap `--bs-primary` / `--bs-info`, overridden in the app’s neo-brutalist CSS). The legend is hidden on the chart; use the tooltip on each bar for values.
+Exact colors depend on light/dark theme (Bootstrap `--bs-primary` / `--bs-info`, overridden in the app’s neo-brutalist CSS). Chart **legends** (e.g. Unique / Count) follow the active UI locale. Use the tooltip on each bar for values.
 
 [Back to top](#gghstats)
 
@@ -256,6 +258,95 @@ All runtime configuration uses env vars (`serve`) or flags (`fetch/report/export
 | `GGHSTATS_METRICS` | (enabled) | Set to `false` to disable `GET /metrics` |
 | `GGHSTATS_METRICS_PER_REPO` | `false` | Set to `true` to expose per-repo Prometheus gauges (`owner`, `repo` labels); higher cardinality |
 | `GGHSTATS_CUSTOM_CSS` | (none) | Optional **regular** `.css` file: loaded **after** built-in `app.css` at `/theme/custom.css` so you can tone down neo-brutalism or replace accents (see [Custom UI theme](#custom-ui-theme-optional)) |
+| `GGHSTATS_DEFAULT_LOCALE` | `en` | Default **dashboard** language when no cookie, `?lang=`, or `Accept-Language` match (see [Web UI languages](#web-ui-languages-i18n)) |
+| `GGHSTATS_ENABLED_LOCALES` | `en,es,de` | Comma-separated locales shown in the sidebar selector and accepted from `?lang=` / cookie |
+
+### Web UI languages (i18n)
+
+**Scope:** dashboard HTML and a small set of **browser UI strings** (sync modal, theme toggle label, chart legends). **Not** translated: HTTP API JSON, CLI output, structured logs, or embed badge SVG text.
+
+**Shipped locales (v0.6.0):** `en`, `es`, `de`. **Next recommended addition:** `pt-br` (Portuguese, Brazil).
+
+#### How the active locale is chosen
+
+| Priority | Source |
+| --- | --- |
+| 1 | Query `?lang=es` (bookmarkable; sets cookie on response) |
+| 2 | Cookie `gghstats_locale` (1 year, `Path=/`, `SameSite=Lax`) |
+| 3 | `Accept-Language` header (first tag that matches an enabled locale) |
+| 4 | `GGHSTATS_DEFAULT_LOCALE` |
+
+Theme (light/dark) stays in **`localStorage`** (`gghstats-theme`); language uses the **cookie** so the first HTML response is already translated.
+
+#### Operator examples
+
+Spanish-first instance (no selector click required for new visitors):
+
+```bash
+GGHSTATS_DEFAULT_LOCALE=es
+GGHSTATS_ENABLED_LOCALES=en,es,de
+```
+
+Force English for one visit: open `https://gghstats.example.com/?lang=en`.  
+Permalink in Spanish: `https://gghstats.example.com/h2h?lang=es&a=owner/repoA&b=owner/repoB`.
+
+In **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** Compose/Helm, set the same variables next to `GGHSTATS_GITHUB_TOKEN` and the image tag (infra repo documents env placement under `run/common/.env.example`).
+
+#### Adding a new locale (contributors)
+
+Example: **Portuguese (Brazil)** as `pt-br`.
+
+1. **Copy the canonical file** (same key set as English):
+
+   ```bash
+   cp internal/i18n/locales/en.json internal/i18n/locales/pt-br.json
+   ```
+
+2. **Translate values only** — keep every key ID unchanged (`nav.repositories`, `h2h.help_p1`, …). Use `\"` inside JSON strings for embedded quotes (same as `en.json` / `es.json`).
+
+3. **Leave formula lines in English** (copy verbatim from `en.json`):
+
+   - `h2h.help_formula_share`
+   - `h2h.help_formula_score`
+
+   Prose around the formulas is translated; notation stays `share_A`, `score_A`, etc.
+
+4. **Do not translate** technical placeholders: `owner/repo` in search fields, API field names, or repo names in charts.
+
+5. **Enable the locale** in config:
+
+   ```bash
+   GGHSTATS_ENABLED_LOCALES=en,es,de,pt-br
+   # optional default for a PT-BR-first install:
+   GGHSTATS_DEFAULT_LOCALE=pt-br
+   ```
+
+   `GGHSTATS_DEFAULT_LOCALE` must appear in `GGHSTATS_ENABLED_LOCALES`.
+
+6. **Optional code tweaks** (only when needed):
+
+   | File | When |
+   | --- | --- |
+   | [`internal/i18n/i18n.go`](internal/i18n/i18n.go) `LangAttr` | Map locale code → BCP 47 for `<html lang="…">` (e.g. `pt-br` → `pt-BR`; already stubbed) |
+   | [`internal/server/locale.go`](internal/server/locale.go) `buildLocaleLinks` | Short sidebar label (e.g. `pt-br` → `PT`); if omitted, the code uses `strings.ToUpper(code)` |
+
+7. **Browser-only strings:** if you add keys used from `web/static/app.js`, append the key names to `jsI18nPayload` in [`internal/server/locale.go`](internal/server/locale.go) and translate them in **every** locale file.
+
+8. **Verify key parity and tests:**
+
+   ```bash
+   go test ./internal/i18n/...
+   ```
+
+9. **Smoke-test in the browser:** `/?lang=pt-br`, `/h2h?lang=pt-br`, a repo page, 404 — confirm sidebar highlight and chart legends.
+
+#### Key conventions
+
+- Nested JSON flattened to dot keys: `nav.repositories`, `chart.legend_unique`.
+- H2H help: **one key per paragraph** in JSON; shared formula lines stay English.
+- Missing translation in a non-English locale → fallback to **English** for that key.
+
+[Back to top](#gghstats)
 
 ### Custom UI theme (optional)
 

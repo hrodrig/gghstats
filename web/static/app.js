@@ -1,3 +1,15 @@
+/** UI strings injected by the server (locale JSON keys → translated text). */
+function uiT(key, vars) {
+  const bag = window.gghstatsI18n || {};
+  let s = bag[key] || key;
+  if (vars) {
+    for (const [k, v] of Object.entries(vars)) {
+      s = s.replaceAll(`{{${k}}}`, String(v));
+    }
+  }
+  return s;
+}
+
 function currentTheme() {
   const theme = document.documentElement.getAttribute('data-bs-theme');
   return theme === 'dark' ? 'dark' : 'light';
@@ -67,7 +79,7 @@ function applyTheme(theme) {
   localStorage.setItem('gghstats-theme', theme);
   const btn = document.getElementById('theme-toggle');
   if (btn) {
-    btn.textContent = theme === 'dark' ? 'Dark' : 'Light';
+    btn.textContent = theme === 'dark' ? uiT('common.theme_dark') : uiT('common.theme_light');
   }
 }
 
@@ -146,10 +158,14 @@ function initRepoCharts() {
   if (!payload) return;
 
   const repoName = payload.repoName || '';
-  renderMetrics('chart_clones', payload.clones, 'uniques', 'count', 'Clones', repoName);
-  renderMetrics('chart_views', payload.views, 'uniques', 'count', 'Views', repoName);
+  const chartLabels = payload.chartLabels || {};
+  const clonesTitle = chartLabels.clones || repoChartLegendLabel('Clones', repoName);
+  const viewsTitle = chartLabels.views || repoChartLegendLabel('Views', repoName);
+  const starsTitle = chartLabels.stars || repoChartLegendLabel('Stars over time', repoName);
+  renderMetrics('chart_clones', payload.clones, 'uniques', 'count', clonesTitle);
+  renderMetrics('chart_views', payload.views, 'uniques', 'count', viewsTitle);
   if (payload.stars && payload.stars.length > 0) {
-    renderStars('chart_stars', payload.stars, repoName);
+    renderStars('chart_stars', payload.stars, starsTitle);
   }
 }
 
@@ -425,7 +441,7 @@ function renderIndexClonesOverTime(canvasId, data) {
     data: {
       labels: data.map(d => d.date),
       datasets: [{
-        label: 'Clones (count)',
+        label: uiT('chart.legend_clones_count'),
         data: data.map(d => d.count),
         borderColor: c.primary,
         backgroundColor: 'transparent',
@@ -571,8 +587,8 @@ function syncPostURL() {
 function formatSyncStatus(st) {
   if (!st) return '';
   if (st.running) {
-    if (st.scope === 'repo' && st.repo) return `Syncing ${st.repo}…`;
-    return 'Syncing all repositories…';
+    if (st.scope === 'repo' && st.repo) return uiT('js.syncing_repo', { repo: st.repo });
+    return uiT('js.syncing_all');
   }
   if (st.last_error) return `Last sync failed: ${st.last_error}`;
   if (st.last_finished_at) {
@@ -625,7 +641,7 @@ function requestSyncTokenModal({ invalid = false } = {}) {
     const onSubmit = () => {
       const token = input.value.trim();
       if (!token) {
-        showError('Token is required.');
+        showError(uiT('js.token_required'));
         input.focus();
         return;
       }
@@ -752,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSyncControl();
 });
 
-function renderMetrics(canvasId, data, uniqueCol, countCol, chartTitle, repoName) {
+function renderMetrics(canvasId, data, uniqueCol, countCol, chartLabel) {
   const el = document.getElementById(canvasId);
   if (!el || !data || data.length === 0) return;
 
@@ -763,14 +779,14 @@ function renderMetrics(canvasId, data, uniqueCol, countCol, chartTitle, repoName
       labels: data.map(d => d.date),
       datasets: [
         {
-          label: 'Unique',
+          label: uiT('chart.legend_unique'),
           data: data.map(d => d[uniqueCol]),
           backgroundColor: c.primary,
           borderWidth: 0,
           borderRadius: 4
         },
         {
-          label: 'Count',
+          label: uiT('chart.legend_count'),
           data: data.map(d => d[countCol]),
           backgroundColor: c.info,
           borderWidth: 0,
@@ -804,14 +820,14 @@ function renderMetrics(canvasId, data, uniqueCol, countCol, chartTitle, repoName
       },
       plugins: {
         legend: repoChartLegendOptions(c),
-        tooltip: repoChartTooltipOptions(chartTitle, repoName)
+        tooltip: repoChartTooltipOptions(chartLabel, '')
       }
     },
     plugins: [mouseLinePlugin]
   });
 }
 
-function renderStars(canvasId, data, repoName) {
+function renderStars(canvasId, data, chartLabel) {
   const el = document.getElementById(canvasId);
   if (!el || !data || data.length === 0) return;
 
@@ -821,7 +837,7 @@ function renderStars(canvasId, data, repoName) {
     data: {
       labels: data.map(d => d.date),
       datasets: [{
-        label: repoChartLegendLabel('Stars over time', repoName),
+        label: chartLabel,
         data: data.map(d => d.total),
         borderColor: c.primary,
         backgroundColor: 'transparent',
@@ -856,7 +872,7 @@ function renderStars(canvasId, data, repoName) {
       },
       plugins: {
         legend: repoChartLegendOptions(c),
-        tooltip: repoChartTooltipOptions('Stars over time', repoName)
+        tooltip: repoChartTooltipOptions(chartLabel, '')
       }
     },
     plugins: [mouseLinePlugin]
