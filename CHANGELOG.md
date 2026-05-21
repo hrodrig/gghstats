@@ -7,6 +7,13 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-05-21
+
+### Fixed
+
+- **Locale cookie:** set `Secure` on `gghstats_locale` (CodeQL `go/cookie-secure-not-set` / alert #5).
+- **Server:** shared `requestScheme()` for HTTPS detection (`TLS` / `X-Forwarded-Proto`), reused by badge base URL logic.
+
 ## [0.6.0] - 2026-05-20
 
 ### Added

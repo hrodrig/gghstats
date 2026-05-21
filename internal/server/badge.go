@@ -75,13 +75,7 @@ func publicBaseURL(r *http.Request, configured string) string {
 	if s := strings.TrimRight(strings.TrimSpace(configured), "/"); s != "" {
 		return s
 	}
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	} else if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
-		scheme = strings.ToLower(strings.TrimSpace(strings.Split(proto, ",")[0]))
-	}
-	return scheme + "://" + r.Host
+	return requestScheme(r) + "://" + r.Host
 }
 
 func badgeMiddleware(cfg Config, next http.HandlerFunc) http.HandlerFunc {

@@ -51,6 +51,7 @@ func maybeSetLocaleCookie(w http.ResponseWriter, r *http.Request, cfg Config) {
 		Path:     "/",
 		MaxAge:   localeCookieMaxAge,
 		SameSite: http.SameSiteLaxMode,
+		Secure:   true,
 	})
 }
 
