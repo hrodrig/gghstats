@@ -559,7 +559,28 @@ html[data-bs-theme="dark"] .app-brutalist .pagination .page-item.active .page-li
   max-height: 360px;
 }
 
-/* H2H: fixed-height well prevents Chart.js resize feedback loop at large Y values */
+/* H2H: equal-height cards; chart well grows inside flex column (Chart.js needs bounded box) */
+.h2h-charts-row > [class*="col-"] {
+  display: flex;
+}
+
+.h2h-charts-row .app-brutal-chart-card {
+  width: 100%;
+}
+
+.h2h-charts-row .app-brutal-chart-well {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.h2h-charts-row .chart-h2h-wrap {
+  position: relative;
+  flex: 1 1 260px;
+  min-height: 260px;
+  max-height: 360px;
+  overflow: hidden;
+}
+
 .chart-h2h-wrap {
   position: relative;
   height: 260px;
@@ -571,10 +592,16 @@ html[data-bs-theme="dark"] .app-brutalist .pagination .page-item.active .page-li
   display: block;
   width: 100% !important;
   height: 100% !important;
-  max-height: 320px;
+  max-height: 360px;
 }
 
-.chart-h2h-footnote {
+.h2h-charts-row .chart-h2h-footnote {
+  flex-shrink: 0;
   line-height: 1.45;
   padding-bottom: 0.15rem;
+  min-height: 4rem;
+}
+
+.chart-h2h-footnote-reserve {
+  visibility: hidden;
 }

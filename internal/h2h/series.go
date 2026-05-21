@@ -24,13 +24,15 @@ func AlignViewSeries(a, b []store.DayRow) (labels []string, countsA, countsB []i
 }
 
 // AlignMomentumSeries builds union date labels and rolling clone momentum ratios
-// ((lastN - prevN) / max(prevN, 1)) for window N (7 or 30). Requires at least 2×window days of history.
-func AlignMomentumSeries(a, b []store.DayRow, window int) (labels []string, momA, momB []*float64) {
+// ((lastN - prevN) / max(prevN, 1)) for window N (7 or 30).
+// calendarFrom (YYYY-MM-DD) extends the dense daily calendar with zero-count days back to the
+// clone fetch start so repos with sparse traffic still get rolling points when enough days were loaded.
+func AlignMomentumSeries(a, b []store.DayRow, window int, calendarFrom string) (labels []string, momA, momB []*float64) {
 	if window < 1 {
 		return nil, nil, nil
 	}
-	la, va := cloneMomentumSeries(a, window)
-	lb, vb := cloneMomentumSeries(b, window)
+	la, va := cloneMomentumSeries(a, window, calendarFrom)
+	lb, vb := cloneMomentumSeries(b, window, calendarFrom)
 	return alignNullableFloatSeries(la, va, lb, vb)
 }
 
@@ -56,8 +58,8 @@ func TrimFloatSeriesFrom(labels []string, a, b []*float64, from string) ([]strin
 	return outL, outA, outB
 }
 
-func cloneMomentumSeries(rows []store.DayRow, window int) (labels []string, values []float64) {
-	days, counts := denseDailyCounts(rows)
+func cloneMomentumSeries(rows []store.DayRow, window int, calendarFrom string) (labels []string, values []float64) {
+	days, counts := denseDailyCounts(rows, calendarFrom)
 	if len(days) < 2*window {
 		return nil, nil
 	}
@@ -80,23 +82,33 @@ func cloneMomentumSeries(rows []store.DayRow, window int) (labels []string, valu
 	return labels, values
 }
 
-func denseDailyCounts(rows []store.DayRow) (days []string, counts map[string]int) {
+func denseDailyCounts(rows []store.DayRow, calendarFrom string) (days []string, counts map[string]int) {
 	if len(rows) == 0 {
 		return nil, nil
 	}
 	counts = make(map[string]int, len(rows))
 	var minD, maxD time.Time
-	for i, r := range rows {
+	parsed := false
+	for _, r := range rows {
 		d, err := time.ParseInLocation("2006-01-02", r.Date, time.UTC)
 		if err != nil {
 			continue
 		}
 		counts[r.Date] = r.Count
-		if i == 0 || d.Before(minD) {
+		if !parsed || d.Before(minD) {
 			minD = d
 		}
-		if i == 0 || d.After(maxD) {
+		if !parsed || d.After(maxD) {
 			maxD = d
+		}
+		parsed = true
+	}
+	if !parsed {
+		return nil, nil
+	}
+	if calendarFrom != "" {
+		if from, err := time.ParseInLocation("2006-01-02", calendarFrom, time.UTC); err == nil && from.Before(minD) {
+			minD = from
 		}
 	}
 	for d := minD; !d.After(maxD); d = d.AddDate(0, 0, 1) {

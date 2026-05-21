@@ -196,6 +196,31 @@ function seriesMax(values) {
   return max;
 }
 
+function seriesMin(values) {
+  let min = 0;
+  let any = false;
+  for (const v of values) {
+    if (v === null || v === undefined) continue;
+    if (!any) {
+      min = v;
+      any = true;
+    } else if (v < min) {
+      min = v;
+    }
+  }
+  return any ? min : 0;
+}
+
+function seriesMaxAbs(values) {
+  let max = 0;
+  for (const v of values) {
+    if (v === null || v === undefined) continue;
+    const abs = Math.abs(v);
+    if (abs > max) max = abs;
+  }
+  return max;
+}
+
 function formatChartTick(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return '';
@@ -213,7 +238,22 @@ function formatMomentumTick(value) {
   return `${rounded > 0 ? '+' : ''}${rounded}%`;
 }
 
-function h2hDualAxisNeeded(seriesA, seriesB) {
+function h2hDualAxisNeeded(seriesA, seriesB, asPercent) {
+  if (asPercent) {
+    const maxAbsA = seriesMaxAbs(seriesA);
+    const maxAbsB = seriesMaxAbs(seriesB);
+    const smaller = Math.min(maxAbsA, maxAbsB);
+    const larger = Math.max(maxAbsA, maxAbsB);
+    if (larger >= 0.05 && smaller < 0.05) return true;
+    if (smaller >= 1e-9 && larger / smaller >= 8) return true;
+    const maxA = seriesMax(seriesA);
+    const maxB = seriesMax(seriesB);
+    const minA = seriesMin(seriesA);
+    const minB = seriesMin(seriesB);
+    if (maxA > 0.05 && minB < -0.05) return true;
+    if (maxB > 0.05 && minA < -0.05) return true;
+    return false;
+  }
   const maxA = seriesMax(seriesA);
   const maxB = seriesMax(seriesB);
   if (maxA < 1 || maxB < 1) return false;
@@ -228,7 +268,7 @@ function renderH2HLineChart(canvasId, labels, seriesA, seriesB, labelA, labelB, 
   const asPercent = opts.asPercent === true;
   const dataA = coerceSeries(seriesA);
   const dataB = coerceSeries(seriesB);
-  const dualAxis = !asPercent && h2hDualAxisNeeded(dataA, dataB);
+  const dualAxis = opts.forceDualAxis === true || h2hDualAxisNeeded(dataA, dataB, asPercent);
 
   const c = chartThemeColors();
   const tickFormatter = asPercent ? formatMomentumTick : formatChartTick;
@@ -275,7 +315,7 @@ function renderH2HLineChart(canvasId, labels, seriesA, seriesB, labelA, labelB, 
       pointHoverRadius: showPoints ? 4 : 0,
       tension: 0.15,
       borderWidth: 2,
-      spanGaps: !asPercent,
+      spanGaps: asPercent,
       yAxisID: 'y'
     },
     {
@@ -288,12 +328,13 @@ function renderH2HLineChart(canvasId, labels, seriesA, seriesB, labelA, labelB, 
       pointHoverRadius: showPoints ? 4 : 0,
       tension: 0.15,
       borderWidth: 2,
-      spanGaps: !asPercent,
+      spanGaps: asPercent,
       yAxisID: dualAxis ? 'y1' : 'y'
     }
   ];
 
   if (dualAxis) {
+    scales.y.ticks = { ...tickStyle, color: asPercent ? c.primary : c.fg };
     scales.y1 = {
       ...yAxis,
       position: 'right',
@@ -351,7 +392,7 @@ function initH2HCharts() {
       payload.momentumB,
       payload.repoA,
       payload.repoB,
-      { asPercent: true, showPoints: true }
+      { asPercent: true, showPoints: true, forceDualAxis: true }
     );
   }
 }

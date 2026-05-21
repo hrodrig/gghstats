@@ -183,7 +183,7 @@ func buildH2HChartJSON(db *store.Store, repoA, repoB string, interval h2h.Interv
 	var mLabels []string
 	var mA, mB []*float64
 	if interval.HasMomentum() {
-		mLabels, mA, mB = h2h.AlignMomentumSeries(clA, clB, interval.MomentumWindowDays())
+		mLabels, mA, mB = h2h.AlignMomentumSeries(clA, clB, interval.MomentumWindowDays(), cloneFetchFrom)
 		mLabels, mA, mB = h2h.TrimFloatSeriesFrom(mLabels, mA, mB, from)
 	}
 

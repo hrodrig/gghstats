@@ -19,6 +19,7 @@
               <li><strong>All time</strong> — Total clones 50%, Total views 50% (no momentum)</li>
             </ul>
             <p class="mb-2"><strong>Momentum</strong> is clone growth: (clones in the window − clones in the prior window) ÷ max(prior window clones, 1). The table shows it as a percentage (×100).</p>
+            <p class="mb-2"><strong>Very high momentum (e.g. thousands of %)</strong> is expected, not a calculation bug: the <em>prior</em> window had few or zero clones and the <em>current</em> window has a recent spike. Example: 819 clones this period vs ~0 last period → about (819 ÷ 1) × 100 ≈ 81,900%. That means “traffic jumped from almost nothing,” not “819× better than the other repo.” After more stable history, momentum usually moves to ordinary ranges (tens of %).</p>
             <p class="mb-0"><strong>Lead X pts</strong> is the gap vs the leader: |score<sub>A</sub> − score<sub>B</sub>| ÷ max(score) × 100. It is not “repo B has X% more clones than A”.</p>
           </div>
         </details>
@@ -125,36 +126,38 @@
 </div>
 
 {{if .HasCharts}}
-<div class="row g-4 mb-4">
-  <div class="{{if .ShowMomentumChart}}col-lg-4{{else}}col-lg-6{{end}}">
-    <div class="card shadow-sm border-0 app-brutal-chart-card">
+<div class="row g-4 mb-4 h2h-charts-row align-items-stretch">
+  <div class="{{if .ShowMomentumChart}}col-lg-4{{else}}col-lg-6{{end}} d-flex">
+    <div class="card shadow-sm border-0 app-brutal-chart-card h-100 w-100">
       <div class="card-header fw-semibold bg-body-secondary border-bottom">Clones ({{.ChartSpanLabel}})</div>
-      <div class="card-body app-brutal-chart-well">
-        <div class="chart-h2h-wrap">
+      <div class="card-body app-brutal-chart-well pb-2 d-flex flex-column">
+        <div class="chart-h2h-wrap flex-grow-1">
           <canvas id="h2h-clones-chart" class="chart-canvas chart-canvas-h2h" aria-label="Clones comparison chart"></canvas>
         </div>
+        <p class="small text-muted mb-0 mt-2 chart-h2h-footnote chart-h2h-footnote-reserve" aria-hidden="true"></p>
       </div>
     </div>
   </div>
-  <div class="{{if .ShowMomentumChart}}col-lg-4{{else}}col-lg-6{{end}}">
-    <div class="card shadow-sm border-0 app-brutal-chart-card">
+  <div class="{{if .ShowMomentumChart}}col-lg-4{{else}}col-lg-6{{end}} d-flex">
+    <div class="card shadow-sm border-0 app-brutal-chart-card h-100 w-100">
       <div class="card-header fw-semibold bg-body-secondary border-bottom">Views ({{.ChartSpanLabel}})</div>
-      <div class="card-body app-brutal-chart-well">
-        <div class="chart-h2h-wrap">
+      <div class="card-body app-brutal-chart-well pb-2 d-flex flex-column">
+        <div class="chart-h2h-wrap flex-grow-1">
           <canvas id="h2h-views-chart" class="chart-canvas chart-canvas-h2h" aria-label="Views comparison chart"></canvas>
         </div>
+        <p class="small text-muted mb-0 mt-2 chart-h2h-footnote chart-h2h-footnote-reserve" aria-hidden="true"></p>
       </div>
     </div>
   </div>
   {{if .ShowMomentumChart}}
-  <div class="col-lg-4">
-    <div class="card shadow-sm border-0 app-brutal-chart-card">
+  <div class="col-lg-4 d-flex">
+    <div class="card shadow-sm border-0 app-brutal-chart-card h-100 w-100">
       <div class="card-header fw-semibold bg-body-secondary border-bottom">{{.MomentumChartLabel}}</div>
-      <div class="card-body app-brutal-chart-well pb-2">
-        <div class="chart-h2h-wrap">
+      <div class="card-body app-brutal-chart-well pb-2 d-flex flex-column">
+        <div class="chart-h2h-wrap flex-grow-1">
           <canvas id="h2h-momentum-chart" class="chart-canvas chart-canvas-h2h" aria-label="Clone momentum comparison chart"></canvas>
         </div>
-        <p class="small text-muted mb-0 mt-2 chart-h2h-footnote">Rolling clone momentum from daily clones. First points need double the selected window in history.</p>
+        <p class="small text-muted mb-0 mt-2 chart-h2h-footnote">Rolling clone momentum from daily clones (missing days = 0). Each repo uses its own axis (left = A, right = B). Extreme % after a first spike with little prior traffic is normal — see <strong>How the H2H score is calculated</strong> above.</p>
       </div>
     </div>
   </div>

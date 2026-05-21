@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.5.0-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.5.2-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -625,7 +625,7 @@ git tag -a v0.3.2 -m "Release 0.3.2"
 git push origin v0.3.2                # triggers Release workflow — builds and publishes artifacts
 ```
 
-For the **next** release after `0.5.0`, bump `VERSION`, update the badge and [CHANGELOG](CHANGELOG.md), then tag `main` with the matching `v*` tag.
+For the **next** release after `0.5.2`, bump `VERSION`, update the badge and [CHANGELOG](CHANGELOG.md), then tag `main` with the matching `v*` tag.
 
 ### Optional: publish from your machine
 

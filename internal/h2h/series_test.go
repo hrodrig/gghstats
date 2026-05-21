@@ -18,7 +18,7 @@ func TestCloneMomentumSeries_increasing(t *testing.T) {
 		}
 		rows = append(rows, store.DayRow{Date: d, Count: n})
 	}
-	labels, vals := cloneMomentumSeries(rows, 7)
+	labels, vals := cloneMomentumSeries(rows, 7, "")
 	if len(labels) == 0 || len(vals) == 0 {
 		t.Fatal("expected momentum points")
 	}
@@ -70,9 +70,31 @@ func TestAlignCloneAndViewSeries(t *testing.T) {
 func TestAlignMomentumSeries_unionLabels(t *testing.T) {
 	a := []store.DayRow{{Date: "2026-04-01", Count: 10}}
 	b := []store.DayRow{{Date: "2026-04-02", Count: 10}}
-	labels, _, _ := AlignMomentumSeries(a, b, 7)
+	labels, _, _ := AlignMomentumSeries(a, b, 7, "")
 	if len(labels) != 0 {
 		t.Errorf("expected no labels with insufficient history, got %v", labels)
+	}
+}
+
+func TestCloneMomentumSeries_calendarFromPadsSparseTraffic(t *testing.T) {
+	// Only recent days have rows, but fetch window is 90d — calendar must include zero days back to calendarFrom.
+	var rows []store.DayRow
+	start := mustParseDay(t, "2026-05-10")
+	for i := 0; i < 10; i++ {
+		d := start.AddDate(0, 0, i).Format("2006-01-02")
+		n := 1
+		if i == 5 {
+			n = 400
+		}
+		rows = append(rows, store.DayRow{Date: d, Count: n})
+	}
+	calendarFrom := start.AddDate(0, 0, -89).Format("2006-01-02")
+	labels, vals := cloneMomentumSeries(rows, 30, calendarFrom)
+	if len(labels) == 0 || len(vals) == 0 {
+		t.Fatal("expected rolling momentum with padded calendar")
+	}
+	if vals[len(vals)-1] <= 0 {
+		t.Errorf("expected positive momentum after spike, got %v", vals[len(vals)-1])
 	}
 }
 

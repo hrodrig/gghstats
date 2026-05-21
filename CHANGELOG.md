@@ -7,6 +7,17 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-05-20
+
+### Fixed
+
+- **H2H momentum chart:** pad the daily calendar from the clone fetch start so repos with sparse traffic (recent spike only) still get a rolling momentum series; align chart card heights across clones, views, and momentum.
+
+### Changed
+
+- **H2H momentum chart:** dual Y-axes when scales differ (e.g. large positive vs negative %); always use separate axes on the momentum chart.
+- **H2H copy:** document that very high momentum % (prior window near zero + recent spike) is expected, not a calculation error.
+
 ## [0.5.0] - 2026-05-19
 
 ### Added
@@ -141,7 +152,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/hrodrig/gghstats/compare/v0.5.0...v0.5.2
 [0.5.0]: https://github.com/hrodrig/gghstats/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/hrodrig/gghstats/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/hrodrig/gghstats/compare/v0.3.1...v0.3.2
