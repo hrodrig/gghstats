@@ -79,7 +79,7 @@ dockers_v2:
 homebrew_casks:
   - name: gghstats
     ids:
-      - gghstats
+      - default
     directory: Casks
     homepage: "https://github.com/hrodrig/gghstats"
     description: "Self-hosted GitHub traffic dashboard and CLI with SQLite storage"
