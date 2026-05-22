@@ -40,7 +40,7 @@ jobs:
         run: make release-check
 
       # QEMU + Buildx + GHCR login: required for GoReleaser dockers_v2 multi-arch on ubuntu-latest
-      # ("Multi-platform build is not supported for the docker driver" without them). Same steps as pgwd.
+      # ("Multi-platform build is not supported for the docker driver" without them).
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -59,7 +59,7 @@ jobs:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           if [ -z "$HOMEBREW_TAP_TOKEN" ]; then
-            echo "::error::HOMEBREW_TAP_TOKEN is not set. Add a fine-grained or classic PAT with contents:write on hrodrig/homebrew-gghstats under Settings → Secrets → Actions. See README Release workflow."
+            echo "::error::Homebrew tap publish secret is not set (Actions secret for write access to hrodrig/homebrew-gghstats). See .github/workflows/release.yml."
             exit 1
           fi
 

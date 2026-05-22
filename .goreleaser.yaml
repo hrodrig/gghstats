@@ -48,11 +48,11 @@ changelog:
       - "^chore:"
 
 # Snapshot / test-release: version from repo VERSION file via Makefile (GGHSTATS_SNAPSHOT_VERSION=<semver>-next).
-# Same pattern as pgwd (PGWD_SNAPSHOT_VERSION). Release on a git tag still uses the tag (e.g. v0.5.0).
+# Snapshot version from GGHSTATS_SNAPSHOT_VERSION (Makefile). Release on a git tag uses the tag (e.g. v0.5.0).
 snapshot:
   version_template: "{{ .Env.GGHSTATS_SNAPSHOT_VERSION }}"
 
-# Docker: multi-arch image to ghcr.io (same pattern as pgwd: dockers_v2 + Dockerfile.release).
+# Docker: multi-arch image to ghcr.io (dockers_v2 + Dockerfile.release).
 # sbom: false — GitHub-hosted runners use the docker buildx driver without attestation support;
 # otherwise build fails with: "Attestation is not supported for the docker driver".
 dockers_v2:
@@ -75,7 +75,7 @@ dockers_v2:
     # buildx setup errors with: "index annotations not supported for single platform export".
 
 # Homebrew: publish cask to https://github.com/hrodrig/homebrew-gghstats (brew install hrodrig/gghstats/gghstats).
-# CI: HOMEBREW_TAP_TOKEN required on gghstats release workflow (PAT with contents:write on the tap repo).
+# Homebrew cask push uses a maintainer PAT in CI (see .github/workflows/release.yml).
 homebrew_casks:
   - name: gghstats
     ids:
@@ -119,6 +119,13 @@ nfpms:
         dst: /usr/share/man/man1/gghstats.1.gz
         file_info:
           mode: 0644
+      # Environment file for systemd (edit token, filter, paths before use).
+      - src: contrib/gghstats.env.example
+        dst: /etc/gghstats/gghstats.env
+        type: config|noreplace
+      # systemd unit: enable with systemctl enable --now gghstats
+      - src: contrib/systemd/gghstats.service
+        dst: /lib/systemd/system/gghstats.service
 
 release:
   github:

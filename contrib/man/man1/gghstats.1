@@ -19,6 +19,13 @@ export.
 .PP
 Server mode (\fBserve\fR) requires a GitHub personal access token with access to
 the repositories you want to track.
+.PP
+Configuration uses environment variables (prefix
+.BR GGHSTATS_ ).
+On Linux servers under systemd, set them in
+.IR /etc/gghstats/gghstats.env
+(see
+.IR contrib/gghstats.env.example ).
 .SH COMMANDS
 .TP
 .B serve
@@ -101,6 +108,15 @@ Fetch one repository:
 gghstats fetch --repo owner/repo --token "$GGHSTATS_GITHUB_TOKEN"
 .EE
 .RE
+.SH FILES
+.IR /etc/gghstats/gghstats.env
+Environment file for systemd (\fBserve\fR). Installed by .deb/.rpm; see
+.IR contrib/gghstats.env.example .
+.PP
+systemd unit:
+.IR contrib/systemd/gghstats.service
+(see
+.IR contrib/systemd/README.md ).
 .SH EXIT STATUS
 0 on success, non-zero on error.
 .SH SEE ALSO

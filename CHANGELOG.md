@@ -7,6 +7,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **systemd (Linux):** `contrib/systemd/gghstats.service`, `contrib/gghstats.env.example` → `/etc/gghstats/gghstats.env`, and [contrib/systemd/README.md](contrib/systemd/README.md). **.deb/.rpm** install the unit to `/lib/systemd/system/`.
+- **README Install:** package-manager table, separate **Build** section, and **Debian / Ubuntu** + **AlmaLinux / Fedora / RHEL** install notes.
+- **Docs:** Install/Quick start = quick commands only; **systemd**, Debian/RHEL package setup, and deployment guides moved to **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** (`run/standalone/linux/`, `run/docker-compose/`, `run/common/`).
+
 ### Changed
 
 - **Default bind address:** `gghstats serve` listens on **`127.0.0.1`** (localhost only) instead of `0.0.0.0`. Docker Compose in this repo and **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** still set `GGHSTATS_HOST=0.0.0.0` for containers.
@@ -16,14 +22,14 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 - **Sidebar sync status i18n:** localized “no sync yet” / last sync messages in all enabled locales.
-- **Homebrew:** official tap [`hrodrig/homebrew-gghstats`](https://github.com/hrodrig/homebrew-gghstats) — `brew install hrodrig/gghstats/gghstats`; GoReleaser `homebrew_casks` on release (requires Actions secret `HOMEBREW_TAP_TOKEN`).
+- **Homebrew:** official tap [`hrodrig/homebrew-gghstats`](https://github.com/hrodrig/homebrew-gghstats) — `brew install hrodrig/gghstats/gghstats`; cask updated automatically on each release.
 - **Linux packages:** `.deb` and `.rpm` via GoReleaser `nfpms`; `contrib/man/man1/gghstats.1` and `make install-man`.
 - **README quick start:** Homebrew, local binary download, and one-line `docker run`.
 
 ### Changed
 
 - **H2H score subline:** only the leading repo shows a margin line (`lead_margin`); ties or small deltas show the interval label only.
-- **Release workflow:** `HOMEBREW_TAP_TOKEN` is required (same model as pgwd); documented in README.
+- **Release workflow:** publishes Homebrew cask updates to the tap repo on each tagged release.
 
 ## [0.6.3] - 2026-05-21
 

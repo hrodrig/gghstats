@@ -34,6 +34,7 @@ If you want your **own self-hosted** deployment (Docker Compose, Traefik with TL
 - [Repository page charts](#repository-page-charts-clones--views)
 - [Quick start](#quick-start)
 - [Install](#install)
+- [Build](#build)
 - [Web UI assets (developers)](#web-ui-assets-developers)
 - [Usage](#usage)
 - [Examples](#examples)
@@ -43,7 +44,6 @@ If you want your **own self-hosted** deployment (Docker Compose, Traefik with TL
 - [Custom UI theme (optional)](#custom-ui-theme-optional)
 - [HTTP API (JSON)](#http-api-json)
 - [Typical scenarios](#typical-scenarios)
-- [Deployments](#deployments)
 - [Troubleshooting](#troubleshooting)
 - [Release workflow](#release-workflow)
 - [Security and quality](#security-and-quality)
@@ -80,6 +80,12 @@ Exact colors depend on light/dark theme (Bootstrap `--bs-primary` / `--bs-info`,
 
 ## Quick start
 
+The steps below are a **minimal path** to install gghstats, run the dashboard once, and **try the UI** (repository list, charts, H2H, languages). They are **not** a production or server deployment.
+
+**Running gghstats on a VPS, with TLS, Traefik, Compose stacks, Helm, or observability** — use **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**. That repository owns production manifests, env layout (`GGHSTATS_HOST_DATA`), and operator docs; this repo ships the application binary and image only.
+
+**gghstats has many configuration options** (repo filter, sync behavior, API token, locales, bind address, SQLite path, badges, metrics, optional theme, and more). Before running it for real data, read **[Configuration](#configuration)**, **[Environment file](#environment-file)**, and **[Token setup](#token-setup)** in detail. Use **[Install](#install)** for `.deb`, `.rpm`, or tarballs; use **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** when you outgrow these smoke-test commands.
+
 ### Homebrew (macOS / Linux)
 
 ```bash
@@ -88,7 +94,7 @@ export GGHSTATS_GITHUB_TOKEN=ghp_xxx
 gghstats serve
 ```
 
-Tap: [homebrew-gghstats](https://github.com/hrodrig/homebrew-gghstats). The cask is updated on each app release when `HOMEBREW_TAP_TOKEN` is configured in the gghstats release workflow.
+Tap: [homebrew-gghstats](https://github.com/hrodrig/homebrew-gghstats). The cask is updated when a new [release](https://github.com/hrodrig/gghstats/releases) is published. Server deployment: **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**.
 
 ### Local binary (fastest try)
 
@@ -98,11 +104,11 @@ export GGHSTATS_GITHUB_TOKEN=ghp_xxx
 gghstats serve
 ```
 
-Open <http://localhost:8080>. Data is stored in `./data/gghstats.db` (override with `GGHSTATS_DB`).
+Open <http://localhost:8080> and confirm the UI loads. Data is stored in `./data/gghstats.db` (override with `GGHSTATS_DB`). A first sync may take a while if the default filter includes many repositories — narrow `GGHSTATS_FILTER` in [Configuration](#configuration) when you move beyond this smoke test.
 
-For production (Compose, Traefik, Helm), use **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**.
+### Docker (one command, no clone — UI smoke test)
 
-### Docker (one command, no clone)
+Quick validation only. **Production Docker / Compose / Traefik / Helm:** **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**.
 
 ```bash
 docker run --rm -d \
@@ -114,9 +120,11 @@ docker run --rm -d \
   ghcr.io/hrodrig/gghstats:latest
 ```
 
-Open <http://localhost:8080>. Named volume keeps SQLite history between restarts.
+Open <http://localhost:8080> to validate the interface. Named volume keeps SQLite history between restarts.
 
-### Docker Compose (build from this repo)
+### Docker Compose (local development in this repo)
+
+Builds the image from source — **not** the supported production path. For published-image Compose, Traefik + TLS, minimal/observability stacks, and **`GGHSTATS_HOST_DATA`**, use **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**.
 
 ```bash
 cp .env.example .env
@@ -124,47 +132,59 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Open <http://localhost:8080>.
-
-The template [`.env.example`](.env.example) lists variables for the **Go binary** and this dev Compose file. Production (Traefik, published image, Helm, observability) is in **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**.
-
-### Plain Docker
-
-```bash
-docker run -d \
-  -e GGHSTATS_GITHUB_TOKEN=ghp_xxx \
-  -e GGHSTATS_FILTER="your-github-user/*" \
-  -p 8080:8080 \
-  -v ./data:/data \
-  --name gghstats \
-  ghcr.io/hrodrig/gghstats:v0.5.0
-```
+Open <http://localhost:8080>. The template [`.env.example`](.env.example) documents variables for the **Go binary** and this **dev-only** Compose file.
 
 [Back to top](#gghstats)
 
 ## Install
 
-### Go install
+**Quick install** — get the binary on your machine. **Configuration on a server, systemd, `.deb`/`.rpm` setup, Compose, Traefik, Helm, env files, and VPS deployment** are documented only in **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** ([`run/`](https://github.com/hrodrig/gghstats-selfhosted/tree/main/run), [`run/standalone/linux/`](https://github.com/hrodrig/gghstats-selfhosted/blob/main/run/standalone/linux/README.md) for Linux packages and systemd).
+
+**From source (recommended for developers):**
 
 ```bash
 go install github.com/hrodrig/gghstats/cmd/gghstats@latest
 ```
 
-### Pre-built binary and container
+This installs the binary to `$GOBIN` (default `$HOME/go/bin`). Ensure `$GOBIN` is on your `PATH`.
 
-- **Binary archives:** [Releases](https://github.com/hrodrig/gghstats/releases) (pick OS/arch; verify `checksums.txt`).
-- **Homebrew:** `brew install hrodrig/gghstats/gghstats` ([tap](https://github.com/hrodrig/homebrew-gghstats)).
-- **Debian/Ubuntu/RHEL packages:** `.deb` and `.rpm` on [Releases](https://github.com/hrodrig/gghstats/releases) (Linux amd64/arm64); include `man gghstats`.
-- **OCI image:** `ghcr.io/hrodrig/gghstats:v0.5.0` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
+**Package managers and images:**
 
-### Build from source
+| Platform | Command / path |
+|----------|----------------|
+| **Homebrew (macOS / Linux)** | `brew install hrodrig/gghstats/gghstats` — [tap](https://github.com/hrodrig/homebrew-gghstats) |
+| **Debian / Ubuntu** | `wget -q -O /tmp/gghstats.deb https://github.com/hrodrig/gghstats/releases/download/v0.6.4/gghstats_0.6.4_linux_amd64.deb && sudo dpkg -i /tmp/gghstats.deb` |
+| **Fedora / RHEL / AlmaLinux / Rocky / Oracle Linux** | `sudo dnf install https://github.com/hrodrig/gghstats/releases/download/v0.6.4/gghstats_0.6.4_linux_amd64.rpm` |
+| **Linux tarball** | `tar -xzf gghstats_*_linux_*.tar.gz` from [Releases](https://github.com/hrodrig/gghstats/releases); verify `checksums.txt` |
+| **macOS / Windows archives** | `.tar.gz` / `.zip` on [Releases](https://github.com/hrodrig/gghstats/releases) |
+| **OCI image** | `ghcr.io/hrodrig/gghstats:v0.6.4` or `:latest` (multi-arch) |
+
+Replace `v0.6.4` and `amd64` with your [release](https://github.com/hrodrig/gghstats/releases) version and architecture (e.g. `arm64`).
+
+After install, validate the UI locally:
+
+```bash
+export GGHSTATS_GITHUB_TOKEN=ghp_xxx
+gghstats serve
+```
+
+Open <http://127.0.0.1:8080>. Variable semantics: [Configuration](#configuration) below. **Do not use this README for production deployment** — use **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**.
+
+[Back to top](#gghstats)
+
+## Build
 
 ```bash
 git clone https://github.com/hrodrig/gghstats.git
 cd gghstats
-make install
-make install-man   # optional: MANDIR=/usr/share/man for system-wide man page
+make build
+make install          # installs to $HOME/go/bin by default; GOBIN=~/bin make install for another path
+make install-man      # optional: MANDIR=/usr/share/man for system-wide man page
 ```
+
+**Release (GitHub):** merge `develop` → `main`, tag `v*`, push — the [Release workflow](.github/workflows/release.yml) runs GoReleaser. Locally: `make release-check` then `make release` (requires [goreleaser](https://goreleaser.com) and tokens). Snapshot without publishing: `make snapshot` → `dist/`.
+
+[Back to top](#gghstats)
 
 ### Web UI assets (developers)
 
@@ -200,12 +220,14 @@ Commit everything under `assets/favicons/` together so all icons stay in sync.
 
 ## Usage
 
-### Server mode (recommended)
+### Server mode (recommended for local try-out)
 
 ```bash
 export GGHSTATS_GITHUB_TOKEN="ghp_your_token"
 gghstats serve
 ```
+
+On a **VPS or production host**, run the published image via **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** instead of ad-hoc `gghstats serve` on the public internet.
 
 Server behavior:
 
@@ -257,7 +279,7 @@ make release-check STRICT_RELEASE=1
 
 ### Local release dry-run flow
 
-Snapshot and test-release versions come from the repo **`VERSION`** file (for example `0.5.0` → artifacts `0.5.0-next`), not from the latest git tag. Same pattern as [pgwd](https://github.com/hrodrig/pgwd).
+Snapshot and test-release versions come from the repo **`VERSION`** file (for example `0.5.0` → artifacts `0.5.0-next`), not from the latest git tag.
 
 ```bash
 make snapshot        # GoReleaser snapshot → dist/ (no Docker; no publish)
@@ -270,12 +292,20 @@ On a real release, push tag **`v<VERSION>`** (must match **`VERSION`**) so GoRel
 
 ## Configuration
 
-All runtime configuration uses env vars (`serve`) or flags (`fetch/report/export`).
+**Application reference** — what each `GGHSTATS_*` variable means (for `gghstats serve`, CLI, and API behavior).
 
-### Environment file
+**Operator implementation** (where to put env files, Compose, Traefik, Helm, systemd, `/etc/gghstats/gghstats.env`, `GGHSTATS_HOST_DATA`, upgrades, observability) → **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** only:
 
-- **Template:** [`.env.example`](.env.example) — copy to `.env` and fill in secrets. `.env` is gitignored (dotfiles are excluded by default in this repo).
-- **Compose:** `docker compose` loads `.env` from the project directory automatically.
+- [`run/common/.env.example`](https://github.com/hrodrig/gghstats-selfhosted/blob/main/run/common/.env.example) — production Compose env template  
+- [`run/standalone/linux/README.md`](https://github.com/hrodrig/gghstats-selfhosted/blob/main/run/standalone/linux/README.md) — `.deb`/`.rpm`, systemd, bare-metal paths  
+- [`run/docker-compose/`](https://github.com/hrodrig/gghstats-selfhosted/tree/main/run/docker-compose/) — minimal, Traefik, observability  
+- [`run/kubernetes/`](https://github.com/hrodrig/gghstats-selfhosted/tree/main/run/kubernetes/) — Helm and manifests  
+
+This repo’s [`.env.example`](.env.example) is for **local smoke tests** and **dev** `docker-compose.yml` in the gghstats clone only.
+
+### Environment file (local try-out)
+
+Copy [`.env.example`](.env.example) → `.env` in this repository when running `gghstats serve` on your laptop. **Servers:** use **gghstats-selfhosted**, not this file.
 
 ### Environment variables (serve)
 
@@ -283,7 +313,7 @@ All runtime configuration uses env vars (`serve`) or flags (`fetch/report/export
 | --- | --- | --- |
 | `GGHSTATS_GITHUB_TOKEN` | (required) | GitHub personal access token |
 | `GGHSTATS_DB` | `./data/gghstats.db` | SQLite database path |
-| `GGHSTATS_HOST` | `127.0.0.1` | Bind address (localhost only; set `0.0.0.0` inside Docker/Compose) |
+| `GGHSTATS_HOST` | `127.0.0.1` | Bind address (localhost only on bare metal). **Production Compose** sets `0.0.0.0` in **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** |
 | `GGHSTATS_PORT` | `8080` | Listen port |
 | `GGHSTATS_FILTER` | `*` | Repo filter expression |
 | `GGHSTATS_INCLUDE_PRIVATE` | `false` | Include private repos |
@@ -329,7 +359,7 @@ GGHSTATS_ENABLED_LOCALES=en,es,de
 Force English for one visit: open `https://gghstats.example.com/?lang=en`.  
 Permalink in Spanish: `https://gghstats.example.com/h2h?lang=es&a=owner/repoA&b=owner/repoB`.
 
-In **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** Compose/Helm, set the same variables next to `GGHSTATS_GITHUB_TOKEN` and the image tag (infra repo documents env placement under `run/common/.env.example`).
+Set **`GGHSTATS_DEFAULT_LOCALE`** and **`GGHSTATS_ENABLED_LOCALES`** in **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** (`run/common/.env.example`) for production instances.
 
 #### Adding a new locale (contributors)
 
@@ -391,12 +421,12 @@ Example: **Portuguese (Brazil)** as `pt-br`.
 
 The shipped look is **neo-brutalist** on purpose—not every user or org wants heavy borders and loud chrome. If you prefer something **flatter, calmer, or closer to your brand**, you can supply your own CSS and keep the same binary and data layout.
 
-Self-hosted installs can override colors and chrome **without rebuilding**:
+**Production (Compose / `GGHSTATS_HOST_DATA`):** file placement and **`GGHSTATS_CUSTOM_CSS`** — **[gghstats-selfhosted — Custom UI theme](https://github.com/hrodrig/gghstats-selfhosted#custom-ui-theme-optional)**.
+
+**Local try-out** (no rebuild):
 
 1. Copy one of the **five official example themes** from [`contrib/themes/`](contrib/themes/README.md) (for a stock-Bootstrap feel use **`example-bootstrap-plain.css`**; or write your own CSS targeting `body.app-brutalist` and `html[data-bs-theme="dark"] body.app-brutalist`).
-2. Place the file where the process can read it (e.g. mount `./data/custom-theme.css` in Docker to `/data/custom-theme.css`).
-3. Set **`GGHSTATS_CUSTOM_CSS=/data/custom-theme.css`** (absolute or relative path; relative paths resolve from the process working directory).
-4. Restart **`gghstats serve`**. The layout adds `<link href="/theme/custom.css?…">` after `/static/app.css`. The query string bumps when the file’s modification time changes.
+2. Set **`GGHSTATS_CUSTOM_CSS`** to the file path and restart **`gghstats serve`**. The layout adds `<link href="/theme/custom.css?…">` after `/static/app.css`.
 
 **Bootstrap-plain example** ([`example-bootstrap-plain.css`](contrib/themes/example-bootstrap-plain.css) with `GGHSTATS_CUSTOM_CSS`): repository index in light mode — closer to stock Bootstrap (sans-serif, thin borders, no offset shadows):
 
@@ -654,6 +684,8 @@ See [Security and quality](#security-and-quality) for the local tooling that sca
 
 ## Typical scenarios
 
+Examples for **local** `gghstats serve` or CLI. **Production filter and sync defaults** on a server: set them in **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** (`run/common/.env.example` or [`run/standalone/linux/`](https://github.com/hrodrig/gghstats-selfhosted/blob/main/run/standalone/linux/README.md)).
+
 ### Track all repositories for one owner
 
 ```bash
@@ -686,21 +718,11 @@ gghstats export --repo your-github-user/my-app --days 30 --output traffic-30d.cs
 
 [Back to top](#gghstats)
 
-## Deployments
-
-Production and optional observability (Traefik + TLS, Prometheus / Grafana stack, Helm) live in a separate repository so release versioning applies to the **application** only. For self-hosted setups, start here:
-
-**[github.com/hrodrig/gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**
-
-Clone that repo on your server, copy `.env.example` → `.env`, and follow its README for the deployment path you choose. For the optional metrics/logs stack, see **[run/docker-compose/observability/README.md](https://github.com/hrodrig/gghstats-selfhosted/blob/main/run/docker-compose/observability/README.md)** (on the default branch).
-
-[Back to top](#gghstats)
-
 ## Troubleshooting
 
 ### `GGHSTATS_GITHUB_TOKEN is required`
 
-Set `GGHSTATS_GITHUB_TOKEN` in your shell or `.env` file before running `serve`.
+Set `GGHSTATS_GITHUB_TOKEN` in your shell or local `.env` before running `serve`. On a **server** (systemd, Compose): **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**.
 
 ### Dashboard shows no repositories
 
@@ -726,6 +748,10 @@ Confirm request header exactly matches configured token. For `404` on `/api/repo
 curl -H "x-api-token: $GGHSTATS_API_TOKEN" http://localhost:8080/api/repos
 ```
 
+### systemd / `.deb` / server deployment issues
+
+See **[gghstats-selfhosted — Linux standalone](https://github.com/hrodrig/gghstats-selfhosted/blob/main/run/standalone/linux/README.md)** and [gghstats `contrib/systemd/README.md`](contrib/systemd/README.md) (unit file source only).
+
 [Back to top](#gghstats)
 
 ## Release workflow
@@ -736,26 +762,12 @@ curl -H "x-api-token: $GGHSTATS_API_TOKEN" http://localhost:8080/api/repos
 
 ### Default: publish from GitHub Actions (no local GoReleaser required)
 
-Pushing a tag matching `v*` runs [`.github/workflows/release.yml`](.github/workflows/release.yml): `make release-check`, then `goreleaser release --clean` with `GITHUB_TOKEN` (releases + **GHCR** + `.deb`/`.rpm` + Homebrew cask).
+Pushing a tag matching `v*` runs [`.github/workflows/release.yml`](.github/workflows/release.yml): `make release-check`, then `goreleaser release --clean` (GitHub release assets, **GHCR** image, `.deb`/`.rpm`, and an updated Homebrew cask on [homebrew-gghstats](https://github.com/hrodrig/homebrew-gghstats)). CI uses the automatic `GITHUB_TOKEN` for releases and the container registry.
 
-**GitHub Actions secrets** (repo **gghstats** → Settings → Secrets and variables → Actions):
-
-| Secret | Purpose |
-|--------|---------|
-| `GITHUB_TOKEN` | Provided automatically — release assets and `ghcr.io` image. |
-| `HOMEBREW_TAP_TOKEN` | **Required.** PAT with **contents:write** on [`hrodrig/homebrew-gghstats`](https://github.com/hrodrig/homebrew-gghstats) so GoReleaser pushes `Casks/gghstats.rb`. The workflow fails if this secret is missing. |
-
-If you already use the same PAT for [pgwd](https://github.com/hrodrig/pgwd) releases, extend it (or create a new one) with write access to **homebrew-gghstats**, then add it to **gghstats** as `HOMEBREW_TAP_TOKEN`:
-
-```bash
-gh secret set HOMEBREW_TAP_TOKEN --repo hrodrig/gghstats
-```
-
-**Local `make release`:**
+**Local `make release`** (maintainers only — needs a GitHub token with release permissions):
 
 ```bash
 export GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-export HOMEBREW_TAP_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 make release
 ```
 

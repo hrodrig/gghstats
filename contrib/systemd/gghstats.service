@@ -1,0 +1,31 @@
+# systemd unit for gghstats (web dashboard + background sync).
+# Environment: /etc/gghstats/gghstats.env (see contrib/gghstats.env.example).
+#
+#   sudo cp contrib/systemd/gghstats.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now gghstats
+
+[Unit]
+Description=gghstats GitHub traffic dashboard
+Documentation=https://github.com/hrodrig/gghstats
+# Use network.target (not network-online.target): Wants=network-online pulls in
+# systemd-networkd-wait-online (or similar) and can block systemctl enable --now
+# for a long time or leave a stale job if interrupted — especially on static IP setups.
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+# .deb/.rpm install to /usr/bin. For manual install to /usr/local/bin, change path.
+EnvironmentFile=/etc/gghstats/gghstats.env
+WorkingDirectory=/var/lib/gghstats
+ExecStart=/usr/bin/gghstats serve
+Restart=on-failure
+RestartSec=30
+
+# Optional: dedicated user (create with: useradd -r -d /var/lib/gghstats -s /usr/sbin/nologin gghstats)
+# User=gghstats
+# Group=gghstats
+
+[Install]
+WantedBy=multi-user.target

@@ -176,7 +176,7 @@ release-check:
 	fi
 	@echo "All release checks passed."
 
-# Snapshot version from VERSION (e.g. 0.5.0 => 0.5.0-next), independent of latest git tag (same as pgwd).
+# Snapshot version from VERSION (e.g. 0.5.0 => 0.5.0-next), independent of latest git tag.
 define export_gghstats_snapshot_version
 	set -e; \
 	ver_raw=$$(cat VERSION 2>/dev/null | tr -d '\n\r'); \
