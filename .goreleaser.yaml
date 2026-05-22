@@ -105,6 +105,9 @@ nfpms:
   - id: gghstats
     builds:
       - gghstats
+    scripts:
+      preremove: contrib/deb/prerm.sh
+      postremove: contrib/deb/postrm.sh
     formats:
       - deb
       - rpm

@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **`.deb`/`.rpm` maintainer scripts:** `contrib/deb/prerm.sh` (stop/disable `gghstats.service` on remove) and `contrib/deb/postrm.sh` (remove `/etc/gghstats` on **purge**; SQLite under `/var/lib/gghstats` is kept).
 - **systemd (Linux):** `contrib/systemd/gghstats.service`, `contrib/gghstats.env.example` → `/etc/gghstats/gghstats.env`, and [contrib/systemd/README.md](contrib/systemd/README.md). **.deb/.rpm** install the unit to `/lib/systemd/system/`.
 - **README Install:** package-manager table, separate **Build** section, and **Debian / Ubuntu** + **AlmaLinux / Fedora / RHEL** install notes.
 - **Docs:** Install/Quick start = quick commands only; **systemd**, Debian/RHEL package setup, and deployment guides moved to **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** (`run/standalone/linux/`, `run/docker-compose/`, `run/common/`).

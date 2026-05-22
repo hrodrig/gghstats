@@ -85,6 +85,17 @@ Ensure **`gghstats`** can read **`/etc/gghstats/gghstats.env`** and read/write *
 
 **gghstats-selfhosted** Compose sets **`0.0.0.0`** inside the container; that is separate from this bare-metal unit.
 
+## Package removal (.deb / .rpm)
+
+Release packages run maintainer scripts on uninstall:
+
+| Action | Behaviour |
+|--------|-----------|
+| **`apt remove`** / **`dnf remove`** | Stops and disables **`gghstats.service`**; keeps **`/etc/gghstats/gghstats.env`** and **`/var/lib/gghstats`** |
+| **`apt purge`** | Same as remove, then deletes **`/etc/gghstats/`** (config only; **not** `/var/lib/gghstats`) |
+
+Scripts: [`contrib/deb/prerm.sh`](../deb/prerm.sh), [`contrib/deb/postrm.sh`](../deb/postrm.sh).
+
 ## Troubleshooting
 
 ### `systemctl enable --now` seems stuck; service stays `inactive (dead)`; empty journal
