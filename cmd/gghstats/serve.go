@@ -42,7 +42,7 @@ func loadServeConfig() serveConfig {
 	cfg := serveConfig{
 		GithubToken:      os.Getenv("GGHSTATS_GITHUB_TOKEN"),
 		DB:               envOr("GGHSTATS_DB", "./data/gghstats.db"),
-		Host:             envOr("GGHSTATS_HOST", "0.0.0.0"),
+		Host:             envOr("GGHSTATS_HOST", "127.0.0.1"),
 		Port:             envOr("GGHSTATS_PORT", "8080"),
 		Filter:           envOr("GGHSTATS_FILTER", "*"),
 		IncludePrivate:   os.Getenv("GGHSTATS_INCLUDE_PRIVATE") == "true",
@@ -173,7 +173,11 @@ func runServe(args []string) error {
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		slog.Info("listening", "addr", "http://"+addr)
+		logURL := "http://" + addr
+		if cfg.Host == "0.0.0.0" {
+			logURL = "http://127.0.0.1:" + cfg.Port + " (bind " + addr + ")"
+		}
+		slog.Info("listening", "url", logURL)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("server error", "error", err)
 			os.Exit(1)

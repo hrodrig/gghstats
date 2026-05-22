@@ -283,7 +283,7 @@ All runtime configuration uses env vars (`serve`) or flags (`fetch/report/export
 | --- | --- | --- |
 | `GGHSTATS_GITHUB_TOKEN` | (required) | GitHub personal access token |
 | `GGHSTATS_DB` | `./data/gghstats.db` | SQLite database path |
-| `GGHSTATS_HOST` | `0.0.0.0` | Bind address |
+| `GGHSTATS_HOST` | `127.0.0.1` | Bind address (localhost only; set `0.0.0.0` inside Docker/Compose) |
 | `GGHSTATS_PORT` | `8080` | Listen port |
 | `GGHSTATS_FILTER` | `*` | Repo filter expression |
 | `GGHSTATS_INCLUDE_PRIVATE` | `false` | Include private repos |

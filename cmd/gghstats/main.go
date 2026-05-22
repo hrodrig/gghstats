@@ -30,7 +30,7 @@ Server (gghstats serve):
 Server env vars (serve):
   GGHSTATS_GITHUB_TOKEN    GitHub personal access token (required)
   GGHSTATS_DB              SQLite path (default: ./data/gghstats.db)
-  GGHSTATS_HOST            Bind address (default: 0.0.0.0)
+  GGHSTATS_HOST            Bind address (default: 127.0.0.1; use 0.0.0.0 in Docker)
   GGHSTATS_PORT            Listen port (default: 8080)
   GGHSTATS_FILTER          Repo filter (default: * = all)
   GGHSTATS_SYNC_INTERVAL   Sync frequency (default: 1h)

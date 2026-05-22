@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Default bind address:** `gghstats serve` listens on **`127.0.0.1`** (localhost only) instead of `0.0.0.0`. Docker Compose in this repo and **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** still set `GGHSTATS_HOST=0.0.0.0` for containers.
+
 ## [0.6.4] - 2026-05-21
 
 ### Added

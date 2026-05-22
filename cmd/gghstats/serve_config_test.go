@@ -17,7 +17,7 @@ func TestLoadServeConfigDefaults(t *testing.T) {
 	t.Setenv("GGHSTATS_SYNC_ON_STARTUP", "")
 
 	cfg := loadServeConfig()
-	if cfg.Host != "0.0.0.0" || cfg.Port != "8080" {
+	if cfg.Host != "127.0.0.1" || cfg.Port != "8080" {
 		t.Fatalf("host/port: %+v", cfg)
 	}
 	if cfg.Filter != "*" {
@@ -42,7 +42,7 @@ func TestLoadServeConfigSyncOnStartupFalse(t *testing.T) {
 func TestLoadServeConfigOverrides(t *testing.T) {
 	t.Setenv("GGHSTATS_GITHUB_TOKEN", "ghp_x")
 	t.Setenv("GGHSTATS_DB", "/data/db.sqlite")
-	t.Setenv("GGHSTATS_HOST", "127.0.0.1")
+	t.Setenv("GGHSTATS_HOST", "0.0.0.0")
 	t.Setenv("GGHSTATS_PORT", "3000")
 	t.Setenv("GGHSTATS_FILTER", "org/*")
 	t.Setenv("GGHSTATS_INCLUDE_PRIVATE", "true")
@@ -53,7 +53,7 @@ func TestLoadServeConfigOverrides(t *testing.T) {
 	if cfg.GithubToken != "ghp_x" || cfg.DB != "/data/db.sqlite" {
 		t.Fatalf("token/db: %+v", cfg)
 	}
-	if cfg.Host != "127.0.0.1" || cfg.Port != "3000" {
+	if cfg.Host != "0.0.0.0" || cfg.Port != "3000" {
 		t.Fatalf("listen: %+v", cfg)
 	}
 	if cfg.Filter != "org/*" || !cfg.IncludePrivate {
