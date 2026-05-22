@@ -80,6 +80,16 @@ Exact colors depend on light/dark theme (Bootstrap `--bs-primary` / `--bs-info`,
 
 ## Quick start
 
+### Homebrew (macOS / Linux)
+
+```bash
+brew install hrodrig/gghstats/gghstats
+export GGHSTATS_GITHUB_TOKEN=ghp_xxx
+gghstats serve
+```
+
+Tap: [homebrew-gghstats](https://github.com/hrodrig/homebrew-gghstats). The cask is updated on each app release when `HOMEBREW_TAP_TOKEN` is configured in the gghstats release workflow.
+
 ### Local binary (fastest try)
 
 ```bash
@@ -143,6 +153,7 @@ go install github.com/hrodrig/gghstats/cmd/gghstats@latest
 ### Pre-built binary and container
 
 - **Binary archives:** [Releases](https://github.com/hrodrig/gghstats/releases) (pick OS/arch; verify `checksums.txt`).
+- **Homebrew:** `brew install hrodrig/gghstats/gghstats` ([tap](https://github.com/hrodrig/homebrew-gghstats)).
 - **Debian/Ubuntu/RHEL packages:** `.deb` and `.rpm` on [Releases](https://github.com/hrodrig/gghstats/releases) (Linux amd64/arm64); include `man gghstats`.
 - **OCI image:** `ghcr.io/hrodrig/gghstats:v0.5.0` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
 
@@ -725,7 +736,7 @@ curl -H "x-api-token: $GGHSTATS_API_TOKEN" http://localhost:8080/api/repos
 
 ### Default: publish from GitHub Actions (no local GoReleaser required)
 
-Pushing a tag matching `v*` runs [`.github/workflows/release.yml`](.github/workflows/release.yml): `make release-check`, then `goreleaser release --clean` with `GITHUB_TOKEN` (releases + **GHCR**).
+Pushing a tag matching `v*` runs [`.github/workflows/release.yml`](.github/workflows/release.yml): `make release-check`, then `goreleaser release --clean` with `GITHUB_TOKEN` (releases + **GHCR** + `.deb`/`.rpm`). **Homebrew cask:** optional Actions secret `HOMEBREW_TAP_TOKEN` (PAT with `contents:write` on [homebrew-gghstats](https://github.com/hrodrig/homebrew-gghstats)); if unset, the workflow skips the cask push (update the tap manually until the secret is set).
 
 ```bash
 # 1) On develop: land changes, bump version if needed

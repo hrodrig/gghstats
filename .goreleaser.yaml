@@ -74,6 +74,33 @@ dockers_v2:
     # No `annotations:` here — GoReleaser passes them as manifest index annotations; GitHub's
     # buildx setup errors with: "index annotations not supported for single platform export".
 
+# Homebrew: publish cask to https://github.com/hrodrig/homebrew-gghstats (brew install hrodrig/gghstats/gghstats).
+# CI: optional HOMEBREW_TAP_TOKEN on gghstats release workflow (PAT with contents:write on the tap repo).
+homebrew_casks:
+  - name: gghstats
+    ids:
+      - gghstats
+    directory: Casks
+    homepage: "https://github.com/hrodrig/gghstats"
+    description: "Self-hosted GitHub traffic dashboard and CLI with SQLite storage"
+    commit_msg_template: "Brew cask update for {{ .ProjectName }} version {{ .Tag }}"
+    commit_author:
+      name: Hermes Rodríguez
+      email: hrodrig@usb.ve
+    repository:
+      owner: hrodrig
+      name: homebrew-gghstats
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    url:
+      verified: "github.com/hrodrig/gghstats/"
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/gghstats"]
+          end
+
 nfpms:
   - id: gghstats
     builds:

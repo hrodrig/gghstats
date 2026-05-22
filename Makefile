@@ -189,11 +189,11 @@ endef
 
 snapshot: release-check
 	@$(export_gghstats_snapshot_version); \
-	goreleaser release --snapshot --clean
+	goreleaser release --snapshot --clean --skip=homebrew
 
 test-release: release-check
 	@$(export_gghstats_snapshot_version); \
-	goreleaser release --snapshot --skip=publish --clean
+	goreleaser release --snapshot --skip=publish --clean --skip=homebrew
 
 release: release-check
 	@branch=$$(git branch --show-current 2>/dev/null); \
