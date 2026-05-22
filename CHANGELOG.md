@@ -7,6 +7,20 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-05-21
+
+### Added
+
+- **Sidebar sync status i18n:** localized “no sync yet” / last sync messages in all enabled locales.
+- **Homebrew:** official tap [`hrodrig/homebrew-gghstats`](https://github.com/hrodrig/homebrew-gghstats) — `brew install hrodrig/gghstats/gghstats`; GoReleaser `homebrew_casks` on release (requires Actions secret `HOMEBREW_TAP_TOKEN`).
+- **Linux packages:** `.deb` and `.rpm` via GoReleaser `nfpms`; `contrib/man/man1/gghstats.1` and `make install-man`.
+- **README quick start:** Homebrew, local binary download, and one-line `docker run`.
+
+### Changed
+
+- **H2H score subline:** only the leading repo shows a margin line (`lead_margin`); ties or small deltas show the interval label only.
+- **Release workflow:** `HOMEBREW_TAP_TOKEN` is required (same model as pgwd); documented in README.
+
 ## [0.6.3] - 2026-05-21
 
 ### Fixed
@@ -192,7 +206,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.6.3...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.6.4...HEAD
+[0.6.4]: https://github.com/hrodrig/gghstats/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/hrodrig/gghstats/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/hrodrig/gghstats/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/hrodrig/gghstats/compare/v0.6.0...v0.6.1
