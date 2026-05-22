@@ -80,6 +80,32 @@ Exact colors depend on light/dark theme (Bootstrap `--bs-primary` / `--bs-info`,
 
 ## Quick start
 
+### Local binary (fastest try)
+
+```bash
+# From Releases: extract gghstats_*_linux_* archive, or: go install github.com/hrodrig/gghstats/cmd/gghstats@latest
+export GGHSTATS_GITHUB_TOKEN=ghp_xxx
+gghstats serve
+```
+
+Open <http://localhost:8080>. Data is stored in `./data/gghstats.db` (override with `GGHSTATS_DB`).
+
+For production (Compose, Traefik, Helm), use **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**.
+
+### Docker (one command, no clone)
+
+```bash
+docker run --rm -d \
+  -e GGHSTATS_GITHUB_TOKEN=ghp_xxx \
+  -e GGHSTATS_FILTER="your-github-user/*" \
+  -p 8080:8080 \
+  -v gghstats-data:/data \
+  --name gghstats \
+  ghcr.io/hrodrig/gghstats:latest
+```
+
+Open <http://localhost:8080>. Named volume keeps SQLite history between restarts.
+
 ### Docker Compose (build from this repo)
 
 ```bash
@@ -117,6 +143,7 @@ go install github.com/hrodrig/gghstats/cmd/gghstats@latest
 ### Pre-built binary and container
 
 - **Binary archives:** [Releases](https://github.com/hrodrig/gghstats/releases) (pick OS/arch; verify `checksums.txt`).
+- **Debian/Ubuntu/RHEL packages:** `.deb` and `.rpm` on [Releases](https://github.com/hrodrig/gghstats/releases) (Linux amd64/arm64); include `man gghstats`.
 - **OCI image:** `ghcr.io/hrodrig/gghstats:v0.5.0` or `ghcr.io/hrodrig/gghstats:latest` (image tag matches the Git release tag; multi-arch manifest).
 
 ### Build from source
@@ -125,6 +152,7 @@ go install github.com/hrodrig/gghstats/cmd/gghstats@latest
 git clone https://github.com/hrodrig/gghstats.git
 cd gghstats
 make install
+make install-man   # optional: MANDIR=/usr/share/man for system-wide man page
 ```
 
 ### Web UI assets (developers)

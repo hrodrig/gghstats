@@ -19,7 +19,7 @@ LDFLAGS     := -s -w \
 
 .DEFAULT_GOAL := help
 
-.PHONY: build clean compose-down compose-up cover docker-build docker-build-amd64 docker-export-amd64 docker-run docker-scan gocyclo govulncheck grype help install lint lint-fix release release-check security server server-metrics snapshot test test-release tools
+.PHONY: build clean compose-down compose-up cover docker-build docker-build-amd64 docker-export-amd64 docker-run docker-scan gocyclo govulncheck grype help install install-man lint lint-fix release release-check security server server-metrics snapshot test test-release tools
 
 help:
 	@echo "gghstats — GitHub traffic dashboard and CLI"
@@ -32,6 +32,7 @@ help:
 	@echo "  compose-down       Stop stack with docker compose"
 	@echo "  compose-up         Start stack with docker compose"
 	@echo "  install            Install binary with ldflags"
+	@echo "  install-man        Install man page (MANDIR=/usr/local/share/man by default)"
 	@echo "  server             Run gghstats serve locally (go run)"
 	@echo "  server-metrics     Same as server with GGHSTATS_METRICS_PER_REPO=true"
 	@echo ""
@@ -64,6 +65,12 @@ build:
 
 install:
 	go install -ldflags "$(LDFLAGS)" ./cmd/gghstats
+
+MANDIR ?= /usr/local/share/man
+install-man:
+	@mkdir -p $(MANDIR)/man1
+	@cp contrib/man/man1/gghstats.1 $(MANDIR)/man1/
+	@echo "Installed man page to $(MANDIR)/man1/gghstats.1"
 
 server:
 	go run -ldflags "$(LDFLAGS)" ./cmd/gghstats serve

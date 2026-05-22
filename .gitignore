@@ -37,6 +37,7 @@
 !assets/**
 !contrib/
 !contrib/**
+contrib/man/man1/*.gz
 # Persist data/ in repo (placeholder only); never commit the SQLite DB.
 !data/
 !.keep

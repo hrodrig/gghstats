@@ -154,7 +154,12 @@ func (b *Bundle) LeadsLabel(locale, repo string) string {
 	return b.Tfmt(locale, "h2h.leads_label", map[string]string{"repo": repo})
 }
 
-// LeadPtsLabel formats lead points suffix.
+// LeadMarginLabel formats the leader-only margin suffix under an H2H score card.
+func (b *Bundle) LeadMarginLabel(locale string, pts float64) string {
+	return b.Tfmt(locale, "h2h.lead_margin", map[string]string{"pts": fmt.Sprintf("%.0f", pts)})
+}
+
+// LeadPtsLabel is deprecated naming; use LeadMarginLabel.
 func (b *Bundle) LeadPtsLabel(locale string, pts float64) string {
-	return b.Tfmt(locale, "h2h.lead_pts", map[string]string{"pts": fmt.Sprintf("%.0f", pts)})
+	return b.LeadMarginLabel(locale, pts)
 }

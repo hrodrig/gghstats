@@ -118,7 +118,10 @@ func TestH2HErrorAndChartLabels(t *testing.T) {
 	if !strings.Contains(b.LeadsLabel("en", "o/r"), "o/r") {
 		t.Fatal("leads label")
 	}
-	if !strings.Contains(b.LeadPtsLabel("en", 12), "12") {
-		t.Fatal("lead pts")
+	if !strings.Contains(b.LeadMarginLabel("en", 12), "12") {
+		t.Fatal("lead margin")
+	}
+	if !strings.Contains(b.LeadMarginLabel("es", 11), "ventaja") {
+		t.Fatal("lead margin es")
 	}
 }

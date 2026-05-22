@@ -1,0 +1,109 @@
+.\" Man page for gghstats(1)
+.TH GGHSTATS 1 "May 2026" "gghstats" "User Commands"
+.SH NAME
+gghstats \- self-hosted GitHub repository traffic dashboard and CLI
+.SH SYNOPSIS
+.B gghstats
+.I command
+.RB [ flags ]
+.PP
+.B gghstats serve
+.RB [ \-\-port
+.IR PORT ]
+.SH DESCRIPTION
+.B gghstats
+collects GitHub traffic metrics (views, clones, referrers, paths) into a local
+SQLite database so history is kept beyond GitHub's 14-day window. It can run as
+a web dashboard with scheduled sync, or as CLI commands for fetch, report, and
+export.
+.PP
+Server mode (\fBserve\fR) requires a GitHub personal access token with access to
+the repositories you want to track.
+.SH COMMANDS
+.TP
+.B serve
+Start the HTTP dashboard and background sync scheduler.
+.TP
+.B fetch
+Download traffic for one repository into the database.
+.TP
+.B report
+Print a traffic summary in the terminal.
+.TP
+.B export
+Export traffic data to CSV.
+.TP
+.B version
+Print build version information.
+.SH CLI FLAGS
+(fetch, report, export)
+.TP
+.BR \-\-repo ", " owner/repo
+Repository (or \fBGGHSTATS_REPO\fR).
+.TP
+.BR \-\-token ", " TOKEN
+GitHub token (or \fBGGHSTATS_GITHUB_TOKEN\fR).
+.TP
+.BR \-\-db ", " PATH
+SQLite database path (default: \fB./data/gghstats.db\fR).
+.SH SERVE FLAGS
+.TP
+.BR \-\-port ", " PORT
+Listen port (overrides \fBGGHSTATS_PORT\fR; default \fB8080\fR).
+.SH ENVIRONMENT
+.TP
+.B GGHSTATS_GITHUB_TOKEN
+GitHub personal access token (required for \fBserve\fR).
+.TP
+.B GGHSTATS_DB
+SQLite path (default: \fB./data/gghstats.db\fR).
+.TP
+.B GGHSTATS_HOST
+Bind address (default: \fB0.0.0.0\fR).
+.TP
+.B GGHSTATS_PORT
+Listen port (default: \fB8080\fR).
+.TP
+.B GGHSTATS_FILTER
+Repository filter (default: \fB*\fR = all accessible).
+.TP
+.B GGHSTATS_SYNC_INTERVAL
+Sync frequency (default: \fB1h\fR).
+.TP
+.B GGHSTATS_SYNC_ON_STARTUP
+Run sync before serving (default: \fBtrue\fR).
+.TP
+.B GGHSTATS_API_TOKEN
+Protect JSON API routes; optional for manual sync from the UI.
+.TP
+.B GGHSTATS_BADGE_PUBLIC
+Allow public badge SVG URLs (default: \fBtrue\fR).
+.TP
+.B GGHSTATS_LOG_LEVEL
+\fBdebug\fR, \fBinfo\fR (default), \fBwarn\fR, or \fBerror\fR.
+.TP
+.B GGHSTATS_METRICS
+Set to \fBfalse\fR to disable Prometheus \fB/metrics\fR.
+.SH EXAMPLES
+.TP
+Run the dashboard locally:
+.RS
+.EX
+export GGHSTATS_GITHUB_TOKEN=ghp_xxx
+gghstats serve
+.EE
+Open \fIhttp://localhost:8080\fR.
+.RE
+.TP
+Fetch one repository:
+.RS
+.EX
+gghstats fetch --repo owner/repo --token "$GGHSTATS_GITHUB_TOKEN"
+.EE
+.RE
+.SH EXIT STATUS
+0 on success, non-zero on error.
+.SH SEE ALSO
+.BR https://github.com/hrodrig/gghstats
+.SH AUTHOR
+Hermes Rodriguez

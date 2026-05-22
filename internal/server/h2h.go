@@ -34,7 +34,6 @@ type h2hPageData struct {
 	Error              string
 	Compared           bool
 	Result             h2h.Result
-	LeadsLabel         string
 	ScoreALeadLine     string
 	ScoreBLeadLine     string
 	ConfidenceLabel    string
@@ -156,19 +155,26 @@ func populateH2HComparison(data *h2hPageData, bundle *i18n.Bundle, locale string
 	data.RepoB = repoB
 	data.IntervalLabel = bundle.IntervalLabel(locale, interval)
 	shareFull := bundle.Tfmt(locale, "h2h.h2h_share", map[string]string{"interval": data.IntervalLabel})
-	data.ScoreALeadLine = shareFull + " · " + bundle.LeadPtsLabel(locale, res.DeltaPct)
-	leader := repoB
-	if res.LeadsA {
-		leader = repoA
-	}
-	data.LeadsLabel = bundle.LeadsLabel(locale, leader)
-	data.ScoreBLeadLine = bundle.T(locale, "h2h.h2h_share_short") + " · " + data.LeadsLabel
+	data.ScoreALeadLine = h2hScoreSubline(bundle, locale, shareFull, res, true)
+	data.ScoreBLeadLine = h2hScoreSubline(bundle, locale, shareFull, res, false)
 	data.ConfidenceLabel = bundle.ConfidenceLabel(locale, res.Suggest.Confidence)
 	if chartJS, ok := buildH2HChartJSON(db, repoA, repoB, interval); ok {
 		data.ChartJSON = chartJS
 		data.HasCharts = true
 	}
 	return nil
+}
+
+// h2hScoreSubline is the muted line under a score card: share label, plus margin only on the leader when the gap is clear.
+func h2hScoreSubline(bundle *i18n.Bundle, locale, shareFull string, res h2h.Result, forRepoA bool) string {
+	if res.ScoreA == res.ScoreB || res.DeltaPct < 10 {
+		return shareFull
+	}
+	isLeader := res.LeadsA == forRepoA
+	if !isLeader {
+		return shareFull
+	}
+	return shareFull + " · " + bundle.LeadMarginLabel(locale, res.DeltaPct)
 }
 
 func buildH2HChartJSON(db *store.Store, repoA, repoB string, interval h2h.Interval) (template.JS, bool) {
