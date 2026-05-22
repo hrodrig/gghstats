@@ -117,6 +117,10 @@ func jsI18nPayload(bundle *i18n.Bundle, locale string) map[string]string {
 	keys := []string{
 		"js.syncing_all",
 		"js.syncing_repo",
+		"js.sync_none_yet",
+		"js.sync_last_failed",
+		"js.sync_last_repo",
+		"js.sync_last",
 		"js.sync_failed",
 		"js.sync_done",
 		"js.token_required",

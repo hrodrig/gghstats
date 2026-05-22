@@ -161,6 +161,10 @@
   "js": {
     "syncing_all": "Syncing all repositories…",
     "syncing_repo": "Syncing {{repo}}…",
+    "sync_none_yet": "No sync completed yet",
+    "sync_last_failed": "Last sync failed: {{error}}",
+    "sync_last_repo": "Last sync ({{repo}}): {{when}}",
+    "sync_last": "Last sync: {{when}}",
     "sync_failed": "Sync failed",
     "sync_done": "Sync finished",
     "token_required": "API token required",

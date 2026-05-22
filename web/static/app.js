@@ -590,13 +590,13 @@ function formatSyncStatus(st) {
     if (st.scope === 'repo' && st.repo) return uiT('js.syncing_repo', { repo: st.repo });
     return uiT('js.syncing_all');
   }
-  if (st.last_error) return `Last sync failed: ${st.last_error}`;
+  if (st.last_error) return uiT('js.sync_last_failed', { error: st.last_error });
   if (st.last_finished_at) {
     const when = new Date(st.last_finished_at).toLocaleString();
-    if (st.scope === 'repo' && st.repo) return `Last sync (${st.repo}): ${when}`;
-    return `Last sync: ${when}`;
+    if (st.scope === 'repo' && st.repo) return uiT('js.sync_last_repo', { repo: st.repo, when });
+    return uiT('js.sync_last', { when });
   }
-  return 'No sync completed yet';
+  return uiT('js.sync_none_yet');
 }
 
 async function fetchSyncStatus() {

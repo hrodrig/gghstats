@@ -161,6 +161,10 @@
   "js": {
     "syncing_all": "Synchronisation de tous les dépôts…",
     "syncing_repo": "Synchronisation de {{repo}}…",
+    "sync_none_yet": "Aucune synchronisation terminée pour l'instant",
+    "sync_last_failed": "Dernière synchronisation échouée : {{error}}",
+    "sync_last_repo": "Dernière synchronisation ({{repo}}) : {{when}}",
+    "sync_last": "Dernière synchronisation : {{when}}",
     "sync_failed": "Échec de la synchronisation",
     "sync_done": "Synchronisation terminée",
     "token_required": "Jeton API requis",
