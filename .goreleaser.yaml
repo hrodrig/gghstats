@@ -75,7 +75,7 @@ dockers_v2:
     # buildx setup errors with: "index annotations not supported for single platform export".
 
 # Homebrew: publish cask to https://github.com/hrodrig/homebrew-gghstats (brew install hrodrig/gghstats/gghstats).
-# CI: optional HOMEBREW_TAP_TOKEN on gghstats release workflow (PAT with contents:write on the tap repo).
+# CI: HOMEBREW_TAP_TOKEN required on gghstats release workflow (PAT with contents:write on the tap repo).
 homebrew_casks:
   - name: gghstats
     ids:

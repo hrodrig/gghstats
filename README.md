@@ -736,7 +736,28 @@ curl -H "x-api-token: $GGHSTATS_API_TOKEN" http://localhost:8080/api/repos
 
 ### Default: publish from GitHub Actions (no local GoReleaser required)
 
-Pushing a tag matching `v*` runs [`.github/workflows/release.yml`](.github/workflows/release.yml): `make release-check`, then `goreleaser release --clean` with `GITHUB_TOKEN` (releases + **GHCR** + `.deb`/`.rpm`). **Homebrew cask:** optional Actions secret `HOMEBREW_TAP_TOKEN` (PAT with `contents:write` on [homebrew-gghstats](https://github.com/hrodrig/homebrew-gghstats)); if unset, the workflow skips the cask push (update the tap manually until the secret is set).
+Pushing a tag matching `v*` runs [`.github/workflows/release.yml`](.github/workflows/release.yml): `make release-check`, then `goreleaser release --clean` with `GITHUB_TOKEN` (releases + **GHCR** + `.deb`/`.rpm` + Homebrew cask).
+
+**GitHub Actions secrets** (repo **gghstats** → Settings → Secrets and variables → Actions):
+
+| Secret | Purpose |
+|--------|---------|
+| `GITHUB_TOKEN` | Provided automatically — release assets and `ghcr.io` image. |
+| `HOMEBREW_TAP_TOKEN` | **Required.** PAT with **contents:write** on [`hrodrig/homebrew-gghstats`](https://github.com/hrodrig/homebrew-gghstats) so GoReleaser pushes `Casks/gghstats.rb`. The workflow fails if this secret is missing. |
+
+If you already use the same PAT for [pgwd](https://github.com/hrodrig/pgwd) releases, extend it (or create a new one) with write access to **homebrew-gghstats**, then add it to **gghstats** as `HOMEBREW_TAP_TOKEN`:
+
+```bash
+gh secret set HOMEBREW_TAP_TOKEN --repo hrodrig/gghstats
+```
+
+**Local `make release`:**
+
+```bash
+export GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+export HOMEBREW_TAP_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+make release
+```
 
 ```bash
 # 1) On develop: land changes, bump version if needed
