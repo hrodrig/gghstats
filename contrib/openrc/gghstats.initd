@@ -1,0 +1,40 @@
+#!/sbin/openrc-run
+# OpenRC init script for gghstats (Alpine Linux and other OpenRC distros).
+# Environment: /etc/gghstats/gghstats.env (see contrib/gghstats.env.example).
+#
+#   rc-service gghstats start
+#   rc-update add gghstats default
+
+: "${gghstats_envfile:=/etc/gghstats/gghstats.env}"
+
+depend() {
+	need net
+}
+
+start_pre() {
+	if [ ! -x /usr/local/bin/gghstats ]; then
+		eerror "missing /usr/local/bin/gghstats"
+		return 1
+	fi
+	if [ ! -r "$gghstats_envfile" ]; then
+		eerror "missing or unreadable $gghstats_envfile"
+		return 1
+	fi
+	set -a
+	# shellcheck disable=SC1090
+	. "$gghstats_envfile" || {
+		eerror "failed to source $gghstats_envfile (check GGHSTATS_FILTER quotes)"
+		return 1
+	}
+	set +a
+	if [ -z "${GGHSTATS_GITHUB_TOKEN:-}" ]; then
+		eerror "GGHSTATS_GITHUB_TOKEN is empty after sourcing $gghstats_envfile"
+		return 1
+	fi
+}
+
+command="/usr/local/bin/gghstats"
+command_args="serve"
+command_background="yes"
+pidfile="/run/gghstats.pid"
+directory="/var/lib/gghstats"

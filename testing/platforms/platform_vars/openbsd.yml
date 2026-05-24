@@ -1,0 +1,23 @@
+---
+# OpenBSD — release tarball, rc.d via rcctl (daemon=gghstats-serve wrapper, rc_bg=YES)
+gghstats_install_method: tarball
+gghstats_init_system: rcd
+gghstats_binary_path: /usr/local/bin/gghstats
+gghstats_tarball_os: openbsd
+gghstats_rcd_shell: /bin/ksh
+gghstats_rcd_script_mode: "0555"
+# Minimal lab VMs often lack curl; use ftp for healthz (see healthz_wait.yml).
+gghstats_healthz_probe: ftp
+
+gghstats_rcd_script_src: contrib/openbsd/gghstats
+gghstats_rcd_script_dest: /etc/rc.d/gghstats
+# gghstats-serve: env + exec serve (rc.subr rc_exec). gghstats-start is manual only.
+gghstats_rcd_serve_wrapper_src: contrib/openbsd/gghstats-serve
+gghstats_rcd_serve_wrapper_dest: /usr/local/bin/gghstats-serve
+gghstats_rcd_start_wrapper_src: contrib/openbsd/gghstats-start
+gghstats_rcd_start_wrapper_dest: /usr/local/bin/gghstats-start
+gghstats_rcd_enable_cmd: "rcctl enable gghstats"
+gghstats_rcd_disable_cmd: "rcctl disable gghstats"
+gghstats_rcd_start_cmd: "rcctl start gghstats"
+gghstats_rcd_stop_cmd: "rcctl stop gghstats"
+gghstats_rcd_status_cmd: "rcctl check gghstats"

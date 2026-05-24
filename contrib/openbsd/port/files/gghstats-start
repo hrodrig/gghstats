@@ -1,0 +1,26 @@
+#!/bin/ksh
+# Manual start without rcctl (runs gghstats-serve in background). Prefer rcctl start gghstats.
+: ${gghstats_logfile:="/var/lib/gghstats/gghstats.log"}
+: ${gghstats_pidfile:="/var/run/gghstats.pid"}
+
+[ -x /usr/local/bin/gghstats-serve ] || {
+	echo "gghstats-start: install /usr/local/bin/gghstats-serve first" >&2
+	exit 1
+}
+_logdir="${gghstats_logfile%/*}"
+case "$_logdir" in
+	"${gghstats_logfile}") _logdir="/var/lib/gghstats" ;;
+esac
+mkdir -p "$_logdir" || exit 1
+
+/usr/local/bin/gghstats-serve >>"$gghstats_logfile" 2>&1 &
+_pid=$!
+sleep 2
+kill -0 "$_pid" 2>/dev/null || {
+	echo "gghstats-start: failed (see $gghstats_logfile):" >&2
+	tail -15 "$gghstats_logfile" >&2
+	exit 1
+}
+echo "$_pid" >"$gghstats_pidfile" 2>/dev/null || true
+echo "started pid $_pid (log $gghstats_logfile)"
+exit 0

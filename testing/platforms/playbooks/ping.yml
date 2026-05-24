@@ -1,0 +1,10 @@
+---
+# ping.yml — Ansible ping (not ICMP). Success reports "pong" per host.
+- name: gghstats platform connectivity check
+  hosts: all
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: ansible.builtin.ping (success shows pong)
+      ansible.builtin.ping:

@@ -1,0 +1,329 @@
+---
+# gghstats_daemon — enable init system, start/stop daemon, verify running.
+#
+# Variables (platform_vars): gghstats_init_system, gghstats_rcd_* ; gghstats_daemon_state: started|stopped
+
+- name: Load platform variables
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/../platform_vars/{{ platform_vars }}.yml"
+
+- name: Set daemon state default
+  ansible.builtin.set_fact:
+    gghstats_daemon_state: "{{ gghstats_daemon_state | default('started') }}"
+
+- name: Compute repo root
+  ansible.builtin.set_fact:
+    _repo_root: "{{ playbook_dir | dirname | dirname | dirname }}"
+
+# Stop stray instances before start (re-runs, partial failures, manual tests on the VM).
+- name: "cleanup: stop gghstats via init when starting"
+  ansible.builtin.shell: "{{ gghstats_rcd_stop_cmd }}"
+  args:
+    executable: /bin/sh
+  register: gghstats_precleanup_rcd
+  changed_when: false
+  failed_when: false
+  when:
+    - gghstats_daemon_state == "started"
+    - gghstats_init_system == "rcd"
+
+- name: "cleanup: stop gghstats via systemd when starting"
+  ansible.builtin.systemd:
+    name: gghstats
+    state: stopped
+  failed_when: false
+  when:
+    - gghstats_daemon_state == "started"
+    - gghstats_init_system == "systemd"
+
+- name: "cleanup: stop gghstats via OpenRC when starting"
+  ansible.builtin.command: rc-service gghstats stop
+  register: gghstats_precleanup_openrc
+  changed_when: false
+  failed_when: false
+  when:
+    - gghstats_daemon_state == "started"
+    - gghstats_init_system == "openrc"
+
+- name: "cleanup: ensure no gghstats process still holds the port"
+  ansible.builtin.shell: pkill '^gghstats$' 2>/dev/null || pkill gghstats 2>/dev/null || true
+  args:
+    executable: /bin/sh
+  changed_when: false
+  failed_when: false
+  when: gghstats_daemon_state == "started"
+
+- name: "cleanup: remove stale pidfile (rc.d)"
+  ansible.builtin.file:
+    path: /var/run/gghstats.pid
+    state: absent
+  when:
+    - gghstats_daemon_state == "started"
+    - gghstats_init_system == "rcd"
+
+- name: "cleanup: remove stale pidfile (OpenRC)"
+  ansible.builtin.file:
+    path: /run/gghstats.pid
+    state: absent
+  when:
+    - gghstats_daemon_state == "started"
+    - gghstats_init_system == "openrc"
+
+- name: "cleanup: brief pause after stop"
+  ansible.builtin.pause:
+    seconds: 1
+  when: gghstats_daemon_state == "started"
+
+# ==================== systemd ====================
+- name: "systemd: install unit (tarball platforms, e.g. Arch)"
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/../templates/gghstats.service.j2"
+    dest: /etc/systemd/system/gghstats.service
+    mode: "0644"
+  when:
+    - gghstats_init_system == "systemd"
+    - gghstats_install_method == "tarball"
+    - gghstats_daemon_state == "started"
+
+- name: "systemd: enable and start gghstats"
+  ansible.builtin.systemd:
+    name: gghstats
+    enabled: true
+    state: started
+    daemon_reload: true
+  when:
+    - gghstats_init_system == "systemd"
+    - gghstats_daemon_state == "started"
+
+- name: "systemd: wait for service to become active"
+  ansible.builtin.command: systemctl is-active gghstats
+  register: systemd_active
+  changed_when: false
+  failed_when: false
+  retries: 12
+  delay: 5
+  until: systemd_active.stdout == "active"
+  when:
+    - gghstats_init_system == "systemd"
+    - gghstats_daemon_state == "started"
+
+- name: "systemd: assert active"
+  ansible.builtin.assert:
+    that:
+      - systemd_active.stdout == "active"
+    fail_msg: "gghstats systemd service is not active: {{ systemd_active.stdout }}"
+    success_msg: "gghstats is running (systemd)"
+  when:
+    - gghstats_init_system == "systemd"
+    - gghstats_daemon_state == "started"
+
+- name: "systemd: stop gghstats"
+  ansible.builtin.systemd:
+    name: gghstats
+    state: stopped
+    enabled: false
+  when:
+    - gghstats_init_system == "systemd"
+    - gghstats_daemon_state == "stopped"
+
+# ==================== OpenRC (Alpine) ====================
+- name: "openrc: install init script"
+  ansible.builtin.copy:
+    src: "{{ _repo_root }}/{{ gghstats_openrc_script_src }}"
+    dest: "{{ gghstats_openrc_script_dest }}"
+    mode: "0755"
+  when:
+    - gghstats_init_system == "openrc"
+    - gghstats_daemon_state == "started"
+    - gghstats_openrc_script_src is defined
+    - gghstats_openrc_script_dest is defined
+
+- name: "openrc: add to default runlevel"
+  ansible.builtin.command: rc-update add gghstats default
+  register: openrc_enable
+  changed_when: "'added' in (openrc_enable.stdout | default('')) or 'added' in (openrc_enable.stderr | default(''))"
+  failed_when: false
+  when:
+    - gghstats_init_system == "openrc"
+    - gghstats_daemon_state == "started"
+
+- name: "openrc: start gghstats"
+  ansible.builtin.command: rc-service gghstats start
+  register: openrc_start
+  changed_when: openrc_start.rc == 0
+  failed_when: false
+  when:
+    - gghstats_init_system == "openrc"
+    - gghstats_daemon_state == "started"
+
+- name: "openrc: verify running"
+  ansible.builtin.command: rc-service gghstats status
+  register: openrc_status
+  changed_when: false
+  failed_when: false
+  when:
+    - gghstats_init_system == "openrc"
+    - gghstats_daemon_state == "started"
+
+- name: "openrc: assert running"
+  ansible.builtin.assert:
+    that:
+      - openrc_status.rc == 0
+    fail_msg: "gghstats OpenRC service not running: {{ openrc_status.stdout | default('') }} {{ openrc_status.stderr | default('') }}"
+    success_msg: "gghstats is running (OpenRC)"
+  when:
+    - gghstats_init_system == "openrc"
+    - gghstats_daemon_state == "started"
+
+- name: "openrc: wait for HTTP health after start"
+  when:
+    - gghstats_init_system == "openrc"
+    - gghstats_daemon_state == "started"
+  block:
+    - name: "openrc: poll healthz (shared tasks)"
+      ansible.builtin.include_tasks:
+        file: "{{ role_path }}/../gghstats_test_health/tasks/healthz_wait.yml"
+
+  rescue:
+    - name: "openrc: fail with service status"
+      ansible.builtin.fail:
+        msg: >-
+          gghstats not healthy on :{{ gghstats_port | default(8080) }} after OpenRC start.
+          rc-service start rc={{ openrc_start.rc | default('?') }}.
+          status: {{ openrc_status.stdout | default('') }} {{ openrc_status.stderr | default('') }}
+
+- name: "openrc: stop gghstats"
+  ansible.builtin.command: rc-service gghstats stop
+  changed_when: true
+  failed_when: false
+  when:
+    - gghstats_init_system == "openrc"
+    - gghstats_daemon_state == "stopped"
+
+- name: "openrc: remove from default runlevel"
+  ansible.builtin.command: rc-update del gghstats default
+  changed_when: true
+  failed_when: false
+  when:
+    - gghstats_init_system == "openrc"
+    - gghstats_daemon_state == "stopped"
+
+# ==================== rc.d (FreeBSD / OpenBSD) ====================
+- name: "rcd: install gghstats-serve wrapper (OpenBSD)"
+  ansible.builtin.copy:
+    src: "{{ _repo_root }}/{{ gghstats_rcd_serve_wrapper_src }}"
+    dest: "{{ gghstats_rcd_serve_wrapper_dest }}"
+    mode: "0755"
+  when:
+    - gghstats_init_system == "rcd"
+    - gghstats_daemon_state == "started"
+    - gghstats_tarball_os | default('') == 'openbsd'
+    - gghstats_rcd_serve_wrapper_src is defined
+    - gghstats_rcd_serve_wrapper_dest is defined
+
+- name: "rcd: install gghstats-start helper (OpenBSD, optional manual)"
+  ansible.builtin.copy:
+    src: "{{ _repo_root }}/{{ gghstats_rcd_start_wrapper_src }}"
+    dest: "{{ gghstats_rcd_start_wrapper_dest }}"
+    mode: "0755"
+  when:
+    - gghstats_init_system == "rcd"
+    - gghstats_daemon_state == "started"
+    - gghstats_tarball_os | default('') == 'openbsd'
+    - gghstats_rcd_start_wrapper_src is defined
+    - gghstats_rcd_start_wrapper_dest is defined
+
+- name: "rcd: install rc.d script"
+  ansible.builtin.copy:
+    src: "{{ _repo_root }}/{{ gghstats_rcd_script_src }}"
+    dest: "{{ gghstats_rcd_script_dest }}"
+    mode: "{{ gghstats_rcd_script_mode | default('0755') }}"
+  when:
+    - gghstats_init_system == "rcd"
+    - gghstats_daemon_state == "started"
+
+- name: "rcd: enable gghstats"
+  ansible.builtin.shell: "{{ gghstats_rcd_enable_cmd }}"
+  args:
+    executable: "{{ gghstats_rcd_shell | default('/bin/sh') }}"
+  changed_when: true
+  when:
+    - gghstats_init_system == "rcd"
+    - gghstats_daemon_state == "started"
+
+- name: "rcd: start gghstats"
+  ansible.builtin.shell: "{{ gghstats_rcd_start_cmd }}"
+  args:
+    executable: "{{ gghstats_rcd_shell | default('/bin/sh') }}"
+  register: rcd_start
+  changed_when: rcd_start.rc == 0
+  failed_when: false
+  when:
+    - gghstats_init_system == "rcd"
+    - gghstats_daemon_state == "started"
+
+- name: "rcd: init status after start"
+  ansible.builtin.shell: "{{ gghstats_rcd_status_cmd }}"
+  args:
+    executable: "{{ gghstats_rcd_shell | default('/bin/sh') }}"
+  register: rcd_status
+  changed_when: false
+  failed_when: false
+  when:
+    - gghstats_init_system == "rcd"
+    - gghstats_daemon_state == "started"
+
+- name: "rcd: assert rcctl check (OpenBSD)"
+  ansible.builtin.assert:
+    that:
+      - rcd_status.stdout is search('ok')
+    fail_msg: "rcctl check gghstats failed: {{ rcd_status.stdout | default('empty') }}"
+    success_msg: "gghstats is running (rcctl {{ rcd_status.stdout | trim }})"
+  when:
+    - gghstats_init_system == "rcd"
+    - gghstats_daemon_state == "started"
+    - gghstats_tarball_os | default('') == 'openbsd'
+
+- name: "rcd: assert service status (FreeBSD)"
+  ansible.builtin.assert:
+    that:
+      - rcd_status.rc == 0
+    fail_msg: "gghstats rc.d service not running: {{ rcd_status.stdout | default('') }}"
+    success_msg: "gghstats is running (rc.d)"
+  when:
+    - gghstats_init_system == "rcd"
+    - gghstats_daemon_state == "started"
+    - gghstats_tarball_os | default('') != 'openbsd'
+
+- name: "rcd: wait for HTTP health after start"
+  when:
+    - gghstats_init_system == "rcd"
+    - gghstats_daemon_state == "started"
+  block:
+    - name: "rcd: poll healthz (shared tasks)"
+      ansible.builtin.include_tasks:
+        file: "{{ role_path }}/../gghstats_test_health/tasks/healthz_wait.yml"
+
+  rescue:
+    - name: "rcd: collect failure diagnostics"
+      ansible.builtin.include_tasks: diagnose_rcd.yml
+
+- name: "rcd: stop gghstats"
+  ansible.builtin.shell: "{{ gghstats_rcd_stop_cmd }}"
+  args:
+    executable: "{{ gghstats_rcd_shell | default('/bin/sh') }}"
+  changed_when: true
+  failed_when: false
+  when:
+    - gghstats_init_system == "rcd"
+    - gghstats_daemon_state == "stopped"
+
+- name: "rcd: disable gghstats"
+  ansible.builtin.shell: "{{ gghstats_rcd_disable_cmd }}"
+  args:
+    executable: "{{ gghstats_rcd_shell | default('/bin/sh') }}"
+  changed_when: true
+  failed_when: false
+  when:
+    - gghstats_init_system == "rcd"
+    - gghstats_daemon_state == "stopped"

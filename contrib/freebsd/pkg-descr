@@ -1,0 +1,11 @@
+gghstats is a self-hosted GitHub repository traffic dashboard and CLI.
+It stores views, clones, and related metrics in SQLite beyond GitHub's
+14-day API window.
+
+Features:
+- Web UI with optional i18n (EN, ES, DE, FR, PT-BR)
+- Prometheus metrics and optional README badges
+- Configurable repo filter and sync interval
+- Static binary (modernc SQLite), MIT licensed
+
+WWW: https://github.com/hrodrig/gghstats

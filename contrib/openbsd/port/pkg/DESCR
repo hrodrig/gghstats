@@ -1,0 +1,11 @@
+gghstats is a self-hosted GitHub traffic dashboard and CLI. It stores
+repository traffic and clone statistics in SQLite and exposes a web UI
+and JSON API.
+
+Features:
+- Dashboard and CLI for GitHub traffic insights
+- Configurable via environment file (token, filters, bind address, paths)
+- One-shot or daemon mode via gghstats serve; suitable for rc.d
+- Static binary (CGO_ENABLED=0)
+
+WWW: https://github.com/hrodrig/gghstats

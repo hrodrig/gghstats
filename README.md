@@ -156,6 +156,8 @@ This installs the binary to `$GOBIN` (default `$HOME/go/bin`). Ensure `$GOBIN` i
 | **Debian / Ubuntu** | `wget -q -O /tmp/gghstats.deb https://github.com/hrodrig/gghstats/releases/download/v0.6.4/gghstats_0.6.4_linux_amd64.deb && sudo dpkg -i /tmp/gghstats.deb` |
 | **Fedora / RHEL / AlmaLinux / Rocky / Oracle Linux** | `sudo dnf install https://github.com/hrodrig/gghstats/releases/download/v0.6.4/gghstats_0.6.4_linux_amd64.rpm` |
 | **Linux tarball** | `tar -xzf gghstats_*_linux_*.tar.gz` from [Releases](https://github.com/hrodrig/gghstats/releases); verify `checksums.txt` |
+| **FreeBSD** | `gghstats_*_freebsd_*.tar.gz` on [Releases](https://github.com/hrodrig/gghstats/releases); port + developer guide [`contrib/freebsd/README.md`](contrib/freebsd/README.md) (`gmake` in repo, `make` in ports tree) |
+| **OpenBSD** | `gghstats_*_openbsd_*.tar.gz` on [Releases](https://github.com/hrodrig/gghstats/releases); [`contrib/openbsd/README.md`](contrib/openbsd/README.md) and port [`contrib/openbsd/port/`](contrib/openbsd/port/) |
 | **macOS / Windows archives** | `.tar.gz` / `.zip` on [Releases](https://github.com/hrodrig/gghstats/releases) |
 | **OCI image** | `ghcr.io/hrodrig/gghstats:v0.6.4` or `:latest` (multi-arch) |
 
@@ -802,6 +804,8 @@ make release                          # runs release-check then goreleaser relea
 
 - Update **`CHANGELOG.md`** (move `[Unreleased]` into the new version section).
 - Keep **`VERSION`** (no `v`), README **Version** badge, and [CHANGELOG](CHANGELOG.md) in sync; the OCI tag uses the same `v` prefix as the Git tag. Deployment image pins live in **gghstats-selfhosted**.
+- Update **`contrib/man/man1/gghstats.1`** — `.TH` date and `gghstats v<VERSION>` (see **[AGENTS.md](AGENTS.md)** — Man page sync). Optional: `make install-man` and `man gghstats`.
+- If shipping BSD ports: **`gmake port-freebsd-sync`** and/or **`gmake port-openbsd-sync`** after bumping **`VERSION`** (GNU make in repo root).
 - Ensure **CI** and **Security** workflows are green before pushing the release tag.
 - **Docker:** `Dockerfile` is for local `make docker-build` / `docker-scan`. **GoReleaser** uses **`Dockerfile.release`** (pre-built Linux binaries; same pattern as multi-arch release images).
 

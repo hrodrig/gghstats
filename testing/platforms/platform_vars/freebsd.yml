@@ -1,0 +1,14 @@
+---
+# FreeBSD — release tarball, rc.d via sysrc/service
+gghstats_install_method: tarball
+gghstats_init_system: rcd
+gghstats_binary_path: /usr/local/bin/gghstats
+gghstats_tarball_os: freebsd
+
+gghstats_rcd_script_src: contrib/freebsd/rc.d/gghstats
+gghstats_rcd_script_dest: /usr/local/etc/rc.d/gghstats
+gghstats_rcd_enable_cmd: "sysrc gghstats_enable=YES"
+gghstats_rcd_disable_cmd: "sysrc gghstats_enable=NO"
+gghstats_rcd_start_cmd: "service gghstats start"
+gghstats_rcd_stop_cmd: "service gghstats stop"
+gghstats_rcd_status_cmd: "service gghstats status"

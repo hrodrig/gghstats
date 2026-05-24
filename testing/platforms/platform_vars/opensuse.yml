@@ -1,0 +1,6 @@
+---
+# OpenSUSE — .rpm via zypper, systemd
+gghstats_install_method: rpm_zypper
+gghstats_init_system: systemd
+gghstats_binary_path: /usr/bin/gghstats
+gghstats_tarball_os: linux

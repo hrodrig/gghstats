@@ -1,0 +1,6 @@
+---
+# Debian — .deb package, systemd
+gghstats_install_method: deb
+gghstats_init_system: systemd
+gghstats_binary_path: /usr/bin/gghstats
+gghstats_tarball_os: linux

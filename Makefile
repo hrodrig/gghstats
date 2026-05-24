@@ -3,13 +3,16 @@
 BINARY      := gghstats
 MODULE      := github.com/hrodrig/gghstats
 DIST        := dist
-VERSION_RAW ?= $(shell v=$$(cat VERSION 2>/dev/null | tr -d '\n\r'); [ -n "$$v" ] && echo "$$v" || echo "0.3.2")
+# Single source of truth: VERSION file at repo root (no silent fallback — avoids wrong port/tarball names).
+VERSION_RAW ?= $(shell cat VERSION 2>/dev/null | tr -d '\n\r')
 VERSION     := $(patsubst v%,%,$(VERSION_RAW))
 TAG         := v$(VERSION)
 COMMIT      := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 BUILDDATE   := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 STRICT_RELEASE ?= 0
 GRYPE_FAIL_ON  ?= high
+# OpenBSD dist helper default arch. Override: gmake dist-openbsd OPENBSD_ARCH=arm64
+OPENBSD_ARCH   ?= amd64
 # Empty = native arch. Set linux/amd64 when building on Apple Silicon (or arm64) for a typical VPS.
 DOCKER_PLATFORM ?=
 LDFLAGS     := -s -w \
@@ -19,7 +22,9 @@ LDFLAGS     := -s -w \
 
 .DEFAULT_GOAL := help
 
-.PHONY: build clean compose-down compose-up cover docker-build docker-build-amd64 docker-export-amd64 docker-run docker-scan gocyclo govulncheck grype help install install-man lint lint-fix release release-check security server server-metrics snapshot test test-release tools
+LIMIT ?=
+
+.PHONY: build clean compose-down compose-up cover dist-freebsd dist-openbsd docker-build docker-build-amd64 docker-export-amd64 docker-run docker-scan gocyclo govulncheck grype help install install-man lint lint-fix port-freebsd-sync port-openbsd-sync release release-check security server server-metrics snapshot test test-platforms test-platforms-ping test-release tools
 
 help:
 	@echo "gghstats — GitHub traffic dashboard and CLI"
@@ -44,6 +49,8 @@ help:
 	@echo "  security           Run govulncheck, gocyclo and grype"
 	@echo "  tools              Install govulncheck and gocyclo"
 	@echo "  test               Run unit tests"
+	@echo "  test-platforms     Ansible full-cycle on lab VMs (testing/platforms/; needs hosts.yml)"
+	@echo "  test-platforms-ping  SSH/Python connectivity check for platform inventory"
 	@echo ""
 	@echo "Docker:"
 	@echo "  docker-build       Build image gghstats:$(VERSION) (optional: DOCKER_PLATFORM=linux/amd64)"
@@ -57,8 +64,15 @@ help:
 	@echo "  release-check      Validate semver, tooling, lint, test and security"
 	@echo "  snapshot           Goreleaser snapshot (VERSION → <semver>-next, dist/, no Docker)"
 	@echo "  test-release       Snapshot dry-run (--skip=publish; same VERSION source)"
+	@echo "  dist-freebsd       Build FreeBSD tar.gz distfile for ports local testing"
+	@echo "  dist-openbsd       Build OpenBSD tar.gz distfile for ports local testing (OPENBSD_ARCH=amd64)"
+	@echo "  port-freebsd-sync  Sync VERSION to contrib/freebsd/Makefile (before port update)"
+	@echo "  port-openbsd-sync  Sync VERSION to contrib/openbsd/port/Makefile (before port update)"
 	@echo ""
 	@echo "Current version: $(VERSION) (tag: $(TAG))"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make test-platforms LIMIT=gghstats-ubuntu"
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) ./cmd/gghstats
@@ -87,6 +101,17 @@ compose-down:
 
 test:
 	go test -race ./...
+
+.PHONY: test-platforms test-platforms-ping
+test-platforms:
+	@command -v ansible-playbook >/dev/null 2>&1 || { echo "ansible-playbook not found; install Ansible 2.14+"; exit 1; }
+	@test -f testing/platforms/inventory/hosts.yml || { echo "Missing testing/platforms/inventory/hosts.yml — copy hosts.yml.example and edit."; exit 1; }
+	cd testing/platforms && ansible-playbook playbooks/full-cycle.yml $(if $(LIMIT),--limit $(LIMIT),)
+
+test-platforms-ping:
+	@command -v ansible-playbook >/dev/null 2>&1 || { echo "ansible-playbook not found; install Ansible 2.14+"; exit 1; }
+	@test -f testing/platforms/inventory/hosts.yml || { echo "Missing testing/platforms/inventory/hosts.yml — copy hosts.yml.example and edit."; exit 1; }
+	cd testing/platforms && ansible-playbook playbooks/ping.yml $(if $(LIMIT),--limit $(LIMIT),)
 
 cover:
 	go test ./... -coverprofile=coverage.out -covermode=atomic
@@ -159,6 +184,79 @@ grype:
 	fi
 
 security: govulncheck gocyclo grype
+
+# Sync VERSION file to FreeBSD port Makefile. Run before updating the port for a new release.
+.PHONY: port-freebsd-sync
+port-freebsd-sync:
+	@[ -n "$(VERSION)" ] || { echo "Error: VERSION file empty or missing"; exit 1; }
+	@sed -i.bak "s/^PORTVERSION=.*/PORTVERSION=\t$(VERSION)/" contrib/freebsd/Makefile
+	@rm -f contrib/freebsd/Makefile.bak
+	@echo "Updated contrib/freebsd/Makefile PORTVERSION to $(VERSION)"
+
+# Build only the FreeBSD distfile tarball expected by contrib/freebsd/Makefile DISTFILES.
+.PHONY: dist-freebsd
+dist-freebsd:
+	@test -f VERSION || { echo "Error: VERSION file missing at repo root"; exit 1; }
+	@[ -n "$(VERSION)" ] || { echo "Error: VERSION is empty"; exit 1; }
+	@ver="$(VERSION)"; \
+	arch=$$(uname -m | sed 's/^aarch64$$/arm64/'); \
+	out="$(DIST)/gghstats_$${ver}_freebsd_$$arch.tar.gz"; \
+	stage="/tmp/gghstats-dist-root-$$PPID"; \
+	set -e; \
+	echo "Building gghstats for FreeBSD $$arch with VERSION=$$ver..."; \
+	rm -rf "$$stage"; \
+	mkdir -p "$$stage/share/man/man1" "$$stage/share/doc/gghstats" "$$stage/etc/gghstats" "$(DIST)"; \
+	GOOS=freebsd GOARCH=$$arch CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o "$$stage/gghstats" ./cmd/gghstats; \
+	cp contrib/man/man1/gghstats.1 "$$stage/share/man/man1/gghstats.1"; \
+	cp LICENSE "$$stage/share/doc/gghstats/LICENSE"; \
+	cp contrib/gghstats.env.example "$$stage/etc/gghstats/gghstats.env.example"; \
+	tar -C "$$stage" -czf "$$out" .; \
+	rm -rf "$$stage"; \
+	echo "Wrote $$out"
+
+# Sync VERSION file to OpenBSD port Makefile. Run before updating the port for a new release.
+.PHONY: port-openbsd-sync
+port-openbsd-sync:
+	@[ -n "$(VERSION)" ] || { echo "Error: VERSION file empty or missing"; exit 1; }
+	@test -f contrib/openbsd/port/Makefile || { echo "Error: contrib/openbsd/port/Makefile not found"; exit 1; }
+	@sed -i.bak \
+	  -e 's#^DISTNAME =.*#DISTNAME =	gghstats_$(VERSION)_openbsd_$${MACHINE_ARCH:S/aarch64/arm64/}#' \
+	  -e 's#^PKGNAME =.*#PKGNAME =	gghstats-$(VERSION)#' \
+	  -e 's#^MASTER_SITES =.*#MASTER_SITES =	https://github.com/hrodrig/gghstats/releases/download/v$(VERSION)/#' \
+	  -e 's#^DISTFILES =.*#DISTFILES =	gghstats_$(VERSION)_openbsd_$${MACHINE_ARCH:S/aarch64/arm64/}.tar.gz#' \
+	  contrib/openbsd/port/Makefile
+	@rm -f contrib/openbsd/port/Makefile.bak
+	@cp contrib/openbsd/gghstats contrib/openbsd/port/pkg/gghstats.rc
+	@cp contrib/openbsd/gghstats contrib/openbsd/port/files/gghstats
+	@cp contrib/openbsd/gghstats-serve contrib/openbsd/port/files/gghstats-serve
+	@cp contrib/openbsd/gghstats-start contrib/openbsd/port/files/gghstats-start
+	@echo "Updated contrib/openbsd/port/Makefile to $(VERSION)"
+	@echo "Synced contrib/openbsd/port/files/ from contrib/openbsd/"
+
+# Build only the OpenBSD distfile tarball expected by contrib/openbsd/port/Makefile DISTFILES.
+.PHONY: dist-openbsd
+dist-openbsd:
+	@test -f VERSION || { echo "Error: VERSION file missing at repo root"; exit 1; }
+	@[ -n "$(VERSION)" ] || { echo "Error: VERSION is empty"; exit 1; }
+	@echo "$(OPENBSD_ARCH)" | grep -qE '^(amd64|arm64|riscv64)$$' || { echo "Error: OPENBSD_ARCH must be one of: amd64, arm64, riscv64"; exit 1; }
+	@ver="$(VERSION)"; \
+	arch="$(OPENBSD_ARCH)"; \
+	out="$(DIST)/gghstats_$${ver}_openbsd_$$arch.tar.gz"; \
+	stage="/tmp/gghstats-openbsd-dist-root-$$PPID"; \
+	set -e; \
+	echo "Building gghstats for OpenBSD $$arch with VERSION=$$ver..."; \
+	rm -rf "$$stage"; \
+	mkdir -p "$$stage/share/man/man1" "$$stage/share/doc/gghstats" "$$stage/etc/gghstats" "$$stage/share/openbsd/rc.d" "$(DIST)"; \
+	GOOS=openbsd GOARCH=$$arch CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o "$$stage/gghstats" ./cmd/gghstats; \
+	cp contrib/man/man1/gghstats.1 "$$stage/share/man/man1/gghstats.1"; \
+	cp LICENSE "$$stage/share/doc/gghstats/LICENSE"; \
+	cp contrib/gghstats.env.example "$$stage/etc/gghstats/gghstats.env.example"; \
+	cp contrib/openbsd/gghstats "$$stage/share/openbsd/rc.d/gghstats"; \
+	cp contrib/openbsd/gghstats-serve "$$stage/gghstats-serve"; \
+	cp contrib/openbsd/gghstats-start "$$stage/gghstats-start"; \
+	tar -C "$$stage" -czf "$$out" .; \
+	rm -rf "$$stage"; \
+	echo "Wrote $$out"
 
 release-check:
 	@test -f VERSION || (echo "VERSION file is required"; exit 1)

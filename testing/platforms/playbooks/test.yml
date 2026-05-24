@@ -1,0 +1,11 @@
+---
+# test.yml — HTTP health check; optional one-shot fetch against GitHub API.
+- name: gghstats platform tests
+  hosts: all
+  gather_facts: false
+  become: true
+
+  roles:
+    - gghstats_test_health
+    - role: gghstats_test_fetch
+      when: gghstats_test_fetch_repo is defined and (gghstats_test_fetch_repo | length) > 0

@@ -1,0 +1,86 @@
+#!/bin/sh
+#
+# PROVIDE: gghstats
+# REQUIRE: DAEMON
+# KEYWORD: nojail
+#
+# Add the following line to /etc/rc.conf to enable gghstats:
+#
+# gghstats_enable="YES"
+#
+# Optional (defaults shown):
+#
+# gghstats_envfile="/etc/gghstats/gghstats.env"
+#
+# Log file (default /var/log/gghstats.log):
+#
+# gghstats_logfile="/var/log/gghstats.log"
+
+. /etc/rc.subr
+
+name="gghstats"
+rcvar="${name}_enable"
+
+command="/usr/local/bin/gghstats"
+pidfile="/var/run/gghstats.pid"
+required_files="${gghstats_envfile:-/etc/gghstats/gghstats.env}"
+
+load_rc_config $name
+: ${gghstats_enable:=NO}
+: ${gghstats_envfile:=/etc/gghstats/gghstats.env}
+: ${gghstats_logfile:=/var/log/gghstats.log}
+
+gghstats_prestart()
+{
+	_logdir="${gghstats_logfile%/*}"
+	case "$_logdir" in
+		"${gghstats_logfile}") _logdir="/var/log" ;;
+		*) ;;
+	esac
+	if [ ! -d "$_logdir" ]; then
+		mkdir -p "$_logdir"
+	fi
+}
+
+gghstats_start()
+{
+	if [ ! -r "${gghstats_envfile}" ]; then
+		echo "gghstats: missing or unreadable ${gghstats_envfile}" >&2
+		return 1
+	fi
+	# shellcheck disable=SC1090
+	set -a
+	. "${gghstats_envfile}"
+	set +a
+	/usr/sbin/daemon -o "${gghstats_logfile}" -P "${pidfile}" -f /usr/local/bin/gghstats serve
+}
+
+gghstats_stop()
+{
+	if [ -f "${pidfile}" ]; then
+		_pid=$(cat "${pidfile}")
+		kill -TERM "${_pid}" 2>/dev/null
+		sleep 1
+		kill -0 "${_pid}" 2>/dev/null || rm -f "${pidfile}"
+	fi
+}
+
+gghstats_status()
+{
+	if [ -f "${pidfile}" ]; then
+		_pid=$(cat "${pidfile}")
+		if kill -0 "${_pid}" 2>/dev/null; then
+			echo "${name} is running as pid ${_pid}."
+			return 0
+		fi
+	fi
+	echo "${name} is not running."
+	return 1
+}
+
+start_precmd="gghstats_prestart"
+start_cmd="gghstats_start"
+stop_cmd="gghstats_stop"
+status_cmd="gghstats_status"
+
+run_rc_command "$1"

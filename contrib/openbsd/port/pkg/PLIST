@@ -1,0 +1,7 @@
+@rcscript ${RCDIR}/gghstats
+bin/gghstats
+bin/gghstats-serve
+bin/gghstats-start
+man/man1/gghstats.1
+share/doc/gghstats/LICENSE
+share/examples/gghstats/gghstats.env.example

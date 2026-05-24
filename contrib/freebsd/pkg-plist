@@ -1,0 +1,5 @@
+bin/gghstats
+share/man/man1/gghstats.1.gz
+share/doc/gghstats/LICENSE
+etc/gghstats/gghstats.env.example
+etc/rc.d/gghstats

@@ -1,0 +1,10 @@
+---
+# full-cycle.yml — setup → test → teardown (release validation).
+- name: "gghstats full cycle: setup"
+  ansible.builtin.import_playbook: setup.yml
+
+- name: "gghstats full cycle: test"
+  ansible.builtin.import_playbook: test.yml
+
+- name: "gghstats full cycle: teardown"
+  ansible.builtin.import_playbook: teardown.yml

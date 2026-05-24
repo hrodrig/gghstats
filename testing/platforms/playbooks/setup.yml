@@ -1,0 +1,13 @@
+---
+# setup.yml — install gghstats, deploy env, start daemon.
+- name: gghstats platform setup
+  hosts: all
+  gather_facts: false
+  become: true
+
+  roles:
+    - gghstats_install
+    - gghstats_configure
+    - role: gghstats_daemon
+      vars:
+        gghstats_daemon_state: started

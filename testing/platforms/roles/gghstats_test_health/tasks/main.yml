@@ -1,0 +1,9 @@
+---
+# gghstats_test_health — wait for HTTP listener and GET /api/v1/healthz.
+
+- name: Load platform variables
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/../platform_vars/{{ platform_vars }}.yml"
+
+- name: Wait for health endpoint
+  ansible.builtin.include_tasks: healthz_wait.yml

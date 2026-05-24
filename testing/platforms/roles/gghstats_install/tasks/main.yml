@@ -1,0 +1,258 @@
+---
+# gghstats_install — install gghstats using the platform-appropriate method.
+#
+# Variables (inventory / group_vars):
+#   gghstats_version, gghstats_release_url, gghstats_local_package, gghstats_package_source, platform_vars
+
+- name: Load platform variables
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/../platform_vars/{{ platform_vars }}.yml"
+
+- name: "alpine: ensure python3 for Ansible modules"
+  ansible.builtin.command: apk add --no-cache python3
+  register: gghstats_apk_python3
+  changed_when: >-
+    'Installing' in (gghstats_apk_python3.stdout | default(''))
+    or 'Upgrading' in (gghstats_apk_python3.stdout | default(''))
+  when: gghstats_init_system == "openrc"
+
+- name: Compute repository root (for default dist/)
+  ansible.builtin.set_fact:
+    _gghstats_repo_root: "{{ playbook_dir | dirname | dirname | dirname }}"
+
+- name: Resolve package source mode
+  ansible.builtin.set_fact:
+    gghstats_package_source: "{{ gghstats_package_source | default('auto') }}"
+
+- name: Validate package source mode value
+  ansible.builtin.assert:
+    that:
+      - gghstats_package_source in ['auto', 'release', 'local']
+    fail_msg: "Invalid gghstats_package_source='{{ gghstats_package_source }}'. Use: auto, release, or local."
+
+- name: Set default local artifact filename
+  ansible.builtin.set_fact:
+    _gghstats_local_artifact_basename: >-
+      {{
+        'gghstats_' ~ gghstats_version ~ '_linux_amd64.deb'
+        if gghstats_install_method == 'deb'
+        else (
+          'gghstats_' ~ gghstats_version ~ '_linux_amd64.rpm'
+          if gghstats_install_method in ['rpm', 'rpm_zypper']
+          else 'gghstats_' ~ gghstats_version ~ '_' ~ gghstats_tarball_os ~ '_amd64.tar.gz'
+        )
+      }}
+
+- name: Build default local artifact path under dist/
+  ansible.builtin.set_fact:
+    _gghstats_dist_artifact_path: >-
+      {{ (gghstats_dist_dir | default(_gghstats_repo_root ~ '/dist'))
+         ~ '/' ~ _gghstats_local_artifact_basename }}
+
+- name: Apply default local package path when not set per host
+  ansible.builtin.set_fact:
+    gghstats_local_package: "{{ gghstats_local_package | default(_gghstats_dist_artifact_path) }}"
+  when:
+    - gghstats_package_source == 'local'
+      or (
+        (gghstats_package_source | default('auto')) == 'auto'
+        and (gghstats_use_dist_for_auto | default(false) | bool)
+      )
+
+- name: Stat candidate local package on control node
+  ansible.builtin.stat:
+    path: "{{ gghstats_local_package }}"
+  register: gghstats_local_package_stat
+  delegate_to: localhost
+  become: false
+  when:
+    - gghstats_local_package is defined
+    - (gghstats_local_package | length) > 0
+
+- name: Decide whether to use a local package file
+  ansible.builtin.set_fact:
+    gghstats_use_local_package: >-
+      {{
+        gghstats_package_source == 'local'
+        or (
+          (gghstats_package_source | default('auto')) == 'auto'
+          and (gghstats_local_package is defined)
+          and (gghstats_local_package | length) > 0
+          and (gghstats_local_package_stat.stat.exists | default(false))
+        )
+      }}
+
+- name: Validate local package exists on control node
+  ansible.builtin.assert:
+    that:
+      - gghstats_local_package_stat.stat.exists
+      - gghstats_local_package_stat.stat.isreg
+    fail_msg: >-
+      Local package not found on control node: {{ gghstats_local_package }}.
+      Run `make snapshot` from the gghstats repo root, set gghstats_version from dist/metadata.json
+      (e.g. 0.6.4-next), and gghstats_package_source: local. See testing/platforms/README.md.
+  when:
+    - gghstats_package_source == 'local'
+    - gghstats_local_package is defined
+
+- name: Validate local package required for source=local
+  ansible.builtin.assert:
+    that:
+      - gghstats_use_local_package
+    fail_msg: "gghstats_package_source=local requires a resolvable local artifact (run make snapshot or set gghstats_local_package)."
+  when: gghstats_package_source == 'local'
+
+# --- .deb (Debian/Ubuntu) ---
+- name: Download deb package
+  ansible.builtin.get_url:
+    url: "{{ gghstats_release_url }}/gghstats_{{ gghstats_version }}_linux_amd64.deb"
+    dest: /tmp/gghstats.deb
+    mode: "0644"
+  when:
+    - gghstats_install_method == "deb"
+    - not gghstats_use_local_package
+
+- name: Copy local deb package
+  ansible.builtin.copy:
+    src: "{{ gghstats_local_package }}"
+    dest: /tmp/gghstats.deb
+    mode: "0644"
+  when:
+    - gghstats_install_method == "deb"
+    - gghstats_use_local_package
+
+- name: Install deb package
+  ansible.builtin.apt:
+    deb: /tmp/gghstats.deb
+    state: present
+  when: gghstats_install_method == "deb"
+
+# --- .rpm (AlmaLinux/RHEL) ---
+- name: Download rpm package
+  ansible.builtin.get_url:
+    url: "{{ gghstats_release_url }}/gghstats_{{ gghstats_version }}_linux_amd64.rpm"
+    dest: /tmp/gghstats.rpm
+    mode: "0644"
+  when:
+    - gghstats_install_method == "rpm"
+    - not gghstats_use_local_package
+
+- name: Copy local rpm package
+  ansible.builtin.copy:
+    src: "{{ gghstats_local_package }}"
+    dest: /tmp/gghstats.rpm
+    mode: "0644"
+  when:
+    - gghstats_install_method == "rpm"
+    - gghstats_use_local_package
+
+- name: Install rpm package (dnf)
+  ansible.builtin.dnf:
+    name: /tmp/gghstats.rpm
+    state: present
+    disable_gpg_check: true
+  when: gghstats_install_method == "rpm"
+
+# --- .rpm via zypper (OpenSUSE) ---
+- name: Download rpm package (zypper)
+  ansible.builtin.get_url:
+    url: "{{ gghstats_release_url }}/gghstats_{{ gghstats_version }}_linux_amd64.rpm"
+    dest: /tmp/gghstats.rpm
+    mode: "0644"
+  when:
+    - gghstats_install_method == "rpm_zypper"
+    - not gghstats_use_local_package
+
+- name: Copy local rpm package (zypper)
+  ansible.builtin.copy:
+    src: "{{ gghstats_local_package }}"
+    dest: /tmp/gghstats.rpm
+    mode: "0644"
+  when:
+    - gghstats_install_method == "rpm_zypper"
+    - gghstats_use_local_package
+
+- name: Install rpm package (zypper)
+  ansible.builtin.command: zypper --non-interactive install --allow-unsigned-rpm /tmp/gghstats.rpm
+  register: zypper_install
+  changed_when: "'Installing' in zypper_install.stdout"
+  when: gghstats_install_method == "rpm_zypper"
+
+# --- tarball (FreeBSD, OpenBSD, Arch, …) ---
+- name: Download tarball
+  ansible.builtin.get_url:
+    url: "{{ gghstats_release_url }}/gghstats_{{ gghstats_version }}_{{ gghstats_tarball_os }}_amd64.tar.gz"
+    dest: /tmp/gghstats.tar.gz
+    mode: "0644"
+  when:
+    - gghstats_install_method == "tarball"
+    - not gghstats_use_local_package
+
+- name: Copy local tarball
+  ansible.builtin.copy:
+    src: "{{ gghstats_local_package }}"
+    dest: /tmp/gghstats.tar.gz
+    mode: "0644"
+  when:
+    - gghstats_install_method == "tarball"
+    - gghstats_use_local_package
+
+- name: Extract tarball
+  ansible.builtin.shell: tar xzf /tmp/gghstats.tar.gz -C /tmp
+  args:
+    executable: /bin/sh
+  when: gghstats_install_method == "tarball"
+
+- name: Install binary from tarball
+  ansible.builtin.shell: install -m 755 /tmp/gghstats {{ gghstats_binary_path }}
+  args:
+    executable: /bin/sh
+  when: gghstats_install_method == "tarball"
+
+- name: Install man page from tarball
+  ansible.builtin.shell: |
+    if [ -f /tmp/share/man/man1/gghstats.1 ]; then
+      mkdir -p /usr/local/share/man/man1
+      install -m 644 /tmp/share/man/man1/gghstats.1 /usr/local/share/man/man1/gghstats.1
+    fi
+  args:
+    executable: /bin/sh
+  when: gghstats_install_method == "tarball"
+
+# OpenBSD: gghstats-start + rc.d are installed by gghstats_daemon from the repo (always current).
+# Newer release tarballs also ship them (see .goreleaser.yaml); optional install if present:
+- name: Install OpenBSD rc assets from tarball when present
+  ansible.builtin.shell: |
+    if [ -f /tmp/gghstats-start ]; then
+      install -m 755 /tmp/gghstats-start /usr/local/bin/gghstats-start
+      echo "installed-gghstats-start"
+    fi
+    if [ -f /tmp/share/openbsd/rc.d/gghstats ]; then
+      install -m 755 /tmp/share/openbsd/rc.d/gghstats /etc/rc.d/gghstats
+      echo "installed-rc.d"
+    fi
+  args:
+    executable: /bin/sh
+  register: gghstats_openbsd_tarball_rc
+  changed_when: gghstats_openbsd_tarball_rc.stdout | length > 0
+  when:
+    - gghstats_install_method == "tarball"
+    - gghstats_tarball_os == "openbsd"
+
+# --- Verification ---
+- name: Verify gghstats is installed
+  ansible.builtin.command: "{{ gghstats_binary_path }} version"
+  register: gghstats_version_output
+  changed_when: false
+
+- name: Show installed version
+  ansible.builtin.debug:
+    msg: "{{ gghstats_version_output.stdout | default(gghstats_version_output.stderr) }}"
+
+- name: Assert version matches
+  ansible.builtin.assert:
+    that:
+      - "gghstats_version in gghstats_version_output.stdout or gghstats_version in gghstats_version_output.stderr"
+    fail_msg: "Expected version {{ gghstats_version }} but got: {{ gghstats_version_output.stdout }} {{ gghstats_version_output.stderr }}"
+    success_msg: "gghstats version verified: {{ gghstats_version }}"
+  when: not (gghstats_skip_version_check | default(false) | bool)

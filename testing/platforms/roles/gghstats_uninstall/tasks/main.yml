@@ -1,0 +1,165 @@
+---
+# gghstats_uninstall — stop daemon, remove package/binary, config, verify cleanup.
+
+- name: Load platform variables
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/../platform_vars/{{ platform_vars }}.yml"
+
+- name: Stop daemon before uninstall
+  ansible.builtin.include_role:
+    name: gghstats_daemon
+  vars:
+    gghstats_daemon_state: stopped
+
+# --- systemd: unit removed with package on deb/rpm ---
+- name: "systemd: remove service file (tarball / manual unit)"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/systemd/system/gghstats.service
+    - /lib/systemd/system/gghstats.service
+  when:
+    - gghstats_init_system == "systemd"
+    - gghstats_install_method == "tarball"
+
+- name: "systemd: daemon-reload after manual unit removal"
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when:
+    - gghstats_init_system == "systemd"
+    - gghstats_install_method == "tarball"
+
+# --- OpenRC: remove init script ---
+- name: "openrc: remove init script"
+  ansible.builtin.file:
+    path: "{{ gghstats_openrc_script_dest }}"
+    state: absent
+  when:
+    - gghstats_init_system == "openrc"
+    - gghstats_openrc_script_dest is defined
+
+# --- rc.d: remove script ---
+- name: "rcd: remove rc.d script"
+  ansible.builtin.file:
+    path: "{{ gghstats_rcd_script_dest }}"
+    state: absent
+  when: gghstats_init_system == "rcd"
+
+- name: "rcd: remove gghstats-serve wrapper (OpenBSD)"
+  ansible.builtin.file:
+    path: "{{ gghstats_rcd_serve_wrapper_dest }}"
+    state: absent
+  when:
+    - gghstats_init_system == "rcd"
+    - gghstats_rcd_serve_wrapper_dest is defined
+
+- name: "rcd: remove gghstats-start helper (OpenBSD)"
+  ansible.builtin.file:
+    path: "{{ gghstats_rcd_start_wrapper_dest }}"
+    state: absent
+  when:
+    - gghstats_init_system == "rcd"
+    - gghstats_rcd_start_wrapper_dest is defined
+
+# --- Package removal ---
+- name: "deb: purge gghstats package"
+  ansible.builtin.apt:
+    name: gghstats
+    state: absent
+    purge: true
+  when: gghstats_install_method == "deb"
+
+- name: "rpm: remove gghstats package (dnf)"
+  ansible.builtin.dnf:
+    name: gghstats
+    state: absent
+  when: gghstats_install_method == "rpm"
+
+- name: "rpm: remove gghstats package (zypper)"
+  ansible.builtin.command: zypper --non-interactive remove gghstats
+  register: zypper_remove
+  changed_when: "'Removing' in zypper_remove.stdout"
+  failed_when: false
+  when: gghstats_install_method == "rpm_zypper"
+
+- name: "tarball: remove binary"
+  ansible.builtin.file:
+    path: "{{ gghstats_binary_path }}"
+    state: absent
+  when: gghstats_install_method == "tarball"
+
+- name: "tarball: remove man page"
+  ansible.builtin.file:
+    path: /usr/local/share/man/man1/gghstats.1
+    state: absent
+  when: gghstats_install_method == "tarball"
+
+# --- Config / data ---
+- name: Remove config directory
+  ansible.builtin.file:
+    path: /etc/gghstats
+    state: absent
+
+- name: Remove data directory
+  ansible.builtin.file:
+    path: "{{ gghstats_data_dir }}"
+    state: absent
+  when: gghstats_remove_data_dir | default(false) | bool
+
+# --- Temp artifacts ---
+- name: Remove temp install artifacts
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /tmp/gghstats.deb
+    - /tmp/gghstats.rpm
+    - /tmp/gghstats.tar.gz
+    - /tmp/gghstats
+    - /tmp/share
+    - /tmp/etc
+    - /tmp/LICENSE
+    - /var/run/gghstats.pid
+
+# --- Verification ---
+- name: Verify gghstats not in PATH
+  ansible.builtin.shell: command -v gghstats 2>/dev/null || echo "NOT_FOUND"
+  args:
+    executable: /bin/sh
+  register: gghstats_which
+  changed_when: false
+
+- name: Assert gghstats removed from PATH
+  ansible.builtin.assert:
+    that:
+      - "'NOT_FOUND' in gghstats_which.stdout"
+    fail_msg: "gghstats still found at: {{ gghstats_which.stdout }}"
+    success_msg: "gghstats removed from PATH"
+
+- name: Verify config directory removed
+  ansible.builtin.stat:
+    path: /etc/gghstats
+  register: gghstats_etc
+
+- name: Assert config directory gone
+  ansible.builtin.assert:
+    that:
+      - not gghstats_etc.stat.exists
+    fail_msg: "/etc/gghstats still exists"
+    success_msg: "Config directory removed"
+
+- name: Verify no gghstats process running
+  ansible.builtin.shell: pgrep -x gghstats || echo "NO_PROCESS"
+  args:
+    executable: /bin/sh
+  register: gghstats_pgrep
+  changed_when: false
+  failed_when: false
+
+- name: Assert no gghstats process
+  ansible.builtin.assert:
+    that:
+      - "'NO_PROCESS' in gghstats_pgrep.stdout"
+    fail_msg: "gghstats process still running: {{ gghstats_pgrep.stdout }}"
+    success_msg: "No gghstats process running"

@@ -1,0 +1,9 @@
+---
+# Alpine Linux — linux tarball, OpenRC
+gghstats_install_method: tarball
+gghstats_init_system: openrc
+gghstats_binary_path: /usr/local/bin/gghstats
+gghstats_tarball_os: linux
+
+gghstats_openrc_script_src: contrib/openrc/gghstats.initd
+gghstats_openrc_script_dest: /etc/init.d/gghstats

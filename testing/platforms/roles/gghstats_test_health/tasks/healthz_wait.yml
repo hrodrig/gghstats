@@ -1,0 +1,38 @@
+---
+# Shared healthz wait — included from gghstats_test_health and gghstats_daemon.
+# Set gghstats_healthz_probe: ftp in platform_vars/openbsd.yml (no curl on minimal VMs).
+
+- name: Wait for TCP listener on health port
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ gghstats_port | default(8080) }}"
+    state: started
+    timeout: 60
+
+- name: Poll healthz (HTTP via Ansible uri)
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ gghstats_port | default(8080) }}/api/v1/healthz"
+    method: GET
+    status_code: 200
+  register: gghstats_health
+  until: gghstats_health.status == 200
+  retries: 30
+  delay: 2
+  when: gghstats_healthz_probe | default('uri') == 'uri'
+
+- name: Poll healthz (OpenBSD ftp, no curl)
+  ansible.builtin.shell: |
+    resp=$(ftp -o - "http://127.0.0.1:{{ gghstats_port | default(8080) }}/api/v1/healthz" 2>/dev/null) || exit 1
+    case "$resp" in *'"status":"ok"'*) exit 0 ;; esac
+    exit 1
+  args:
+    executable: "{{ gghstats_rcd_shell | default('/bin/ksh') }}"
+  register: gghstats_health_ftp
+  until: gghstats_health_ftp.rc == 0
+  retries: 30
+  delay: 2
+  when: gghstats_healthz_probe | default('uri') == 'ftp'
+
+- name: Health check passed
+  ansible.builtin.debug:
+    msg: "GET /api/v1/healthz OK on port {{ gghstats_port | default(8080) }}"

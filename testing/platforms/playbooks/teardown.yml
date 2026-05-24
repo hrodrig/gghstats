@@ -1,0 +1,9 @@
+---
+# teardown.yml — uninstall and verify cleanup.
+- name: gghstats platform teardown
+  hosts: all
+  gather_facts: false
+  become: true
+
+  roles:
+    - gghstats_uninstall

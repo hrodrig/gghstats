@@ -1,0 +1,6 @@
+---
+# AlmaLinux / RHEL family — .rpm (dnf), systemd
+gghstats_install_method: rpm
+gghstats_init_system: systemd
+gghstats_binary_path: /usr/bin/gghstats
+gghstats_tarball_os: linux

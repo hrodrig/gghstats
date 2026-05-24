@@ -1,0 +1,17 @@
+# Managed by Ansible (gghstats platform tests). See contrib/systemd/gghstats.service.
+[Unit]
+Description=gghstats GitHub traffic dashboard
+Documentation=https://github.com/hrodrig/gghstats
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/gghstats/gghstats.env
+WorkingDirectory={{ gghstats_data_dir }}
+ExecStart={{ gghstats_binary_path }} serve
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

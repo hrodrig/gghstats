@@ -1,0 +1,35 @@
+---
+# gghstats_test_fetch — optional one-shot fetch (requires GitHub API; set gghstats_test_fetch_repo in inventory).
+
+- name: Load platform variables
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/../platform_vars/{{ platform_vars }}.yml"
+
+- name: Run gghstats fetch against test repo
+  ansible.builtin.command:
+    argv:
+      - "{{ gghstats_binary_path }}"
+      - fetch
+      - -repo
+      - "{{ gghstats_test_fetch_repo }}"
+  environment:
+    GGHSTATS_GITHUB_TOKEN: "{{ gghstats_github_token }}"
+    GGHSTATS_DB: "{{ gghstats_data_dir }}/gghstats-fetch-test.db"
+    GGHSTATS_FILTER: "{{ gghstats_filter }}"
+  register: gghstats_fetch
+  changed_when: false
+
+- name: Assert fetch succeeded
+  ansible.builtin.assert:
+    that:
+      - gghstats_fetch.rc == 0
+    fail_msg: >
+      gghstats fetch {{ gghstats_test_fetch_repo }} failed (rc={{ gghstats_fetch.rc }}).
+      stdout: {{ gghstats_fetch.stdout }}
+      stderr: {{ gghstats_fetch.stderr }}
+    success_msg: "gghstats fetch {{ gghstats_test_fetch_repo }} OK"
+
+- name: Remove fetch test database
+  ansible.builtin.file:
+    path: "{{ gghstats_data_dir }}/gghstats-fetch-test.db"
+    state: absent

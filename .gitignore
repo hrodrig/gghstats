@@ -21,6 +21,7 @@
 !CONTRIBUTING.md
 !CODE_OF_CONDUCT.md
 !SECURITY.md
+!AGENTS.md
 !codecov.yml
 !docker-compose.yml
 !go.mod
@@ -38,6 +39,11 @@
 !contrib/
 !contrib/**
 contrib/man/man1/*.gz
+
+# Platform tests (Ansible); local inventory with secrets
+!testing/
+!testing/**
+testing/platforms/inventory/hosts.yml
 # Persist data/ in repo (placeholder only); never commit the SQLite DB.
 !data/
 !.keep
@@ -50,3 +56,6 @@ data/*.db
 *.db-shm
 *.db-wal
 /gghstats
+
+# OpenBSD port: distinfo requires release tarballs; generate with make makesum in ports tree (not in repo)
+contrib/openbsd/port/distinfo

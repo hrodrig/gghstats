@@ -1,0 +1,27 @@
+#!/bin/ksh
+# Invoked by rc.subr rc_exec (rc_bg=YES). Load env, run gghstats serve in foreground.
+: ${gghstats_envfile:=/etc/gghstats/gghstats.env}
+
+if [ ! -x /usr/local/bin/gghstats ]; then
+	echo "gghstats-serve: missing /usr/local/bin/gghstats" >&2
+	exit 1
+fi
+if [ ! -r "$gghstats_envfile" ]; then
+	echo "gghstats-serve: missing or unreadable $gghstats_envfile" >&2
+	exit 1
+fi
+
+set -a
+# shellcheck disable=SC1090
+if ! . "$gghstats_envfile"; then
+	echo "gghstats-serve: failed to source $gghstats_envfile (check FILTER quotes: use '...!fork...')" >&2
+	exit 1
+fi
+set +a
+
+if [ -z "${GGHSTATS_GITHUB_TOKEN:-}" ]; then
+	echo "gghstats-serve: GGHSTATS_GITHUB_TOKEN is empty after sourcing $gghstats_envfile" >&2
+	exit 1
+fi
+
+exec /usr/local/bin/gghstats serve

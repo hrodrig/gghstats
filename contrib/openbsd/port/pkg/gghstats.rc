@@ -1,0 +1,30 @@
+#!/bin/ksh
+#
+# OpenBSD rc.d for gghstats.
+#
+# rc.subr runs rc_exec with rc_bg=YES (monitor + background via su) — do not
+# hand-roll "&" in rc_start. Config is loaded inside /usr/local/bin/gghstats-serve.
+#
+#   rcctl enable gghstats
+#   rcctl start gghstats
+#
+# Optional in /etc/rc.conf.local:
+#   gghstats_logger="daemon.info"
+#   gghstats_env="EXTRA=value"   # rare; main config is gghstats.env
+
+daemon="/usr/local/bin/gghstats-serve"
+daemon_flags=""
+
+# Extra exports for rc.conf (e.g. overrides); file env is in gghstats-serve.
+[ -n "$gghstats_env" ] && eval "export $gghstats_env"
+
+. /etc/rc.d/rc.subr
+
+# After exec, process argv is "gghstats serve" (not gghstats-serve).
+pexp="/usr/local/bin/gghstats serve"
+
+rcvar="gghstats_enable"
+rc_bg=YES
+rc_reload=NO
+
+rc_cmd $1

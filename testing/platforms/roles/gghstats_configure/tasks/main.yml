@@ -1,0 +1,46 @@
+---
+# gghstats_configure — deploy /etc/gghstats/gghstats.env and data directory.
+#
+# Variables: gghstats_github_token, gghstats_filter, gghstats_data_dir, gghstats_port, ...
+
+- name: Create config directory
+  ansible.builtin.file:
+    path: /etc/gghstats
+    state: directory
+    mode: "0755"
+
+- name: Create data directory
+  ansible.builtin.file:
+    path: "{{ gghstats_data_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Deploy gghstats.env from template
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/../templates/gghstats.env.j2"
+    dest: /etc/gghstats/gghstats.env
+    mode: "0600"
+
+- name: Verify env file exists
+  ansible.builtin.stat:
+    path: /etc/gghstats/gghstats.env
+  register: gghstats_env_stat
+
+- name: Assert env deployed
+  ansible.builtin.assert:
+    that:
+      - gghstats_env_stat.stat.exists
+    fail_msg: "/etc/gghstats/gghstats.env was not deployed"
+
+- name: Assert GitHub token is set in env
+  ansible.builtin.slurp:
+    src: /etc/gghstats/gghstats.env
+  register: gghstats_env_content
+
+- name: Validate token line present
+  ansible.builtin.assert:
+    that:
+      - "'GGHSTATS_GITHUB_TOKEN=' in (gghstats_env_content.content | b64decode)"
+      - "gghstats_github_token | length > 0"
+    fail_msg: "gghstats_github_token must be set in inventory for platform tests"
+    success_msg: "gghstats.env validated"

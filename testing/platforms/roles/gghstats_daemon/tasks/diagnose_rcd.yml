@@ -1,0 +1,52 @@
+---
+# rc.d failure diagnostics (included from rescue block).
+
+- name: "rcd: diagnose when healthz fails (OpenBSD)"
+  ansible.builtin.shell: |
+    echo "=== rcctl start (rc={{ rcd_start.rc | default('?') }}) ==="
+    echo "{{ rcd_start.stdout | default('') }}"
+    echo "=== env (no token) ==="
+    grep -v '^GGHSTATS_GITHUB_TOKEN=' /etc/gghstats/gghstats.env || true
+    echo "=== processes ==="
+    pgrep -af gghstats || echo "no gghstats process"
+    echo "=== rc.d (daemon, rc_bg, pexp) ==="
+    grep -E '^(daemon=|rc_bg=|pexp=)' /etc/rc.d/gghstats 2>/dev/null || true
+    echo "=== gghstats-serve (2s) ==="
+    /usr/local/bin/gghstats-serve 2>&1 &
+    spid=$!
+    sleep 2
+    if kill -0 $spid 2>/dev/null; then kill $spid 2>/dev/null; echo "gghstats-serve: stayed up"; else wait $spid; echo "gghstats-serve: exited"; fi
+    echo "=== rcctl check ==="
+    rcctl check gghstats 2>&1 || true
+    echo "=== healthz (ftp) ==="
+    ftp -o - "http://127.0.0.1:{{ gghstats_port | default(8080) }}/api/v1/healthz" 2>/dev/null || echo "healthz FAIL"
+  args:
+    executable: "{{ gghstats_rcd_shell | default('/bin/ksh') }}"
+  register: rcd_start_diag
+  changed_when: false
+  when: gghstats_tarball_os | default('') == 'openbsd'
+
+- name: "rcd: diagnose when healthz fails (FreeBSD / generic rc.d)"
+  ansible.builtin.shell: |
+    echo "=== start (rc={{ rcd_start.rc | default('?') }}) ==="
+    echo "{{ rcd_start.stdout | default('') }}"
+    echo "{{ rcd_start.stderr | default('') }}"
+    echo "=== service status ==="
+    {{ gghstats_rcd_status_cmd }}
+    echo "=== processes ==="
+    pgrep -af gghstats || true
+    echo "=== healthz ==="
+    fetch -qo - "http://127.0.0.1:{{ gghstats_port | default(8080) }}/api/v1/healthz" 2>/dev/null || echo "healthz FAIL"
+  args:
+    executable: /bin/sh
+  register: rcd_start_diag
+  changed_when: false
+  when: gghstats_tarball_os | default('') != 'openbsd'
+
+- name: "rcd: fail with diagnostics"
+  ansible.builtin.fail:
+    msg: >-
+      gghstats not healthy on :{{ gghstats_port | default(8080) }} after rc.d start.
+      rc start rc={{ rcd_start.rc | default('?') }} stdout={{ rcd_start.stdout | default('') }}.
+      init: {{ rcd_status.stdout | default('') }}.
+      {{ rcd_start_diag.stdout | default('') }}

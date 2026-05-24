@@ -18,6 +18,8 @@ builds:
       - linux
       - darwin
       - windows
+      - freebsd
+      - openbsd
     goarch:
       - amd64
       - arm64
@@ -34,6 +36,21 @@ archives:
       - goos: windows
         formats: [zip]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - src: contrib/man/man1/gghstats.1
+        dst: share/man/man1/gghstats.1
+      - src: LICENSE
+        dst: share/doc/gghstats/LICENSE
+      - src: contrib/gghstats.env.example
+        dst: etc/gghstats/gghstats.env.example
+      - src: contrib/openrc/gghstats.initd
+        dst: share/openrc/gghstats.initd
+      - src: contrib/openbsd/gghstats
+        dst: share/openbsd/rc.d/gghstats
+      - src: contrib/openbsd/gghstats-serve
+        dst: gghstats-serve
+      - src: contrib/openbsd/gghstats-start
+        dst: gghstats-start
 
 checksum:
   name_template: checksums.txt

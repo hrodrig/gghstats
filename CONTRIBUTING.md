@@ -19,6 +19,9 @@ Thank you for your interest in contributing.
   - `make security`
 - For release-related changes, run:
   - `make release-check`
+- **Native OS packaging** (`.deb`, `.rpm`, FreeBSD/OpenBSD): optional maintainer gate —
+  - `make test-platforms-ping` / `make test-platforms` with inventory under `testing/platforms/` (see [testing/platforms/README.md](testing/platforms/README.md)).
+- **Docker / Helm manifests:** validated in [gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted), not in this repo.
 
 ## Release flow
 

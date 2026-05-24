@@ -1,0 +1,20 @@
+---
+# Shared defaults for platform test hosts (override in hosts.yml).
+#
+# Lab / pre-release: use local GoReleaser snapshot artifacts from dist/ on the control node.
+#   make snapshot
+#   gghstats_version: "<version>" from dist/metadata.json (e.g. 0.6.4-next)
+#   gghstats_package_source: local
+# Published release on GitHub: set gghstats_package_source: release and gghstats_version: "0.6.4"
+
+gghstats_version: "0.6.4-next"
+gghstats_release_url: "https://github.com/hrodrig/gghstats/releases/download/v{{ gghstats_version }}"
+gghstats_package_source: local
+# Optional: absolute path if dist/ is not under the cloned repo (default: <repo>/dist)
+# gghstats_dist_dir: "/Volumes/Data/addlink/github/gghstats/dist"
+# auto + true: prefer dist/ when local file exists; false: always try GitHub unless gghstats_local_package set
+gghstats_use_dist_for_auto: true
+
+gghstats_data_dir: /var/lib/gghstats
+gghstats_port: 8080
+gghstats_sync_on_startup: "false"

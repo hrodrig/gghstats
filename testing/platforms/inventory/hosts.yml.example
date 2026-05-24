@@ -1,0 +1,101 @@
+---
+# testing/platforms/inventory/hosts.yml.example
+#
+# Copy to hosts.yml (gitignored):
+#   cp hosts.yml.example hosts.yml
+#
+# Example lab: SSH via NAT — ansible_port is often 22<last-two-digits-of-VMID>
+# (e.g. VM 11098 → 2298). Set ansible_host_lab to your firewall or public IP.
+#
+# Local packages (pre-release):
+#   make snapshot
+#   gghstats_version: read "version" from dist/metadata.json (e.g. 0.6.4-next)
+#   gghstats_package_source: local
+#   Install role picks dist/gghstats_<version>_<os>_amd64.{deb,rpm,tar.gz} per platform_vars
+#
+# Run from repo root:
+#   make test-platforms-ping
+#   make test-platforms
+#   make test-platforms LIMIT=gghstats-freebsd
+
+all:
+  vars:
+    # From dist/metadata.json after `make snapshot` (not the git tag — no "v" prefix in filename)
+    gghstats_version: "0.6.4-next"
+    gghstats_release_url: "https://github.com/hrodrig/gghstats/releases/download/v{{ gghstats_version }}"
+    # local | auto | release — use local until v<version> assets exist on GitHub
+    gghstats_package_source: local
+    # gghstats_dist_dir: "/absolute/path/to/gghstats/dist"   # optional; default <repo>/dist
+
+    # Required — PAT with read access to repos in gghstats_filter (never commit hosts.yml with a real token).
+    gghstats_github_token: ghp_REPLACE
+
+    gghstats_data_dir: /var/lib/gghstats
+    gghstats_port: 8080
+    gghstats_filter: "your-github-user/*,!fork,!archived"
+    gghstats_sync_on_startup: "false"
+
+    # Optional: gghstats_test_fetch_repo: "your-github-user/some-repo"
+    # Optional per host: gghstats_local_package: "/other/path/custom.deb"
+
+    ansible_host_lab: "203.0.113.10"
+
+  children:
+    linux_systemd:
+      hosts:
+        gghstats-ubuntu:
+          ansible_host: "{{ ansible_host_lab }}"
+          ansible_port: 2298
+          ansible_user: root
+          platform_vars: ubuntu
+
+        gghstats-debian:
+          ansible_host: "{{ ansible_host_lab }}"
+          ansible_port: 2285
+          ansible_user: root
+          platform_vars: debian
+
+        gghstats-almalinux:
+          ansible_host: "{{ ansible_host_lab }}"
+          ansible_port: 2299
+          ansible_user: root
+          platform_vars: almalinux
+
+        gghstats-opensuse:
+          ansible_host: "{{ ansible_host_lab }}"
+          ansible_port: 2286
+          ansible_user: root
+          platform_vars: opensuse
+
+        gghstats-archlinux:
+          ansible_host: "{{ ansible_host_lab }}"
+          ansible_port: 2288
+          ansible_user: root
+          platform_vars: archlinux
+
+    linux_openrc:
+      hosts:
+        # VM 11097 (alpine)
+        gghstats-alpine:
+          ansible_host: "{{ ansible_host_lab }}"
+          ansible_port: 2297
+          ansible_user: root
+          platform_vars: alpine
+
+    bsd:
+      vars:
+        ansible_python_interpreter: /usr/local/bin/python3
+      hosts:
+        gghstats-freebsd:
+          ansible_host: "{{ ansible_host_lab }}"
+          ansible_port: 2295
+          ansible_user: root
+          platform_vars: freebsd
+
+        gghstats-openbsd:
+          ansible_host: "{{ ansible_host_lab }}"
+          ansible_port: 2296
+          ansible_user: root
+          platform_vars: openbsd
+
+    # Not in gghstats GoReleaser builds: 11093 dragonfly, 11094 netbsd, 11090 illumos, 11091/11092 solaris

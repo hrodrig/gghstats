@@ -1,0 +1,6 @@
+---
+# Arch Linux — release tarball, systemd (unit installed by Ansible)
+gghstats_install_method: tarball
+gghstats_init_system: systemd
+gghstats_binary_path: /usr/local/bin/gghstats
+gghstats_tarball_os: linux
