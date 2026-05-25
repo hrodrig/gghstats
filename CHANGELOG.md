@@ -7,21 +7,27 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-05-24
+
 ### Added
 
 - **FreeBSD:** `contrib/freebsd/` port (Makefile, pkg-plist, `rc.d/gghstats`, README developer guide, PORT-RELEASE); GoReleaser **`freebsd`** archives; **`gmake dist-freebsd`** / **`gmake port-freebsd-sync`** (GNU make; BSD `make` for `/usr/ports` only).
 - **OpenBSD:** `contrib/openbsd/` (rc.d, `gghstats-serve`, `port/` with `files/` + PLIST, README, PORT-RELEASE); GoReleaser **`openbsd`** archives; **`gmake dist-openbsd`** / **`gmake port-openbsd-sync`** (`OPENBSD_ARCH` default `amd64`). Port installs **`gghstats-serve`** required by rc.d.
+- **`contrib/BSD-PORTS-STEP-BY-STEP.md`:** end-to-end guide (tarball → port → install) for FreeBSD and OpenBSD newcomers.
 - **AGENTS.md:** man page sync checklist before release (keep `contrib/man/man1/gghstats.1` aligned with `VERSION` and env/CLI).
 - **`.deb`/`.rpm` maintainer scripts:** `contrib/deb/prerm.sh` (stop/disable `gghstats.service` on remove) and `contrib/deb/postrm.sh` (remove `/etc/gghstats` on **purge**; SQLite under `/var/lib/gghstats` is kept).
 - **systemd (Linux):** `contrib/systemd/gghstats.service`, `contrib/gghstats.env.example` → `/etc/gghstats/gghstats.env`, and [contrib/systemd/README.md](contrib/systemd/README.md). **.deb/.rpm** install the unit to `/lib/systemd/system/`.
-- **README Install:** package-manager table, separate **Build** section, and **Debian / Ubuntu** + **AlmaLinux / Fedora / RHEL** install notes.
+- **macOS (launchd):** `contrib/launchd/` — wrapper script, LaunchAgent plist template, and README for always-on local use.
+- **CLI local UX:** `gghstats run` (alias for `serve`); **`--open`** and **`GGHSTATS_OPEN_BROWSER`** open the default browser when the dashboard is ready.
+- **README Install:** package-manager table, separate **Build** section, **Always-on (macOS)**, and **Debian / Ubuntu** + **AlmaLinux / Fedora / RHEL** install notes.
+- **README demo:** side-by-side screenshots — GitHub Traffic (14 days) vs gghstats historical SQLite charts; ecosystem links to **pgwd** / **pgwd-selfhosted**.
 - **Docs:** Install/Quick start = quick commands only; **systemd**, Debian/RHEL package setup, and deployment guides moved to **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** (`run/standalone/linux/`, `run/docker-compose/`, `run/common/`).
 - **Alpine (OpenRC):** `contrib/openrc/gghstats.initd` and README; linux release tarballs include `share/openrc/gghstats.initd`.
-- **Platform tests:** Ansible support for **Alpine** (`platform_vars/alpine.yml`, OpenRC in `gghstats_daemon` / uninstall); lab inventory **gghstats-alpine** (VM 11097 / port 2297).
+- **Platform tests:** Ansible support for **Alpine** (`platform_vars/alpine.yml`, OpenRC in `gghstats_daemon` / uninstall); unified **`gghstats_package_source`** docs (`local` / `auto` / `release`).
 
 ### Changed
 
-- **Default bind address:** `gghstats serve` listens on **`127.0.0.1`** (localhost only) instead of `0.0.0.0`. Docker Compose in this repo and **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** still set `GGHSTATS_HOST=0.0.0.0` for containers.
+- **Default bind address:** `gghstats serve` listens on **`127.0.0.1`** (localhost only) instead of `0.0.0.0`. Set **`GGHSTATS_HOST=0.0.0.0`** if you need LAN access without a reverse proxy. Docker Compose in this repo and **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** still set `GGHSTATS_HOST=0.0.0.0` for containers.
 
 ## [0.6.4] - 2026-05-21
 
@@ -222,7 +228,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.6.4...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/hrodrig/gghstats/compare/v0.6.4...v0.7.0
 [0.6.4]: https://github.com/hrodrig/gghstats/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/hrodrig/gghstats/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/hrodrig/gghstats/compare/v0.6.1...v0.6.2
