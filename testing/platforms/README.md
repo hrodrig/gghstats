@@ -14,19 +14,102 @@ Automated multi-platform validation of **native** gghstats installation: package
 
 **Not in scope:** Traefik, observability stacks, in-cluster Kubernetes, or running gghstats inside Docker on the target host.
 
-**Target OS:** Linux with Docker **not** required. **\*BSD** hosts use release tarballs and rc.d — there is no Docker-based platform test for BSD in this repo.
+**Target OS:** Linux with Docker **not** required. **\*BSD** hosts are tested **natively** (no Docker on the target). Compose on BSD is out of scope — see **gghstats-selfhosted** for Linux-only Compose tests.
+
+## Package sources and install paths
+
+Platform tests install **GoReleaser artifacts** (`.deb`, `.rpm`, OS tarballs). You do **not** run GoReleaser on the target VM.
+
+Inventory variable: **`gghstats_package_source`** (`local` | `auto` | `release`). Related: **`gghstats_version`**, **`gghstats_release_url`**, optional **`gghstats_dist_dir`**, **`gghstats_local_package`**, **`gghstats_use_dist_for_auto`** (default **`true`** in **`inventory/group_vars/all.yml`**).
+
+### How `gghstats_package_source` chooses an artifact
+
+The install role sets **`gghstats_use_local_package`**: copy from the control node vs download on the target (`get_url`).
+
+| Value | When to use | Install role behavior | GitHub release required? |
+|-------|-------------|------------------------|---------------------------|
+| **`local`** | Pre-release on **`develop`**; packaging still changing | **Always** copy from control node **`dist/`** (or **`gghstats_local_package`**). Fails if the file is missing. | No — run **`make snapshot`** first |
+| **`auto`** | Default-friendly mixed lab | If **`gghstats_use_dist_for_auto: true`** and **`dist/gghstats_<version>_…`** exists on the control node → **copy**; else → **download** from **`gghstats_release_url`** on the target | Only when falling back to download |
+| **`release`** | Post-tag smoke on real VMs | **Always download** on the target from **`gghstats_release_url`**, even if **`dist/`** exists locally | Yes — tag **`v{{ gghstats_version }}`** and matching assets |
+
+**Decision flow (`auto`):**
+
+```
+gghstats_package_source == local     → copy from dist/ (required)
+gghstats_package_source == release   → download from GitHub
+gghstats_package_source == auto
+  → dist/ artifact exists?  copy : download
+     (only checks dist/ when gghstats_use_dist_for_auto: true)
+```
+
+Set **`gghstats_version`** to semver **without** `v` (e.g. `0.6.4`). Release URL:
+
+`https://github.com/hrodrig/gghstats/releases/download/v{{ gghstats_version }}/gghstats_<version>_…`
+
+Filenames match GoReleaser (no `v` in the file): `gghstats_0.6.4_linux_amd64.deb`, `gghstats_0.6.4_freebsd_amd64.tar.gz`, etc. The role picks the suffix from **`platform_vars`** (`.deb`, `.rpm`, `freebsd`/`openbsd`/`linux` tarball).
+
+Override one host: **`gghstats_local_package: "/path/to/custom.deb"`** (works with **`local`** or **`auto`** when the file exists).
+
+**Defaults:** **`inventory/group_vars/all.yml`** sets **`gghstats_package_source: local`** and **`gghstats_version: "0.6.4-next"`** for lab work. The install role’s internal default if unset is **`auto`** — set **`gghstats_package_source`** explicitly in inventory to avoid surprises.
+
+### What Ansible installs today (by OS)
+
+| Platform | Artifact | How the test installs it | Operator equivalent |
+|----------|----------|---------------------------|---------------------|
+| Debian / Ubuntu | `.deb` | `dpkg -i` (local copy or download) | `wget` release + `dpkg -i`, or `apt` from file URL |
+| AlmaLinux / RHEL | `.rpm` | `dnf install` / `rpm -i` | `dnf install` release URL |
+| OpenSUSE | `.rpm` | `zypper install` | Same |
+| Arch / Alpine | linux `.tar.gz` | Extract + install binary, unit/init script | Manual tarball path in docs |
+| **FreeBSD** | freebsd `.tar.gz` | Binary from tarball; **rc.d from repo checkout** (`contrib/freebsd/rc.d` → target) | **Not yet** `pkg install` from ports |
+| **OpenBSD** | openbsd `.tar.gz` | Binary from tarball; **wrappers + rc.d from repo checkout** (`contrib/openbsd/*`; tarball may also ship rc assets) | **Not yet** `pkg_add gghstats` from ports |
+
+**\*BSD note:** with **`release`** or **`auto`** (GitHub fallback), the **binary** comes from the tarball on GitHub, but **rc.d / wrappers** are still copied from your **gghstats clone** on the control node (**`gghstats_daemon`**). Run playbooks from a checkout at or near the tag you are testing. Linux **`.deb`/`.rpm`** from GitHub are self-contained (package + maintainer scripts).
+
+With **`gghstats_package_source: release`**, you do **not** need **`make snapshot`** on the laptop — the target downloads release assets. That is the usual **post-release** gate (Linux fully; BSD binary only — see note above).
+
+With **`local`**, run **`make snapshot`** once, set **`gghstats_version`** from **`dist/metadata.json`** (e.g. `0.6.4-next`), then **`make test-platforms`**.
+
+### Pre-release vs post-release (quick pick)
+
+**Before tagging (packaging still in flux):**
+
+```yaml
+gghstats_package_source: local
+gghstats_version: "0.6.4-next"   # from dist/metadata.json after make snapshot
+```
+
+**After `v0.6.4` is on GitHub Releases:**
+
+```yaml
+gghstats_package_source: release
+gghstats_version: "0.6.4"
+```
+
+### \*BSD: tarball path today; port / `pkg_add` (planned)
+
+| Path | Status | What it validates |
+|------|--------|-------------------|
+| **Release tarball + Ansible** | **Implemented** | GoReleaser BSD tarball, env file, rc.d enable/start, healthz, teardown |
+| **Port build → `pkg install` / `pkg_add`** using distfile from **GitHub Releases** | **Planned** | `contrib/freebsd` / `contrib/openbsd/port` — PLIST, `@rcscript`, pkg delete (same distfile as release, no local `dist/`) |
+| **`pkg_add gghstats` from official mirrors** | **Future** | Only after the port is accepted into the **official** FreeBSD/OpenBSD ports trees |
+
+Today’s playbooks follow the **first row**: they mirror a careful **manual tarball install**, not **`pkg_add`** from the ports tree. Port files live under **`contrib/freebsd/`** and **`contrib/openbsd/port/`**; see **`PORT-RELEASE.md`** in each directory for manual port validation.
+
+When **`install_method: port_pkg`** is added, **`release`** mode will still mean “use the GitHub distfile”, but installation will go through the **port Makefile** (or a built **`.pkg`**) instead of manual `tar xzf`. Until then, use **`release`** for BSD tarball smoke after each tag.
+
+**Port maintainer guide (step-by-step):** [../../contrib/BSD-PORTS-STEP-BY-STEP.md](../../contrib/BSD-PORTS-STEP-BY-STEP.md) — how to run **`gmake port-*-sync`**, build distfiles, and validate **`make install`** / future **`pkg_add`** on FreeBSD and OpenBSD VMs.
 
 ## Supported platforms
 
-| Platform | Install method | Init system |
-|----------|----------------|-------------|
+| Platform | Test artifact | Init system |
+|----------|---------------|-------------|
 | Debian / Ubuntu | `.deb` | systemd |
 | AlmaLinux / RHEL family | `.rpm` (dnf) | systemd |
-| FreeBSD | tarball | rc.d (`service`) |
-| OpenBSD | tarball | rc.d (`rcctl`) |
-| Arch Linux | linux tarball | systemd (unit from Ansible template) |
+| FreeBSD | freebsd `.tar.gz` (port/pkg planned) | rc.d (`service`) |
+| OpenBSD | openbsd `.tar.gz` (port/pkg planned) | rc.d (`rcctl`) |
+| Arch Linux | linux `.tar.gz` | systemd (unit from Ansible template) |
 | OpenSUSE | `.rpm` (zypper) | systemd |
-| Alpine Linux | linux tarball | OpenRC (`contrib/openrc/gghstats.initd`) |
+| Alpine Linux | linux `.tar.gz` | OpenRC (`contrib/openrc/gghstats.initd`) |
 
 **Example lab layout:** `inventory/hosts.yml.example` lists eight targets (Debian, Ubuntu, AlmaLinux, OpenSUSE, Arch, Alpine, FreeBSD, OpenBSD). NAT SSH ports often follow **`22` + last two digits of VMID** (e.g. VM **11098** → port **2298**). Set **`ansible_host_lab`** (or per-host **`ansible_host`**) to your SSH bastion or public IP. **Not supported** here: NetBSD, DragonFly, Illumos, Solaris (no gghstats release tarball).
 
@@ -93,32 +176,19 @@ Copy **`inventory/hosts.yml.example`** to **`inventory/hosts.yml`** (gitignored)
 - **`ansible_host`**, **`ansible_port`**, **`ansible_user`**
 - **`gghstats_github_token`** — PAT (never commit)
 - **`gghstats_filter`** — e.g. `your-user/*,!fork,!archived`
-- Optional: **`gghstats_version`**, **`gghstats_package_source`** (`auto` \| `release` \| `local`), **`gghstats_local_package`**, **`gghstats_port`**, **`gghstats_sync_on_startup`** (default `false` for faster smoke tests), **`gghstats_test_fetch_repo`** (e.g. `owner/repo` for optional API fetch test)
+- Optional: **`gghstats_version`**, **`gghstats_package_source`**, **`gghstats_local_package`**, **`gghstats_port`**, **`gghstats_sync_on_startup`** (default `false` for faster smoke tests), **`gghstats_test_fetch_repo`** (e.g. `owner/repo` for optional API fetch test)
 
-**Package source:**
+See **[Package sources and install paths](#package-sources-and-install-paths)** for **`local` / `auto` / `release`**, pre-release **`make snapshot`**, and BSD tarball vs future port/pkg.
 
-- **`local`** (default in `group_vars/all.yml`): install from **`dist/`** on the control node. No GitHub release required.
-- **`auto`**: use **`dist/`** only if the artifact file exists (or set **`gghstats_local_package`** per host); otherwise download from **`gghstats_release_url`**.
-- **`release`**: always download (requires published **`v{{ gghstats_version }}`** assets).
+### Local snapshot (checklist)
 
-### Local snapshot (before a GitHub release)
+1. **`make snapshot`** → **`dist/`** + **`dist/metadata.json`**
+2. **`gghstats_version`**: copy **`version`** from metadata (e.g. `0.6.4-next`)
+3. **`gghstats_package_source: local`** (default in **`inventory/group_vars/all.yml`**)
+4. Optional **`gghstats_dist_dir`**: absolute path if Ansible runs outside the clone
+5. **`make test-platforms-ping`**, then **`make test-platforms`**
 
-1. From the repo root: **`make snapshot`** (writes **`dist/`** and **`dist/metadata.json`**).
-2. Set **`gghstats_version`** in `hosts.yml` to the **`version`** field from **`dist/metadata.json`** (e.g. `0.6.4-next`, not the git tag).
-3. Set **`gghstats_package_source: local`** (default in **`inventory/group_vars/all.yml`**).
-4. The install role resolves paths automatically:
-   - Debian/Ubuntu → `dist/gghstats_<version>_linux_amd64.deb`
-   - AlmaLinux / OpenSUSE → `..._linux_amd64.rpm`
-   - Arch → `..._linux_amd64.tar.gz`
-   - FreeBSD / OpenBSD → `dist/gghstats_<version>_<os>_amd64.tar.gz`
-5. Optional **`gghstats_dist_dir`**: absolute path if you run Ansible outside the clone.
-6. **`make test-platforms-ping`**, then **`make test-platforms`**.
-
-Override a single host: **`gghstats_local_package: "/path/to/custom.deb"`**.
-
-After you publish **`v<version>`** on GitHub, switch to **`gghstats_package_source: release`** and **`gghstats_version: "<version>"`** (semver without `v`).
-
-Release asset names match GoReleaser: `gghstats_<version>_linux_amd64.deb`, `gghstats_<version>_freebsd_amd64.tar.gz`, etc. (no `v` in the filename; Git tag is `v<version>`).
+After **`v<version>`** is published, switch to **`gghstats_package_source: release`** and **`gghstats_version: "<version>"`**.
 
 ## Test flow
 

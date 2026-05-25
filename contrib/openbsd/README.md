@@ -1,5 +1,7 @@
 # OpenBSD support for gghstats
 
+**New maintainers:** step-by-step FreeBSD + OpenBSD port workflow → **[../BSD-PORTS-STEP-BY-STEP.md](../BSD-PORTS-STEP-BY-STEP.md)**.
+
 [OpenBSD](https://www.openbsd.org) uses **rc.d**, not systemd. This layout uses a **serve wrapper** plus **`rc_bg=YES`** so **`rc.subr`** backgrounds the daemon (no custom `rc_start` with `&`):
 
 | Piece | Role |

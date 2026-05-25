@@ -2,6 +2,8 @@
 
 How to bump the **gghstats** port for a new app release, validate it on an OpenBSD VM, and (optionally) submit to the official ports tree.
 
+**New to BSD ports?** Read **[BSD-PORTS-STEP-BY-STEP.md](../BSD-PORTS-STEP-BY-STEP.md)** first (Scenarios A/B, then return here for OpenBSD lab detail).
+
 | Doc | Audience |
 |-----|----------|
 | **[README.md](README.md)** | Install from release tarball or repo scripts (`/etc/rc.d`, manual) |

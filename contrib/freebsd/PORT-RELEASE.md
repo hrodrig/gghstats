@@ -1,6 +1,10 @@
 # FreeBSD Port: Release and Update Procedure
 
-Steps to create or update the **gghstats** port for a new application release. Operator-facing install docs: **[README.md](README.md)**. Full developer context ( **`gmake` vs `make`**, VM test, distfile names): **[README.md — Developer guide](README.md#developer-guide)**.
+Steps to create or update the **gghstats** port for a new application release.
+
+**New to BSD ports?** Start with **[BSD-PORTS-STEP-BY-STEP.md](../BSD-PORTS-STEP-BY-STEP.md)** (Scenarios A/B, `gmake` vs `make`, distfile naming).
+
+Operator-facing install docs: **[README.md](README.md)**. Full developer context: **[README.md — Developer guide](README.md#developer-guide)**.
 
 ## Prerequisites
 

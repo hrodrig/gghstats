@@ -4,6 +4,7 @@ This directory contains the [FreeBSD](https://www.freebsd.org) port files for **
 
 | Audience | Start here |
 |----------|------------|
+| **New maintainers** (step-by-step, both BSDs) | **[../BSD-PORTS-STEP-BY-STEP.md](../BSD-PORTS-STEP-BY-STEP.md)** |
 | **Developers** (port, distfile, Bugzilla) | [Developer guide](#developer-guide) below |
 | **Operators** (install, config, rc.d) | [Install from port](#install-from-port) |
 | **Release maintainer** (version bump, submit diff) | [PORT-RELEASE.md](PORT-RELEASE.md) |

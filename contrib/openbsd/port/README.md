@@ -4,7 +4,9 @@ Port files for submitting gghstats to the official OpenBSD ports tree.
 
 Operator install from tarball: **[../README.md](../README.md)**.
 
-**Maintainers:** step-by-step release + lab port test → **[../PORT-RELEASE.md](../PORT-RELEASE.md)** (start there). This file is the port-directory reference (CVS/git checkout, `file://` fetch, layout).
+**New maintainers:** **[../BSD-PORTS-STEP-BY-STEP.md](../BSD-PORTS-STEP-BY-STEP.md)** (both BSDs, ordered steps).
+
+**Maintainers:** OpenBSD lab detail → **[../PORT-RELEASE.md](../PORT-RELEASE.md)**. This file is the port-directory reference (CVS/git checkout, `file://` fetch, layout).
 
 ## Version bump
 

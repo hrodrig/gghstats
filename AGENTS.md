@@ -20,7 +20,7 @@ Keep **`contrib/man/man1/gghstats.1`** aligned with the CLI and **`serve`** envi
 
 **Source of truth:** `cmd/gghstats/main.go`, `flags.go`, `serve.go`, `contrib/gghstats.env.example`.
 
-**Before tagging:** run **`gmake port-freebsd-sync`** and/or **`gmake port-openbsd-sync`** when BSD ports should match **`VERSION`** (OpenBSD sync also copies **`contrib/openbsd/*`** → **`contrib/openbsd/port/files/`**). Optional local distfiles: **`gmake dist-freebsd`**, **`gmake dist-openbsd`** (`OPENBSD_ARCH=arm64` if needed). Workflows: **`contrib/freebsd/README.md`**, **`contrib/openbsd/PORT-RELEASE.md`**.
+**Before tagging:** run **`gmake port-freebsd-sync`** and/or **`gmake port-openbsd-sync`** when BSD ports should match **`VERSION`** (OpenBSD sync also copies **`contrib/openbsd/*`** → **`contrib/openbsd/port/files/`**). Optional local distfiles: **`gmake dist-freebsd`**, **`gmake dist-openbsd`** (`OPENBSD_ARCH=arm64` if needed). **New maintainers:** **`contrib/BSD-PORTS-STEP-BY-STEP.md`**. Detail: **`contrib/freebsd/README.md`**, **`contrib/openbsd/PORT-RELEASE.md`**.
 
 **Verify:** `make install-man MANDIR=/tmp/gghstats-man` then `MANPATH="/tmp/gghstats-man:$(pwd)/contrib/man" man gghstats`.
 
