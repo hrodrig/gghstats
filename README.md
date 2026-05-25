@@ -19,6 +19,8 @@ Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only k
 
 If you want your **own self-hosted** deployment (Docker Compose, Traefik with TLS, Helm, optional Prometheus/Grafana/Loki), use the companion repo **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** — it lists the supported options and example manifests.
 
+**Related (same maintainer):** **[pgwd](https://github.com/hrodrig/pgwd)** — PostgreSQL connection watchdog (Slack/Loki alerts); production manifests in **[pgwd-selfhosted](https://github.com/hrodrig/pgwd-selfhosted)**.
+
 **Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.6.0`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
 
 ## Demo
