@@ -27,11 +27,26 @@ If you want your **own self-hosted** deployment (Docker Compose, Traefik with TL
 
 **Live:** [gghstats.hermesrodriguez.com](https://gghstats.hermesrodriguez.com)
 
+### Beyond GitHub’s 14-day Traffic tab
+
+GitHub **Insights → Traffic** shows clones and views for a **rolling 14 days** only. Older daily data disappears from the UI unless you archive it yourself. **gghstats** syncs the same GitHub API into **SQLite** so you keep daily charts and totals for as long as you run it.
+
+Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
+
+![GitHub Traffic — last 14 days only](assets/compare-github-traffic-14d.png)
+
+*GitHub Insights → Traffic — rolling 14-day window (May 2026).*
+
+![gghstats — daily history in SQLite](assets/compare-gghstats-history.png)
+
+*Same repo on the [live demo](https://gghstats.hermesrodriguez.com/hrodrig/gghstats) — daily clones/views from first sync (Mar–May 2026). Totals differ from GitHub’s 14d rollup; see [Repository page charts](#repository-page-charts-clones--views).*
+
 ![GGHSTATS dashboard — repository metrics and neobrutalist UI](assets/gghstats-main.png)
 
 ## Table of contents
 
 - [Demo](#demo)
+  - [Beyond GitHub’s 14-day Traffic tab](#beyond-githubs-14-day-traffic-tab)
 - [Features](#features)
 - [Repository page charts](#repository-page-charts-clones--views)
 - [Quick start](#quick-start)
