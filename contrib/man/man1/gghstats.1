@@ -10,6 +10,10 @@ gghstats \- self-hosted GitHub repository traffic dashboard and CLI
 .B gghstats serve
 .RB [ \-\-port
 .IR PORT ]
+.RB [ \-\-open ]
+.PP
+.B gghstats run
+.RI (alias for \fBserve\fR)
 .SH DESCRIPTION
 .B gghstats
 collects GitHub traffic metrics (views, clones, referrers, paths) into a local
@@ -30,6 +34,9 @@ On Linux servers under systemd, set them in
 .TP
 .B serve
 Start the HTTP dashboard and background sync scheduler.
+.TP
+.B run
+Alias for \fBserve\fR (local convenience).
 .TP
 .B fetch
 Download traffic for one repository into the database.
@@ -57,6 +64,9 @@ SQLite database path (default: \fB./data/gghstats.db\fR).
 .TP
 .BR \-\-port ", " PORT
 Listen port (overrides \fBGGHSTATS_PORT\fR; default \fB8080\fR).
+.TP
+.BR \-\-open
+Open the default browser when the server is ready (or \fBGGHSTATS_OPEN_BROWSER=1\fR).
 .SH ENVIRONMENT
 .TP
 .B GGHSTATS_GITHUB_TOKEN
@@ -80,6 +90,9 @@ Sync frequency (default: \fB1h\fR).
 .B GGHSTATS_SYNC_ON_STARTUP
 Run sync before serving (default: \fBtrue\fR).
 .TP
+.B GGHSTATS_OPEN_BROWSER
+Open the default browser on startup (default: \fBfalse\fR; same as \fB\-\-open\fR).
+.TP
 .B GGHSTATS_API_TOKEN
 Protect JSON API routes; optional for manual sync from the UI.
 .TP
@@ -97,9 +110,9 @@ Run the dashboard locally:
 .RS
 .EX
 export GGHSTATS_GITHUB_TOKEN=ghp_xxx
-gghstats serve
+gghstats run --open
 .EE
-Open \fIhttp://localhost:8080\fR.
+Opens \fIhttp://localhost:8080\fR in the default browser (\fBrun\fR is an alias for \fBserve\fR).
 .RE
 .TP
 Fetch one repository:
@@ -117,6 +130,11 @@ systemd unit:
 .IR contrib/systemd/gghstats.service
 (see
 .IR contrib/systemd/README.md ).
+.PP
+macOS LaunchAgent:
+.IR contrib/launchd/com.github.hrodrig.gghstats.plist
+(see
+.IR contrib/launchd/README.md ).
 .SH EXIT STATUS
 0 on success, non-zero on error.
 .SH SEE ALSO

@@ -33,6 +33,7 @@ type serveConfig struct {
 	APIToken         string
 	SyncInterval     time.Duration
 	SyncOnStartup    bool
+	OpenBrowser      bool
 	BadgePublic      bool
 	BadgeCacheMaxAge int
 	PublicURL        string
@@ -49,6 +50,7 @@ func loadServeConfig() serveConfig {
 		APIToken:         os.Getenv("GGHSTATS_API_TOKEN"),
 		SyncInterval:     1 * time.Hour,
 		SyncOnStartup:    envBool("GGHSTATS_SYNC_ON_STARTUP", true),
+		OpenBrowser:      envBool("GGHSTATS_OPEN_BROWSER", false),
 		BadgePublic:      os.Getenv("GGHSTATS_BADGE_PUBLIC") != "false",
 		BadgeCacheMaxAge: 300,
 		PublicURL:        strings.TrimSpace(os.Getenv("GGHSTATS_PUBLIC_URL")),
@@ -82,6 +84,7 @@ func runServe(args []string) error {
 		fmt.Fprintf(fs.Output(), "\nEnvironment variables apply when flags are omitted (see: gghstats --help).\n")
 	}
 	fs.StringVar(&cfg.Port, "port", cfg.Port, "HTTP listen port (overrides `GGHSTATS_PORT`; default 8080)")
+	fs.BoolVar(&cfg.OpenBrowser, "open", cfg.OpenBrowser, "Open the default browser when the server is ready")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return nil
@@ -173,11 +176,18 @@ func runServe(args []string) error {
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		logURL := "http://" + addr
-		if cfg.Host == "0.0.0.0" {
-			logURL = "http://127.0.0.1:" + cfg.Port + " (bind " + addr + ")"
+		logURL := serveDashboardURL(cfg.Host, cfg.Port)
+		if cfg.Host == "0.0.0.0" || cfg.Host == "::" || cfg.Host == "[::]" {
+			slog.Info("listening", "url", logURL, "bind", addr)
+		} else {
+			slog.Info("listening", "url", logURL)
 		}
-		slog.Info("listening", "url", logURL)
+		if cfg.OpenBrowser {
+			go func() {
+				time.Sleep(300 * time.Millisecond)
+				openBrowser(logURL)
+			}()
+		}
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("server error", "error", err)
 			os.Exit(1)

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  User LaunchAgent for gghstats on macOS (Homebrew or manual binary on PATH).
+
+  1. cp contrib/gghstats.env.example ~/.gghstats.env && chmod 600 ~/.gghstats.env
+  2. Edit ~/.gghstats.env (token, GGHSTATS_DB under ~/Library/Application Support/gghstats/, etc.)
+  3. cp contrib/launchd/gghstats-serve.sh ~/bin/ && chmod +x ~/bin/gghstats-serve.sh
+  4. Edit ProgramArguments below if the wrapper is not in ~/bin/gghstats-serve.sh
+  5. cp contrib/launchd/com.github.hrodrig.gghstats.plist ~/Library/LaunchAgents/
+  6. launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.github.hrodrig.gghstats.plist
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.github.hrodrig.gghstats</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>REPLACE_WITH_HOME/bin/gghstats-serve.sh</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>StandardOutPath</key>
+	<string>REPLACE_WITH_HOME/Library/Logs/gghstats.log</string>
+	<key>StandardErrorPath</key>
+	<string>REPLACE_WITH_HOME/Library/Logs/gghstats.error.log</string>
+	<key>WorkingDirectory</key>
+	<string>REPLACE_WITH_HOME/Library/Application Support/gghstats</string>
+</dict>
+</plist>

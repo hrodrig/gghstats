@@ -2,6 +2,8 @@
 
 Run **`gghstats serve`** under systemd on Linux. Configuration is an **environment file** at `/etc/gghstats/gghstats.env`.
 
+**macOS (local LaunchAgent):** see **[contrib/launchd/README.md](../launchd/README.md)**.
+
 **One instance = one SQLite file and one filter.** For multiple isolated dashboards, use separate env files, units, and data directories (e.g. `gghstats-team-a.service` + `/etc/gghstats/team-a.env`).
 
 ## Prerequisites

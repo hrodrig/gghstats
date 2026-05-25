@@ -55,6 +55,12 @@ func TestRunCLISubcommandFailures(t *testing.T) {
 			t.Fatalf("want exit 1, got %d", code)
 		}
 	})
+	t.Run("run_missing_token", func(t *testing.T) {
+		t.Setenv("GGHSTATS_GITHUB_TOKEN", "")
+		if code := runCLI([]string{"gghstats", "run"}); code != 1 {
+			t.Fatalf("want exit 1, got %d", code)
+		}
+	})
 }
 
 func TestRunCLIHelp(t *testing.T) {

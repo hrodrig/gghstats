@@ -108,8 +108,10 @@ The steps below are a **minimal path** to install gghstats, run the dashboard on
 ```bash
 brew install hrodrig/gghstats/gghstats
 export GGHSTATS_GITHUB_TOKEN=ghp_xxx
-gghstats serve
+gghstats run --open
 ```
+
+**`run`** is an alias for **`serve`**; **`--open`** opens the default browser when the dashboard is ready. Background daemon on macOS: **[contrib/launchd/README.md](contrib/launchd/README.md)**. Linux packages install **[systemd](contrib/systemd/README.md)**.
 
 Tap: [homebrew-gghstats](https://github.com/hrodrig/homebrew-gghstats). The cask is updated when a new [release](https://github.com/hrodrig/gghstats/releases) is published. Server deployment: **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**.
 
@@ -118,10 +120,10 @@ Tap: [homebrew-gghstats](https://github.com/hrodrig/homebrew-gghstats). The cask
 ```bash
 # From Releases: extract gghstats_*_linux_* archive, or: go install github.com/hrodrig/gghstats/cmd/gghstats@latest
 export GGHSTATS_GITHUB_TOKEN=ghp_xxx
-gghstats serve
+gghstats run --open
 ```
 
-Open <http://localhost:8080> and confirm the UI loads. Data is stored in `./data/gghstats.db` (override with `GGHSTATS_DB`). A first sync may take a while if the default filter includes many repositories — narrow `GGHSTATS_FILTER` in [Configuration](#configuration) when you move beyond this smoke test.
+Open <http://localhost:8080> if you did not use **`--open`**. Data is stored in `./data/gghstats.db` (override with `GGHSTATS_DB`). A first sync may take a while if the default filter includes many repositories — narrow `GGHSTATS_FILTER` in [Configuration](#configuration) when you move beyond this smoke test.
 
 ### Docker (one command, no clone — UI smoke test)
 
@@ -188,6 +190,15 @@ gghstats serve
 ```
 
 Open <http://127.0.0.1:8080>. Variable semantics: [Configuration](#configuration) below. **Do not use this README for production deployment** — use **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**.
+
+### Always-on (macOS)
+
+To keep gghstats running after you log in (background sync + dashboard on **localhost**), use a **LaunchAgent** — there is **no** `brew services` stanza in the Homebrew cask yet.
+
+1. Install the binary (`brew install hrodrig/gghstats/gghstats` or a [Release](https://github.com/hrodrig/gghstats/releases) archive).
+2. Follow **[contrib/launchd/README.md](contrib/launchd/README.md)**: `~/.gghstats.env`, `gghstats-serve.sh` wrapper, plist in `~/Library/LaunchAgents/`, then `launchctl bootstrap`.
+
+**Linux servers:** `.deb`/`.rpm` install a **systemd** unit — [`contrib/systemd/README.md`](contrib/systemd/README.md) and **`systemctl enable --now gghstats`**. Public TLS / Compose / Helm → **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**.
 
 [Back to top](#gghstats)
 
@@ -256,7 +267,7 @@ Server behavior:
 - Stores data in `./data/gghstats.db`
 - Liveness/readiness: `GET /api/v1/healthz` → `{"status":"ok"}` (no auth; Kubernetes-style)
 - Prometheus: `GET /metrics` (disable with `GGHSTATS_METRICS=false`)
-- Listen port: `GGHSTATS_PORT` (default `8080`) or `gghstats serve --port <port>`
+- Listen port: `GGHSTATS_PORT` (default `8080`) or `gghstats serve --port <port>` (or `gghstats run --open` for local try)
 - First stderr line on start: version, build date, `GOOS`/`GOARCH`, listen address, masked GitHub token (`XXXX....YYYY`); then slog at `GGHSTATS_LOG_LEVEL` (default `info`). Every structured slog line is prefixed with `gghstats ` so it is easy to grep in shared log streams.
 
 ### CLI mode
@@ -338,6 +349,7 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_INCLUDE_PRIVATE` | `false` | Include private repos |
 | `GGHSTATS_SYNC_INTERVAL` | `1h` | Sync frequency |
 | `GGHSTATS_SYNC_ON_STARTUP` | `true` | Full sync when the process starts; set `false` to serve immediately using existing SQLite data |
+| `GGHSTATS_OPEN_BROWSER` | `false` | Open the default browser when the server is ready (same as `gghstats serve --open`) |
 | `GGHSTATS_API_TOKEN` | (none) | If set, `GET /api/repos` requires matching `x-api-token` header (see [HTTP API (JSON)](#http-api-json)) |
 | `GGHSTATS_BADGE_PUBLIC` | `true` | Set to `false` to require `x-api-token` on badge URLs (breaks `![…](url)` in GitHub READMEs unless you use a proxy) |
 | `GGHSTATS_BADGE_CACHE_SECONDS` | `300` | `Cache-Control: max-age` for badge SVG responses |
@@ -734,6 +746,12 @@ curl -H "x-api-token: my-api-token" http://localhost:8080/api/repos
 ```bash
 gghstats export --repo your-github-user/my-app --days 30 --output traffic-30d.csv
 ```
+
+### Run always on macOS (LaunchAgent)
+
+Keep sync and the UI running in the background on a Mac (single-user, **127.0.0.1**). Step-by-step: **[contrib/launchd/README.md](contrib/launchd/README.md)** — env file at **`~/.gghstats.env`**, wrapper script, LaunchAgent plist, **`launchctl bootstrap`**. Logs under **`~/Library/Logs/`**.
+
+**Linux (VPS / bare metal):** install `.deb`/`.rpm`, edit **`/etc/gghstats/gghstats.env`**, then **`systemctl enable --now gghstats`** — see **[contrib/systemd/README.md](contrib/systemd/README.md)**.
 
 [Back to top](#gghstats)
 

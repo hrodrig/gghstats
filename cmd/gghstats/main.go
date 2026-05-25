@@ -14,6 +14,7 @@ Usage:
 
 Commands:
   serve    Start web dashboard with auto-sync scheduler
+  run      Alias for serve (local convenience)
   fetch    Fetch traffic data from GitHub API and store locally
   report   Display traffic summary in the terminal
   export   Export traffic data to CSV
@@ -24,8 +25,9 @@ CLI flags (fetch/report/export):
   --token  TOKEN           GitHub token (or GGHSTATS_GITHUB_TOKEN env var)
   --db     PATH            SQLite database path (default: ./data/gghstats.db)
 
-Server (gghstats serve):
+Server (gghstats serve or gghstats run):
   --port PORT              Listen port (overrides GGHSTATS_PORT; default 8080)
+  --open                   Open the default browser when the server is ready
 
 Server env vars (serve):
   GGHSTATS_GITHUB_TOKEN    GitHub personal access token (required)
@@ -38,6 +40,7 @@ Server env vars (serve):
   GGHSTATS_API_TOKEN       Protect /api/repos (and badges when GGHSTATS_BADGE_PUBLIC=false)
   GGHSTATS_BADGE_PUBLIC    Badge SVG public (default true; set false to require x-api-token)
   GGHSTATS_PUBLIC_URL      Optional public base URL for badge embed snippets
+  GGHSTATS_OPEN_BROWSER    Open default browser on startup (default false; same as --open)
   GGHSTATS_LOG_LEVEL       Log level: debug, info (default), warn, error
   GGHSTATS_METRICS         Set to false to disable GET /metrics (Prometheus); default enabled
   GGHSTATS_METRICS_PER_REPO Set to true to expose per-repo gauges (higher cardinality)
@@ -57,7 +60,7 @@ func runCLI(args []string) int {
 	}
 
 	switch args[1] {
-	case "serve":
+	case "serve", "run":
 		if err := runServe(args[2:]); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			return 1

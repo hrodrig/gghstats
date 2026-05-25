@@ -29,6 +29,17 @@ func TestLoadServeConfigDefaults(t *testing.T) {
 	if !cfg.SyncOnStartup {
 		t.Error("SyncOnStartup default want true")
 	}
+	if cfg.OpenBrowser {
+		t.Error("OpenBrowser default want false")
+	}
+}
+
+func TestLoadServeConfigOpenBrowser(t *testing.T) {
+	t.Setenv("GGHSTATS_OPEN_BROWSER", "true")
+	cfg := loadServeConfig()
+	if !cfg.OpenBrowser {
+		t.Error("OpenBrowser want true from env")
+	}
 }
 
 func TestLoadServeConfigSyncOnStartupFalse(t *testing.T) {
