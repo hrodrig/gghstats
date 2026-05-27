@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.7.0-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.7.1-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -172,15 +172,15 @@ This installs the binary to `$GOBIN` (default `$HOME/go/bin`). Ensure `$GOBIN` i
 | Platform | Command / path |
 |----------|----------------|
 | **Homebrew (macOS / Linux)** | `brew install hrodrig/gghstats/gghstats` — [tap](https://github.com/hrodrig/homebrew-gghstats) |
-| **Debian / Ubuntu** | `wget -q -O /tmp/gghstats.deb https://github.com/hrodrig/gghstats/releases/download/v0.7.0/gghstats_0.7.0_linux_amd64.deb && sudo dpkg -i /tmp/gghstats.deb` |
-| **Fedora / RHEL / AlmaLinux / Rocky / Oracle Linux** | `sudo dnf install https://github.com/hrodrig/gghstats/releases/download/v0.7.0/gghstats_0.7.0_linux_amd64.rpm` |
+| **Debian / Ubuntu** | `wget -q -O /tmp/gghstats.deb https://github.com/hrodrig/gghstats/releases/download/v0.7.1/gghstats_0.7.1_linux_amd64.deb && sudo dpkg -i /tmp/gghstats.deb` |
+| **Fedora / RHEL / AlmaLinux / Rocky / Oracle Linux** | `sudo dnf install https://github.com/hrodrig/gghstats/releases/download/v0.7.1/gghstats_0.7.1_linux_amd64.rpm` |
 | **Linux tarball** | `tar -xzf gghstats_*_linux_*.tar.gz` from [Releases](https://github.com/hrodrig/gghstats/releases); verify `checksums.txt` |
 | **FreeBSD** | `gghstats_*_freebsd_*.tar.gz` on [Releases](https://github.com/hrodrig/gghstats/releases); port + developer guide [`contrib/freebsd/README.md`](contrib/freebsd/README.md) (`gmake` in repo, `make` in ports tree) |
 | **OpenBSD** | `gghstats_*_openbsd_*.tar.gz` on [Releases](https://github.com/hrodrig/gghstats/releases); [`contrib/openbsd/README.md`](contrib/openbsd/README.md) and port [`contrib/openbsd/port/`](contrib/openbsd/port/) |
 | **macOS / Windows archives** | `.tar.gz` / `.zip` on [Releases](https://github.com/hrodrig/gghstats/releases) |
-| **OCI image** | `ghcr.io/hrodrig/gghstats:v0.7.0` or `:latest` (multi-arch) |
+| **OCI image** | `ghcr.io/hrodrig/gghstats:v0.7.1` or `:latest` (multi-arch) |
 
-Replace `v0.7.0` and `amd64` with your [release](https://github.com/hrodrig/gghstats/releases) version and architecture (e.g. `arm64`).
+Replace `v0.7.1` and `amd64` with your [release](https://github.com/hrodrig/gghstats/releases) version and architecture (e.g. `arm64`).
 
 After install, validate the UI locally:
 
@@ -301,10 +301,10 @@ gghstats report --repo your-github-user/my-app --token "$GGHSTATS_GITHUB_TOKEN" 
 gghstats export --repo your-github-user/my-app --token "$GGHSTATS_GITHUB_TOKEN" --days 30 --output traffic-30d.csv
 ```
 
-### Run strict pre-release checks (includes container scan)
+### Run pre-release checks (includes container scan)
 
 ```bash
-make release-check STRICT_RELEASE=1
+make release-check
 ```
 
 ### Local release dry-run flow
@@ -811,7 +811,7 @@ make release
 ```bash
 # 1) On develop: land changes, bump version if needed
 git checkout develop
-make release-check                    # optional: STRICT_RELEASE=1 (adds docker image scan)
+make release-check                    # lint, test, security, docker-scan (Docker required)
 make test-release                     # optional: dry-run GoReleaser (VERSION → *-next; no publish)
 
 # 2) Update VERSION, README version badge, CHANGELOG; commit on develop

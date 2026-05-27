@@ -7,6 +7,18 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-05-25
+
+### Security
+
+- Bump transitive **`golang.org/x/net`** to **v0.45.0** (HTTP/2 infinite-loop fix; via Prometheus client).
+- Bump transitive **`golang.org/x/sys`** to **v0.44.0** (Windows `NewNTUnicodeString` overflow fix; via `modernc.org/sqlite`).
+
+### Changed
+
+- **FreeBSD port:** replace incorrect **`NO_ARCH=yes`** with **`ONLY_FOR_ARCHS= amd64 aarch64`** (matches GoReleaser **`freebsd`** amd64/arm64 tarballs; same pattern as pgwd).
+- **`make release-check`:** always runs **`docker-scan`** (same as pgwd); removed opt-in **`STRICT_RELEASE=1`** gate.
+
 ## [0.7.0] - 2026-05-24
 
 ### Added
@@ -228,7 +240,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/hrodrig/gghstats/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/hrodrig/gghstats/compare/v0.6.4...v0.7.0
 [0.6.4]: https://github.com/hrodrig/gghstats/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/hrodrig/gghstats/compare/v0.6.2...v0.6.3

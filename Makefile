@@ -9,7 +9,8 @@ VERSION     := $(patsubst v%,%,$(VERSION_RAW))
 TAG         := v$(VERSION)
 COMMIT      := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 BUILDDATE   := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
-STRICT_RELEASE ?= 0
+# Fails early when Docker is required but not running.
+check-docker = @docker info >/dev/null 2>&1 || { echo "Error: Docker is not running. Start Docker and try again."; exit 1; }
 GRYPE_FAIL_ON  ?= high
 # OpenBSD dist helper default arch. Override: gmake dist-openbsd OPENBSD_ARCH=arm64
 OPENBSD_ARCH   ?= amd64
@@ -61,7 +62,7 @@ help:
 	@echo ""
 	@echo "Release:"
 	@echo "  release            Publish release (main branch only)"
-	@echo "  release-check      Validate semver, tooling, lint, test and security"
+	@echo "  release-check      lint, test, security, docker-scan (requires Docker)"
 	@echo "  snapshot           Goreleaser snapshot (VERSION → <semver>-next, dist/, no Docker)"
 	@echo "  test-release       Snapshot dry-run (--skip=publish; same VERSION source)"
 	@echo "  dist-freebsd       Build FreeBSD tar.gz distfile for ports local testing"
@@ -131,6 +132,7 @@ clean:
 	rm -rf $(DIST)
 
 docker-build:
+	$(check-docker)
 	@set -e; \
 	opts=""; \
 	if [ -n "$(strip $(DOCKER_PLATFORM))" ]; then opts="--platform $(DOCKER_PLATFORM)"; fi; \
@@ -259,19 +261,16 @@ dist-openbsd:
 	echo "Wrote $$out"
 
 release-check:
+	$(check-docker)
 	@test -f VERSION || (echo "VERSION file is required"; exit 1)
 	@echo "Release version: $(VERSION) (tag: $(TAG))"
 	@echo "$(VERSION)" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$$' || (echo "VERSION must be semantic version (e.g. 0.1.0)"; exit 1)
 	@command -v goreleaser >/dev/null 2>&1 || (echo "goreleaser is required. Install from https://goreleaser.com/install/"; exit 1)
+	@echo "Running release checks (lint, test, security, docker-scan)..."
 	@$(MAKE) lint
 	@$(MAKE) test
 	@$(MAKE) security
-	@if [ "$(STRICT_RELEASE)" = "1" ]; then \
-		echo "STRICT_RELEASE=1 -> running docker-scan"; \
-		$(MAKE) docker-scan; \
-	else \
-		echo "STRICT_RELEASE=0 -> skipping docker-scan"; \
-	fi
+	@$(MAKE) docker-scan
 	@echo "All release checks passed."
 
 # Snapshot version from VERSION (e.g. 0.5.0 => 0.5.0-next), independent of latest git tag.

@@ -11,6 +11,15 @@ This directory contains the [FreeBSD](https://www.freebsd.org) port files for **
 
 **Production deployment** (Compose, Traefik, TLS): **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**. This port is for **bare-metal** FreeBSD with **rc.d** and **`/etc/gghstats/gghstats.env`**.
 
+## Supported architectures
+
+The port sets **`ONLY_FOR_ARCHS= amd64 aarch64`**, aligned with prebuilt tarballs on each [GitHub release](https://github.com/hrodrig/gghstats/releases):
+
+- `gghstats_<version>_freebsd_amd64.tar.gz`
+- `gghstats_<version>_freebsd_arm64.tar.gz`
+
+FreeBSD uses **`aarch64`** in **`ONLY_FOR_ARCHS`**; **`DISTFILES`** maps it to the **`arm64`** suffix in the release filename (`${ARCH:S/aarch64/arm64/}`).
+
 ---
 
 ## Developer guide

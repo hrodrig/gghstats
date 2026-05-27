@@ -2,7 +2,7 @@
 
 - Use English for all project artifacts (code, docs, commit messages, UI text).
 - Follow git flow: feature work in `develop`; releases from `main`.
-- Before release, run `make release-check` (or `STRICT_RELEASE=1` for image scan gate).
+- Before release, run `make release-check` (lint, tests, security, **docker-scan**; requires Docker).
 - Keep `VERSION`, README badges, and release tags synchronized. Deployment manifests (Compose prod, Helm, observability) belong in the **gghstats-selfhosted** repository, not in this repo.
 - Do not commit without first showing the proposed commit message and getting explicit user approval.
 - **Supply chain:** Prefer resolving dependency and Dependabot-style work **inside the clone** (read diffs, `go get module@version`, `go mod tidy`, `go test ./...`, merge bot branches from **trusted Git remotes**). Do not replace that with pasted blobs from random sites, `curl | sh` installers, or unknown `GOPROXY` / disabled checksums unless the user explicitly accepts that risk.

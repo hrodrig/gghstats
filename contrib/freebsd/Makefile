@@ -1,5 +1,5 @@
 PORTNAME=	gghstats
-PORTVERSION=	0.7.0
+PORTVERSION=	0.7.1
 DISTVERSIONPREFIX=	v
 CATEGORIES=	sysutils
 # Local test before release: copy the tarball into DISTDIR (see `make -V DISTDIR`
@@ -16,7 +16,8 @@ WWW=		https://github.com/hrodrig/gghstats
 LICENSE=	MIT
 
 NO_BUILD=	yes
-NO_ARCH=	yes
+# amd64/aarch64 only: matches GitHub release tarballs (see README.md "Supported architectures").
+ONLY_FOR_ARCHS=	amd64 aarch64
 
 do-install:
 	${INSTALL_PROGRAM} ${WRKDIR}/gghstats ${STAGEDIR}${PREFIX}/bin/gghstats
