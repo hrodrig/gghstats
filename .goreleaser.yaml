@@ -4,7 +4,8 @@ project_name: gghstats
 
 before:
   hooks:
-    - go mod tidy
+    # Do not run go mod tidy here — it drops the explicit golang.org/x/net pin (see Makefile check-x-net-pin).
+    - make check-x-net-pin
     - go test ./...
     - sh -c 'gzip -cn contrib/man/man1/gghstats.1 > contrib/man/man1/gghstats.1.gz'
 
