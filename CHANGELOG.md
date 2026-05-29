@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **GoReleaser:** `nfpms.builds` → `nfpms.ids` (removes deprecation warning).
+
 ## [0.7.3] - 2026-05-29
 
 ### Added

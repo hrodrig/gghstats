@@ -121,7 +121,7 @@ homebrew_casks:
 
 nfpms:
   - id: gghstats
-    builds:
+    ids:
       - gghstats
     scripts:
       preremove: contrib/deb/prerm.sh
