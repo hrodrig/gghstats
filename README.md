@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.7.2-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.7.3-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -172,15 +172,15 @@ This installs the binary to `$GOBIN` (default `$HOME/go/bin`). Ensure `$GOBIN` i
 | Platform | Command / path |
 |----------|----------------|
 | **Homebrew (macOS / Linux)** | `brew install hrodrig/gghstats/gghstats` — [tap](https://github.com/hrodrig/homebrew-gghstats) |
-| **Debian / Ubuntu** | `wget -q -O /tmp/gghstats.deb https://github.com/hrodrig/gghstats/releases/download/v0.7.2/gghstats_0.7.2_linux_amd64.deb && sudo dpkg -i /tmp/gghstats.deb` |
-| **Fedora / RHEL / AlmaLinux / Rocky / Oracle Linux** | `sudo dnf install https://github.com/hrodrig/gghstats/releases/download/v0.7.2/gghstats_0.7.2_linux_amd64.rpm` |
+| **Debian / Ubuntu** | `wget -q -O /tmp/gghstats.deb https://github.com/hrodrig/gghstats/releases/download/v0.7.3/gghstats_0.7.3_linux_amd64.deb && sudo dpkg -i /tmp/gghstats.deb` |
+| **Fedora / RHEL / AlmaLinux / Rocky / Oracle Linux** | `sudo dnf install https://github.com/hrodrig/gghstats/releases/download/v0.7.3/gghstats_0.7.3_linux_amd64.rpm` |
 | **Linux tarball** | `tar -xzf gghstats_*_linux_*.tar.gz` from [Releases](https://github.com/hrodrig/gghstats/releases); verify `checksums.txt` |
 | **FreeBSD** | `gghstats_*_freebsd_*.tar.gz` on [Releases](https://github.com/hrodrig/gghstats/releases); port + developer guide [`contrib/freebsd/README.md`](contrib/freebsd/README.md) (`gmake` in repo, `make` in ports tree) |
 | **OpenBSD** | `gghstats_*_openbsd_*.tar.gz` on [Releases](https://github.com/hrodrig/gghstats/releases); [`contrib/openbsd/README.md`](contrib/openbsd/README.md) and port [`contrib/openbsd/port/`](contrib/openbsd/port/) |
 | **macOS / Windows archives** | `.tar.gz` / `.zip` on [Releases](https://github.com/hrodrig/gghstats/releases) |
-| **OCI image** | `ghcr.io/hrodrig/gghstats:v0.7.2` or `:latest` (multi-arch) |
+| **OCI image** | `ghcr.io/hrodrig/gghstats:v0.7.3` or `:latest` (multi-arch) |
 
-Replace `v0.7.2` and `amd64` with your [release](https://github.com/hrodrig/gghstats/releases) version and architecture (e.g. `arm64`).
+Replace `v0.7.3` and `amd64` with your [release](https://github.com/hrodrig/gghstats/releases) version and architecture (e.g. `arm64`).
 
 After install, validate the UI locally:
 
@@ -266,6 +266,7 @@ Server behavior:
 - Serves dashboard on <http://localhost:8080>
 - Stores data in `./data/gghstats.db`
 - Liveness/readiness: `GET /api/v1/healthz` → `{"status":"ok"}` (no auth; Kubernetes-style)
+- SEO (per deployment): `GET /robots.txt`, `GET /sitemap.xml` (repo pages from SQLite; set **`GGHSTATS_PUBLIC_URL`** in production)
 - Prometheus: `GET /metrics` (disable with `GGHSTATS_METRICS=false`)
 - Listen port: `GGHSTATS_PORT` (default `8080`) or `gghstats serve --port <port>` (or `gghstats run --open` for local try)
 - First stderr line on start: version, build date, `GOOS`/`GOARCH`, listen address, masked GitHub token (`XXXX....YYYY`); then slog at `GGHSTATS_LOG_LEVEL` (default `info`). Every structured slog line is prefixed with `gghstats ` so it is easy to grep in shared log streams.
@@ -353,7 +354,7 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_API_TOKEN` | (none) | If set, `GET /api/repos` requires matching `x-api-token` header (see [HTTP API (JSON)](#http-api-json)) |
 | `GGHSTATS_BADGE_PUBLIC` | `true` | Set to `false` to require `x-api-token` on badge URLs (breaks `![…](url)` in GitHub READMEs unless you use a proxy) |
 | `GGHSTATS_BADGE_CACHE_SECONDS` | `300` | `Cache-Control: max-age` for badge SVG responses |
-| `GGHSTATS_PUBLIC_URL` | (none) | Optional public base URL for embed snippets (e.g. `https://gghstats.example.com`); if unset, uses the request `Host` |
+| `GGHSTATS_PUBLIC_URL` | (none) | Optional public base URL for embed snippets, **`/sitemap.xml`**, and **`/robots.txt`** (e.g. `https://gghstats.example.com`); if unset, uses the request `Host`. On `localhost` / `127.0.0.1`, robots disallows crawling unless this is set |
 | `GGHSTATS_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, or `error` (slog only; startup banner always prints) |
 | `GGHSTATS_METRICS` | (enabled) | Set to `false` to disable `GET /metrics` |
 | `GGHSTATS_METRICS_PER_REPO` | `false` | Set to `true` to expose per-repo Prometheus gauges (`owner`, `repo` labels); higher cardinality |

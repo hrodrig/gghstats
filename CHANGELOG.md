@@ -7,6 +7,20 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-05-29
+
+### Added
+
+- **`GET /robots.txt`** and **`GET /sitemap.xml`**: per-deployment SEO (uses **`GGHSTATS_PUBLIC_URL`** when set; localhost gets `Disallow: /` and an empty sitemap).
+
+### Changed
+
+- Bump pinned **`golang.org/x/net`** to **v0.55.0** (transitive **`x/crypto`**; Snyk noise reduction).
+
+### Fixed
+
+- H2H **Compare** button uses the same orange CTA style as **Search** in light mode (`app-repo-search-submit`).
+
 ## [0.7.2] - 2026-05-29
 
 ### Changed
@@ -250,7 +264,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.7.3...HEAD
+[0.7.3]: https://github.com/hrodrig/gghstats/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/hrodrig/gghstats/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/hrodrig/gghstats/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/hrodrig/gghstats/compare/v0.6.4...v0.7.0

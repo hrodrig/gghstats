@@ -39,7 +39,7 @@ Server env vars (serve):
   GGHSTATS_SYNC_ON_STARTUP Run full sync before serving (default: true; false = use existing DB, sync later)
   GGHSTATS_API_TOKEN       Protect /api/repos (and badges when GGHSTATS_BADGE_PUBLIC=false)
   GGHSTATS_BADGE_PUBLIC    Badge SVG public (default true; set false to require x-api-token)
-  GGHSTATS_PUBLIC_URL      Optional public base URL for badge embed snippets
+  GGHSTATS_PUBLIC_URL      Optional public base URL (badges, /robots.txt, /sitemap.xml)
   GGHSTATS_OPEN_BROWSER    Open default browser on startup (default false; same as --open)
   GGHSTATS_LOG_LEVEL       Log level: debug, info (default), warn, error
   GGHSTATS_METRICS         Set to false to disable GET /metrics (Prometheus); default enabled

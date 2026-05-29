@@ -136,6 +136,7 @@ func mountAPIRoutes(mux *http.ServeMux, cfg Config) {
 }
 
 func mountHTMLRoutes(mux *http.ServeMux, cfg Config, tmpl *template.Template) {
+	mountSEORoutes(mux, cfg)
 	repoHandler := handleRepoPage(cfg, cfg.Store, tmpl)
 	indexHandler := handleIndex(cfg, cfg.Store, tmpl)
 	mux.HandleFunc("GET /h2h", handleH2HPage(cfg, cfg.Store, tmpl))

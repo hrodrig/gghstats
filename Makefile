@@ -28,7 +28,7 @@ LIMIT ?=
 .PHONY: build check-x-net-pin clean compose-down compose-up cover dist-freebsd dist-openbsd docker-build docker-build-amd64 docker-export-amd64 docker-run docker-scan gocyclo govulncheck grype help install install-man lint lint-fix port-freebsd-sync port-openbsd-sync release release-check security server server-metrics snapshot test test-platforms test-platforms-ping test-release tools
 
 # Minimum golang.org/x/net (explicit go.mod pin; go mod tidy drops it → Prometheus resolves v0.43.0).
-X_NET_MIN_VERSION ?= v0.45.0
+X_NET_MIN_VERSION ?= v0.55.0
 
 help:
 	@echo "gghstats — GitHub traffic dashboard and CLI"
