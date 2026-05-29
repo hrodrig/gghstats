@@ -14,9 +14,10 @@ Thank you for your interest in contributing.
 
 - Format Go code with `gofmt -s`.
 - Run checks locally before submitting:
-  - `make lint`
+  - `make lint` (includes **`check-x-net-pin`** for **`golang.org/x/net v0.45.0`**)
   - `make test`
   - `make security`
+- After **`go mod tidy`** or Dependabot dependency PRs, re-pin if needed: **`go get golang.org/x/net@v0.45.0`**, then **`make check-x-net-pin`**.
 - For release-related changes, run:
   - `make release-check`
 - **Native OS packaging** (`.deb`, `.rpm`, FreeBSD/OpenBSD): optional maintainer gate —

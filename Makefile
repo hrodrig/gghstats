@@ -25,7 +25,10 @@ LDFLAGS     := -s -w \
 
 LIMIT ?=
 
-.PHONY: build clean compose-down compose-up cover dist-freebsd dist-openbsd docker-build docker-build-amd64 docker-export-amd64 docker-run docker-scan gocyclo govulncheck grype help install install-man lint lint-fix port-freebsd-sync port-openbsd-sync release release-check security server server-metrics snapshot test test-platforms test-platforms-ping test-release tools
+.PHONY: build check-x-net-pin clean compose-down compose-up cover dist-freebsd dist-openbsd docker-build docker-build-amd64 docker-export-amd64 docker-run docker-scan gocyclo govulncheck grype help install install-man lint lint-fix port-freebsd-sync port-openbsd-sync release release-check security server server-metrics snapshot test test-platforms test-platforms-ping test-release tools
+
+# Minimum golang.org/x/net (explicit go.mod pin; go mod tidy drops it → Prometheus resolves v0.43.0).
+X_NET_MIN_VERSION ?= v0.45.0
 
 help:
 	@echo "gghstats — GitHub traffic dashboard and CLI"
@@ -45,8 +48,9 @@ help:
 	@echo "Quality:"
 	@echo "  cover              Run tests with coverage profile and total % (stdout + coverage.out)"
 	@echo "  grype              Grype directory scan (excludes ./dist/**, ./gghstats)"
-	@echo "  lint               Check gofmt and go vet"
+	@echo "  lint               Check gofmt, go vet, and x/net security pin"
 	@echo "  lint-fix           Apply gofmt -s -w"
+	@echo "  check-x-net-pin    Verify golang.org/x/net pin in go.mod (see X_NET_MIN_VERSION)"
 	@echo "  security           Run govulncheck, gocyclo and grype"
 	@echo "  tools              Install govulncheck and gocyclo"
 	@echo "  test               Run unit tests"
@@ -119,10 +123,27 @@ cover:
 	@go tool cover -func=coverage.out | tail -1
 
 lint:
+	@$(MAKE) check-x-net-pin
 	@echo "Checking gofmt -s..."
 	@unformatted=$$(gofmt -s -l .); [ -z "$$unformatted" ] || { echo "Files not formatted (run make lint-fix):"; echo "$$unformatted"; exit 1; }
 	@echo "Running go vet..."
 	@go vet ./...
+
+# Fail if go mod tidy (or Dependabot) removed the explicit x/net pin — Snyk expects >= X_NET_MIN_VERSION.
+check-x-net-pin:
+	@echo "Checking golang.org/x/net pin (minimum $(X_NET_MIN_VERSION))..."
+	@grep -q 'golang.org/x/net $(X_NET_MIN_VERSION)' go.mod || { \
+		echo "Error: go.mod must include: golang.org/x/net $(X_NET_MIN_VERSION) // indirect"; \
+		echo "After go mod tidy or bot bumps, run: go get golang.org/x/net@$(X_NET_MIN_VERSION)"; \
+		exit 1; \
+	}
+	@resolved=$$(go list -m -f '{{.Version}}' golang.org/x/net); \
+	if [ "$$resolved" != "$(X_NET_MIN_VERSION)" ]; then \
+		echo "Error: golang.org/x/net resolved to $$resolved, want $(X_NET_MIN_VERSION)"; \
+		echo "Re-pin with: go get golang.org/x/net@$(X_NET_MIN_VERSION)"; \
+		exit 1; \
+	fi
+	@echo "golang.org/x/net pin OK ($(X_NET_MIN_VERSION))"
 
 lint-fix:
 	gofmt -s -w .

@@ -148,10 +148,18 @@ func TestCoordinatorStartRepo(t *testing.T) {
 	if err := c.StartRepo(repo); err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(80 * time.Millisecond)
-	if c.Status().Running {
-		t.Fatal("expected repo sync done")
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		st := c.Status()
+		if !st.Running {
+			if st.LastFinishedAt == nil {
+				t.Fatalf("status = %+v, want finished sync", st)
+			}
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
+	t.Fatal("expected repo sync done within timeout")
 }
 
 func TestCoordinatorSetMetricsObserveSync(t *testing.T) {
