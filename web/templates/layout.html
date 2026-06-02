@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#e63946">
+  {{if .MetaDescription}}<meta name="description" content="{{.MetaDescription}}">{{end}}
+  {{if .RobotsNoindex}}<meta name="robots" content="noindex, nofollow">{{end}}
+  {{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">{{end}}
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico?v={{.Version}}">
   <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png?v={{.Version}}">
   <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png?v={{.Version}}">

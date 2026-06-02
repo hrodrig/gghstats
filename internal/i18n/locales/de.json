@@ -25,6 +25,14 @@
     "metric": "Metrik",
     "close_modal": "Schließen"
   },
+  "meta": {
+    "index": "Self-hosted GitHub-Traffic-Dashboard: Views, Klons und Stars über GitHubs 14-Tage-Fenster hinaus.",
+    "h2h": "Vergleiche zwei GitHub-Repositories Head-to-Head bei Traffic- und Engagement-Metriken.",
+    "h2h_compare": "Head-to-Head-Vergleich von {{repoA}} vs. {{repoB}} auf gghstats.",
+    "repo": "Traffic-Verlauf und Metriken für {{repo}}: Views, Klons, Referrer und Stars.",
+    "repo_generic": "GitHub-Repository-Traffic-Metriken auf gghstats.",
+    "not_found": "Seite auf dieser gghstats-Instanz nicht gefunden."
+  },
   "layout": {
     "title_suffix": "gghstats",
     "footer_manifest": "Repository-Metriken ohne Lärm. Neobrutalistischer Stack. Nur Rohdaten—keine weichen Schatten.",

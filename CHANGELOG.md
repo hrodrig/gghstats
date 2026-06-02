@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- HTML **`<link rel="canonical">`** and **`<meta name="description">`** on dashboard pages (uses **`GGHSTATS_PUBLIC_URL`** when set). Index canonical is `/` without `lang` / sort / pagination; **404** pages get **`noindex`**.
+
 ### Changed
 
 - **GoReleaser:** `nfpms.builds` → `nfpms.ids` (removes deprecation warning).

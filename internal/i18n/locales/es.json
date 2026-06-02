@@ -25,6 +25,14 @@
     "metric": "Métrica",
     "close_modal": "Cerrar"
   },
+  "meta": {
+    "index": "Panel de tráfico GitHub autoalojado: vistas, clones y estrellas más allá de la ventana de 14 días de GitHub.",
+    "h2h": "Compara dos repositorios de GitHub cara a cara en métricas de tráfico y engagement.",
+    "h2h_compare": "Comparación cara a cara de {{repoA}} frente a {{repoB}} en gghstats.",
+    "repo": "Historial de tráfico y métricas de {{repo}}: vistas, clones, referentes y estrellas.",
+    "repo_generic": "Métricas de tráfico de repositorios GitHub en gghstats.",
+    "not_found": "Página no encontrada en esta instancia de gghstats."
+  },
   "layout": {
     "title_suffix": "gghstats",
     "footer_manifest": "Métricas de repositorios sin ruido. Stack neobrutalista. Solo datos crudos—sin sombras suaves.",

@@ -264,6 +264,10 @@ type layoutData struct {
 	SyncUIEnabled bool
 	// SyncScopeRepo when set scopes the sidebar sync to this owner/repo (repo detail pages).
 	SyncScopeRepo string
+	// CanonicalURL is the preferred indexing URL (no lang/sort/pagination params on index).
+	CanonicalURL    template.URL
+	MetaDescription string
+	RobotsNoindex   bool
 }
 
 // templateDict builds a map for {{call .Tfmt "key" (dict "a" 1)}} in templates.
@@ -717,6 +721,7 @@ func renderLayoutStatus(w http.ResponseWriter, r *http.Request, tmpl *template.T
 		data.SyncUIEnabled = true
 	}
 	data = fillLayoutDefaults(data)
+	data = applyLayoutSEO(r, cfg, data)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache, must-revalidate")
 	w.WriteHeader(status)
