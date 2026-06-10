@@ -7,6 +7,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.4] - 2026-06-10
+
 ### Added
 
 - HTML **`<link rel="canonical">`** and **`<meta name="description">`** on dashboard pages (uses **`GGHSTATS_PUBLIC_URL`** when set). Index canonical is `/` without `lang` / sort / pagination; **404** pages get **`noindex`**.
@@ -277,7 +279,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.7.3...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.7.4...HEAD
+[0.7.4]: https://github.com/hrodrig/gghstats/compare/v0.7.3...v0.7.4
 [0.7.3]: https://github.com/hrodrig/gghstats/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/hrodrig/gghstats/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/hrodrig/gghstats/compare/v0.7.0...v0.7.1
