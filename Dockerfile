@@ -1,5 +1,5 @@
 # Multi-stage build for local use (make docker-build). Release images use Dockerfile.release + GoReleaser.
-FROM golang:1.26.3-alpine AS builder
+FROM golang:1.26.4-alpine AS builder
 
 # Pin module proxy so builds do not inherit a broken or empty GOPROXY from the host/BuildKit environment.
 ENV GOPROXY=https://proxy.golang.org,direct

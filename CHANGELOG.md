@@ -14,6 +14,11 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - **GoReleaser:** `nfpms.builds` → `nfpms.ids` (removes deprecation warning).
+- Go toolchain **1.26.4** (Docker builder `golang:1.26.4-alpine`).
+
+### Security
+
+- Go **1.26.4**: **CVE-2026-42504** (`mime` encoded-word DoS, via Prometheus `expfmt`) and **CVE-2026-27145** (`crypto/x509` hostname verification); rebuild required.
 
 ## [0.7.3] - 2026-05-29
 
