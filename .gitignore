@@ -27,6 +27,10 @@
 !go.mod
 !go.sum
 
+# Install script (curl | sh from GitHub raw)
+!scripts/
+!scripts/**
+
 # Allowlist: source trees
 !cmd/
 !cmd/**

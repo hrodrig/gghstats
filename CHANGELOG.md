@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **`scripts/install.sh`:** one-liner install from GitHub releases (`curl -fsSL https://raw.githubusercontent.com/hrodrig/gghstats/main/scripts/install.sh | sh`).
+
 ## [0.7.4] - 2026-06-10
 
 ### Added
