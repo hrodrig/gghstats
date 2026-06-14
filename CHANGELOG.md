@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **IP whitelist:** restrict access by client IP/CIDR with `GGHSTATS_WHITELIST` and `GGHSTATS_WHITELIST_PATHS`. Non-matching IPs receive 403. Scoped to specific paths (e.g. protect only `/api/`) or all routes. Exempts `/metrics` and `/api/v1/healthz`.
+
+### Changed
+
+- **Docs:** clarify `/metrics` is public by default and should be protected at the network edge.
+
 ## [0.7.5] - 2026-06-14
 
 ### Added
