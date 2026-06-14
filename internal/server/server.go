@@ -56,6 +56,8 @@ type Config struct {
 	EnabledLocales []string
 	// RateLimiter, when non-nil, enables per-IP rate limiting (see GGHSTATS_RATE_LIMIT_* env vars).
 	RateLimiter *RateLimiter
+	// Whitelist, when non-nil, restricts access to whitelisted IPs on configured paths (see GGHSTATS_WHITELIST* env vars).
+	Whitelist *Whitelist
 }
 
 func withCacheControl(directive string, next http.Handler) http.Handler {
@@ -180,8 +182,11 @@ func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 		mux.Handle("GET "+MetricsPath, metricsScrapeHandler(reg, cfg.DomainMetrics))
 		h = logMiddleware(wrapWithHTTPMetrics(reg, mux))
 	}
+	if cfg.Whitelist != nil {
+		h = cfg.Whitelist.Middleware(h, MetricsPath, HealthzPath)
+	}
 	if cfg.RateLimiter != nil {
-		return cfg.RateLimiter.Middleware(h, MetricsPath, HealthzPath)
+		h = cfg.RateLimiter.Middleware(h, MetricsPath, HealthzPath)
 	}
 	return h
 }

@@ -132,6 +132,8 @@ func runServe(args []string) error {
 		defer rateLimiter.Shutdown()
 	}
 
+	whitelist := server.NewWhitelist(server.ParseWhitelistEnv())
+
 	syncOpts := sync.Options{
 		IncludePrivate: cfg.IncludePrivate,
 		Filter:         cfg.Filter,
@@ -165,6 +167,7 @@ func runServe(args []string) error {
 		DefaultLocale:    i18n.EnvDefaultLocale(),
 		EnabledLocales:   i18n.EnvEnabledLocales(),
 		RateLimiter:      rateLimiter,
+		Whitelist:        whitelist,
 	})
 
 	addr := cfg.Host + ":" + cfg.Port

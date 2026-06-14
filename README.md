@@ -375,6 +375,8 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_RATE_LIMIT_REQUESTS` | `120` | Requests per time window before limiting (per IP) |
 | `GGHSTATS_RATE_LIMIT_PERIOD` | `1m` | Time window for rate limiting (Go duration, e.g. `30s`, `5m`) |
 | `GGHSTATS_RATE_LIMIT_BURST` | `20` | Maximum burst of requests allowed before smoothing kicks in |
+| `GGHSTATS_WHITELIST` | (none) | Comma-separated IPs/CIDRs allowed to access the server (empty = all allowed) |
+| `GGHSTATS_WHITELIST_PATHS` | (none) | Comma-separated path prefixes where whitelist applies (empty = all routes) |
 
 ### Rate limiting
 
@@ -400,6 +402,23 @@ GGHSTATS_RATE_LIMIT_ENABLED=false
 ```
 
 Inactive IPs are evicted from memory after 5 minutes of idle time.
+
+### IP whitelist
+
+gghstats supports optional IP-based access control via `GGHSTATS_WHITELIST`. When set, only requests from matching IPs or CIDR ranges are allowed; all others receive `403 Forbidden` with `{"error":"ip_not_whitelisted"}`.
+
+By default the whitelist applies to **all routes** except `/metrics` and `/api/v1/healthz`. Scope it to specific paths with `GGHSTATS_WHITELIST_PATHS` (comma-separated prefixes, e.g. `/api/,/h2h`). Paths not listed remain publicly accessible.
+
+```bash
+# Internal network + VPN only
+GGHSTATS_WHITELIST=10.0.0.0/8,172.16.0.0/12,192.168.1.0/24
+
+# Protect only API and sync endpoints; dashboard stays public
+GGHSTATS_WHITELIST=10.0.0.0/8
+GGHSTATS_WHITELIST_PATHS=/api/,/h2h
+```
+
+Single IPs without a CIDR mask are treated as `/32`. Invalid entries are silently skipped.
 
 ### Web UI languages (i18n)
 

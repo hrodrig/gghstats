@@ -1,5 +1,5 @@
 .\" Man page for gghstats(1)
-.TH GGHSTATS 1 "June 2026" "gghstats v0.7.5" "User Commands"
+.TH GGHSTATS 1 "June 2026" "gghstats v0.7.6" "User Commands"
 .SH NAME
 gghstats \- self-hosted GitHub repository traffic dashboard and CLI
 .SH SYNOPSIS
@@ -116,6 +116,12 @@ Time window for rate limiting as a Go duration (default: \fB1m\fR).
 .TP
 .B GGHSTATS_RATE_LIMIT_BURST
 Maximum burst of requests before smoothing (default: \fB20\fR).
+.TP
+.B GGHSTATS_WHITELIST
+Comma-separated IPs/CIDRs allowed to access the server (empty = all allowed).
+.TP
+.B GGHSTATS_WHITELIST_PATHS
+Comma-separated path prefixes where the whitelist applies (empty = all routes).
 .SH EXAMPLES
 .TP
 Run the dashboard locally:
