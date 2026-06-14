@@ -382,6 +382,8 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 
 gghstats applies **per-IP token-bucket rate limiting** to all HTTP routes except `/metrics` and `/api/v1/healthz`. When a client exceeds the limit the server returns `429 Too Many Requests` with a JSON body `{"error":"rate_limit_exceeded"}` and a `Retry-After: 60` header.
 
+**Middleware order (outermost first):** IP whitelist → rate limiting → request logging → Prometheus HTTP metrics → route handlers.
+
 **Defaults:** 120 requests per minute, burst of 20. For most dashboard browsing this is generous; adjust for high-traffic or protected deployments.
 
 Behind a **reverse proxy** (nginx, Traefik, Caddy, haproxy), gghstats reads the client IP from `X-Forwarded-For` (preferred) or `X-Real-IP`. Ensure your proxy sets one of these headers, otherwise all requests appear to come from the proxy itself and share a single rate-limit bucket.
