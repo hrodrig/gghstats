@@ -11,6 +11,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 - **IP whitelist:** restrict access by client IP/CIDR with `GGHSTATS_WHITELIST` and `GGHSTATS_WHITELIST_PATHS`. Non-matching IPs receive 403. Scoped to specific paths (e.g. protect only `/api/`) or all routes. Exempts `/metrics` and `/api/v1/healthz`.
 
+### Security
+
+- **Query parameter sanitization:** `sort` and `dir` parameters in `parseIndexQueryParams` are now validated against a whitelist of known values. Invalid values fall back to safe defaults (`total_clones` / `desc`). The store layer already enforced this; server-side validation adds defence in depth.
+
 ### Changed
 
 - **Docs:** clarify `/metrics` is public by default and should be protected at the network edge.
