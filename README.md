@@ -371,6 +371,10 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_CUSTOM_CSS` | (none) | Optional **regular** `.css` file: loaded **after** built-in `app.css` at `/theme/custom.css` so you can tone down neo-brutalism or replace accents (see [Custom UI theme](#custom-ui-theme-optional)) |
 | `GGHSTATS_DEFAULT_LOCALE` | `en` | Default **dashboard** language when no cookie, `?lang=`, or `Accept-Language` match (see [Web UI languages](#web-ui-languages-i18n)) |
 | `GGHSTATS_ENABLED_LOCALES` | `en,es,de` | Comma-separated locales shown in the sidebar selector and accepted from `?lang=` / cookie |
+| `GGHSTATS_RATE_LIMIT_ENABLED` | `true` | Set to `false` to disable per-IP rate limiting |
+| `GGHSTATS_RATE_LIMIT_REQUESTS` | `120` | Requests per time window before limiting (per IP) |
+| `GGHSTATS_RATE_LIMIT_PERIOD` | `1m` | Time window for rate limiting (Go duration, e.g. `30s`, `5m`) |
+| `GGHSTATS_RATE_LIMIT_BURST` | `20` | Maximum burst of requests allowed before smoothing kicks in |
 
 ### Web UI languages (i18n)
 

@@ -54,6 +54,8 @@ type Config struct {
 	DefaultLocale string
 	// EnabledLocales lists UI locales offered in the language selector (GGHSTATS_ENABLED_LOCALES).
 	EnabledLocales []string
+	// RateLimiter, when non-nil, enables per-IP rate limiting (see GGHSTATS_RATE_LIMIT_* env vars).
+	RateLimiter *RateLimiter
 }
 
 func withCacheControl(directive string, next http.Handler) http.Handler {
@@ -167,15 +169,21 @@ func mountHTMLRoutes(mux *http.ServeMux, cfg Config, tmpl *template.Template) {
 }
 
 func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
+	var h http.Handler = mux
 	if cfg.DisableMetrics {
-		return logMiddleware(mux)
+		h = logMiddleware(mux)
+	} else {
+		reg := cfg.MetricsRegistry
+		if reg == nil {
+			reg = newMetricsRegistry()
+		}
+		mux.Handle("GET "+MetricsPath, metricsScrapeHandler(reg, cfg.DomainMetrics))
+		h = logMiddleware(wrapWithHTTPMetrics(reg, mux))
 	}
-	reg := cfg.MetricsRegistry
-	if reg == nil {
-		reg = newMetricsRegistry()
+	if cfg.RateLimiter != nil {
+		return cfg.RateLimiter.Middleware(h, MetricsPath, HealthzPath)
 	}
-	mux.Handle("GET "+MetricsPath, metricsScrapeHandler(reg, cfg.DomainMetrics))
-	return logMiddleware(wrapWithHTTPMetrics(reg, mux))
+	return h
 }
 
 // --- Middleware ---
