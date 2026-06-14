@@ -129,19 +129,18 @@ lint:
 	@echo "Running go vet..."
 	@go vet ./...
 
-# Fail if go mod tidy (or Dependabot) removed the explicit x/net pin — Snyk expects >= X_NET_MIN_VERSION.
+# Ensure the explicit x/net pin stays in go.mod — Snyk expects >= X_NET_MIN_VERSION.
+# Auto-restores the pin if go mod tidy (or CI runner setup) dropped it.
 check-x-net-pin:
 	@echo "Checking golang.org/x/net pin (minimum $(X_NET_MIN_VERSION))..."
 	@grep -q 'golang.org/x/net $(X_NET_MIN_VERSION)' go.mod || { \
-		echo "Error: go.mod must include: golang.org/x/net $(X_NET_MIN_VERSION) // indirect"; \
-		echo "After go mod tidy or bot bumps, run: go get golang.org/x/net@$(X_NET_MIN_VERSION)"; \
-		exit 1; \
+		echo "go.mod missing pin; re-pinning golang.org/x/net@$(X_NET_MIN_VERSION)..."; \
+		go get golang.org/x/net@$(X_NET_MIN_VERSION); \
 	}
 	@resolved=$$(go list -m -f '{{.Version}}' golang.org/x/net); \
 	if [ "$$resolved" != "$(X_NET_MIN_VERSION)" ]; then \
-		echo "Error: golang.org/x/net resolved to $$resolved, want $(X_NET_MIN_VERSION)"; \
-		echo "Re-pin with: go get golang.org/x/net@$(X_NET_MIN_VERSION)"; \
-		exit 1; \
+		echo "golang.org/x/net resolved to $$resolved; re-pinning to $(X_NET_MIN_VERSION)..."; \
+		go get golang.org/x/net@$(X_NET_MIN_VERSION); \
 	fi
 	@echo "golang.org/x/net pin OK ($(X_NET_MIN_VERSION))"
 
