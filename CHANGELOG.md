@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.7.7] - 2026-06-14
 
 ### Added
 
@@ -18,6 +18,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - **Docs:** clarify `/metrics` is public by default and should be protected at the network edge.
+- **Docs:** add middleware chain order to rate limiting section.
+- Bump **`modernc.org/sqlite`** from 1.51.0 to 1.52.0 (SQLite 3.53.2; Dependabot #8).
 
 ## [0.7.5] - 2026-06-14
 

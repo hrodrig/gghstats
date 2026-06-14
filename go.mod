@@ -5,7 +5,7 @@ go 1.26.4
 require (
 	github.com/prometheus/client_golang v1.23.2
 	golang.org/x/time v0.15.0
-	modernc.org/sqlite v1.51.0
+	modernc.org/sqlite v1.52.0
 )
 
 require (
