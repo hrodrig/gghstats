@@ -21,7 +21,7 @@ RUN go build -ldflags "-s -w \
     -o gghstats ./cmd/gghstats
 
 # Alpine 3.22+: fresher busybox/ca-certificates vs Grype noise on 3.21; apk upgrade pulls security revisions.
-FROM alpine:3.22
+FROM alpine:3.24
 RUN apk update \
     && apk add --no-cache ca-certificates \
     && apk upgrade --no-cache \

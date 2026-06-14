@@ -127,6 +127,11 @@ func runServe(args []string) error {
 		gh.SetMetrics(domainMetrics)
 	}
 
+	rateLimiter := setupRateLimiter()
+	if rateLimiter != nil {
+		defer rateLimiter.Shutdown()
+	}
+
 	syncOpts := sync.Options{
 		IncludePrivate: cfg.IncludePrivate,
 		Filter:         cfg.Filter,
@@ -142,11 +147,7 @@ func runServe(args []string) error {
 	defer cancel()
 	go startScheduler(ctx, coord, cfg.SyncInterval, cfg.SyncOnStartup)
 
-	cssAbs, cssQuery := server.ResolveCustomCSS(os.Getenv("GGHSTATS_CUSTOM_CSS"))
-	if strings.TrimSpace(os.Getenv("GGHSTATS_CUSTOM_CSS")) != "" && cssAbs == "" {
-		slog.Warn("GGHSTATS_CUSTOM_CSS ignored: path is missing or not a regular file",
-			"GGHSTATS_CUSTOM_CSS", os.Getenv("GGHSTATS_CUSTOM_CSS"))
-	}
+	cssAbs, cssQuery := resolveCSSPath()
 
 	// Start HTTP server
 	handler := server.New(server.Config{
@@ -163,6 +164,7 @@ func runServe(args []string) error {
 		CustomCSSQuery:   cssQuery,
 		DefaultLocale:    i18n.EnvDefaultLocale(),
 		EnabledLocales:   i18n.EnvEnabledLocales(),
+		RateLimiter:      rateLimiter,
 	})
 
 	addr := cfg.Host + ":" + cfg.Port
@@ -237,4 +239,27 @@ func startScheduler(ctx context.Context, coord *sync.Coordinator, interval time.
 			}
 		}
 	}
+}
+
+func resolveCSSPath() (cssAbs, cssQuery string) {
+	cssAbs, cssQuery = server.ResolveCustomCSS(os.Getenv("GGHSTATS_CUSTOM_CSS"))
+	if strings.TrimSpace(os.Getenv("GGHSTATS_CUSTOM_CSS")) != "" && cssAbs == "" {
+		slog.Warn("GGHSTATS_CUSTOM_CSS ignored: path is missing or not a regular file",
+			"GGHSTATS_CUSTOM_CSS", os.Getenv("GGHSTATS_CUSTOM_CSS"))
+	}
+	return
+}
+
+func setupRateLimiter() *server.RateLimiter {
+	rlCfg := server.ParseRateLimitEnv()
+	if !rlCfg.Enabled {
+		return nil
+	}
+	rl := server.NewRateLimiter(rlCfg)
+	slog.Info("rate limiter enabled",
+		"requests", rlCfg.Requests,
+		"period", rlCfg.Period,
+		"burst", rlCfg.Burst,
+	)
+	return rl
 }

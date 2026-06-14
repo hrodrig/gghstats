@@ -118,10 +118,12 @@ Tap: [homebrew-gghstats](https://github.com/hrodrig/homebrew-gghstats). The cask
 ### Local binary (fastest try)
 
 ```bash
-# From Releases: extract gghstats_*_linux_* archive, or: go install github.com/hrodrig/gghstats/cmd/gghstats@latest
+curl -fsSL https://raw.githubusercontent.com/hrodrig/gghstats/main/scripts/install.sh | sh
 export GGHSTATS_GITHUB_TOKEN=ghp_xxx
 gghstats run --open
 ```
+
+Or extract a [Release](https://github.com/hrodrig/gghstats/releases) tarball, or `go install github.com/hrodrig/gghstats/cmd/gghstats@latest`. Pin a version: `VERSION=v0.7.4 curl -fsSL …/install.sh | sh`.
 
 Open <http://localhost:8080> if you did not use **`--open`**. Data is stored in `./data/gghstats.db` (override with `GGHSTATS_DB`). A first sync may take a while if the default filter includes many repositories — narrow `GGHSTATS_FILTER` in [Configuration](#configuration) when you move beyond this smoke test.
 
@@ -158,6 +160,14 @@ Open <http://localhost:8080>. The template [`.env.example`](.env.example) docume
 ## Install
 
 **Quick install** — get the binary on your machine. **Configuration on a server, systemd, `.deb`/`.rpm` setup, Compose, Traefik, Helm, env files, and VPS deployment** are documented only in **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** ([`run/`](https://github.com/hrodrig/gghstats-selfhosted/tree/main/run), [`run/standalone/linux/`](https://github.com/hrodrig/gghstats-selfhosted/blob/main/run/standalone/linux/README.md) for Linux packages and systemd).
+
+**One-liner (Linux, macOS, BSD — no Docker):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hrodrig/gghstats/main/scripts/install.sh | sh
+```
+
+Downloads the latest [release](https://github.com/hrodrig/gghstats/releases) archive for your OS/arch into `/usr/local/bin` (override with `BINDIR=~/bin`). Review [`scripts/install.sh`](scripts/install.sh) before piping to `sh`; pin with `VERSION=v0.7.4`.
 
 **From source (recommended for developers):**
 
@@ -361,6 +371,10 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_CUSTOM_CSS` | (none) | Optional **regular** `.css` file: loaded **after** built-in `app.css` at `/theme/custom.css` so you can tone down neo-brutalism or replace accents (see [Custom UI theme](#custom-ui-theme-optional)) |
 | `GGHSTATS_DEFAULT_LOCALE` | `en` | Default **dashboard** language when no cookie, `?lang=`, or `Accept-Language` match (see [Web UI languages](#web-ui-languages-i18n)) |
 | `GGHSTATS_ENABLED_LOCALES` | `en,es,de` | Comma-separated locales shown in the sidebar selector and accepted from `?lang=` / cookie |
+| `GGHSTATS_RATE_LIMIT_ENABLED` | `true` | Set to `false` to disable per-IP rate limiting |
+| `GGHSTATS_RATE_LIMIT_REQUESTS` | `120` | Requests per time window before limiting (per IP) |
+| `GGHSTATS_RATE_LIMIT_PERIOD` | `1m` | Time window for rate limiting (Go duration, e.g. `30s`, `5m`) |
+| `GGHSTATS_RATE_LIMIT_BURST` | `20` | Maximum burst of requests allowed before smoothing kicks in |
 
 ### Web UI languages (i18n)
 

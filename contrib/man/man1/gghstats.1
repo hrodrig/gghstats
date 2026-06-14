@@ -1,5 +1,5 @@
 .\" Man page for gghstats(1)
-.TH GGHSTATS 1 "June 2026" "gghstats v0.7.4" "User Commands"
+.TH GGHSTATS 1 "June 2026" "gghstats v0.7.5" "User Commands"
 .SH NAME
 gghstats \- self-hosted GitHub repository traffic dashboard and CLI
 .SH SYNOPSIS
@@ -104,6 +104,18 @@ Allow public badge SVG URLs (default: \fBtrue\fR).
 .TP
 .B GGHSTATS_METRICS
 Set to \fBfalse\fR to disable Prometheus \fB/metrics\fR.
+.TP
+.B GGHSTATS_RATE_LIMIT_ENABLED
+Set to \fBfalse\fR to disable per-IP rate limiting (default: \fBtrue\fR).
+.TP
+.B GGHSTATS_RATE_LIMIT_REQUESTS
+Requests per time window before limiting per IP (default: \fB120\fR).
+.TP
+.B GGHSTATS_RATE_LIMIT_PERIOD
+Time window for rate limiting as a Go duration (default: \fB1m\fR).
+.TP
+.B GGHSTATS_RATE_LIMIT_BURST
+Maximum burst of requests before smoothing (default: \fB20\fR).
 .SH EXAMPLES
 .TP
 Run the dashboard locally:

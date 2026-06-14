@@ -5,7 +5,16 @@ All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.7.5] - 2026-06-14
+
+### Added
+
+- **`scripts/install.sh`:** one-liner install from GitHub releases (`curl -fsSL https://raw.githubusercontent.com/hrodrig/gghstats/main/scripts/install.sh | sh`).
+- **Per-IP rate limiting:** protects the HTTP server from abuse with a configurable token-bucket middleware. Enabled by default (120 req/min, burst 20). Skipped for `/metrics` and `/api/v1/healthz`. Configure via `GGHSTATS_RATE_LIMIT_*` env vars; set `GGHSTATS_RATE_LIMIT_ENABLED=false` to disable.
+
+### Security
+
+- Rate limiting mitigates M7 from the professionalism audit (no protection on `POST /api/v1/sync`).
 
 ## [0.7.4] - 2026-06-10
 
