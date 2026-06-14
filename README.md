@@ -742,7 +742,7 @@ curl -sS -H "x-api-token: $GGHSTATS_API_TOKEN" http://localhost:8080/api/repos
 | | |
 | --- | --- |
 | **Purpose** | [Prometheus](https://prometheus.io/) text / OpenMetrics exposition for scraping. |
-| **Auth** | None — treat network access like any other unauthenticated metrics endpoint. |
+| **Auth** | None — public by default. Protect `/metrics` at the network edge (firewall, reverse proxy, or Traefik `!PathPrefix` rule). If you cannot restrict it, set `GGHSTATS_METRICS=false`. |
 | **Disabled** | When `GGHSTATS_METRICS=false`, the route is omitted (returns **`404`**). |
 
 **Domain series** (besides HTTP and Go runtime): `gghstats_repos_total`, `gghstats_db_size_bytes`, `gghstats_last_sync_timestamp_seconds`, `gghstats_sync_duration_seconds`, `gghstats_github_api_requests_total`, `gghstats_github_rate_limit_remaining`. Refreshed on each scrape and after each successful sync.
