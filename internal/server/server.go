@@ -322,6 +322,17 @@ const (
 	defaultStylesheetFile   = "bootstrap.min.css"
 )
 
+var (
+	validIndexSorts = map[string]bool{
+		"name": true, "stars": true, "forks": true,
+		"total_views": true, "total_clones": true,
+		"clones_1d": true, "clones_7d": true, "clones_30d": true,
+	}
+	validIndexDirs = map[string]bool{
+		"asc": true, "desc": true,
+	}
+)
+
 func fillLayoutDefaults(d layoutData) layoutData {
 	if d.BootstrapVersion == "" {
 		d.BootstrapVersion = defaultBootstrapVersion
@@ -383,6 +394,13 @@ func parseIndexQueryParams(r *http.Request) (sort, dir, query string, page, perP
 	perPage = parsePositiveInt(r.URL.Query().Get("per_page"), defaultPerPage)
 	if perPage > maxPerPage {
 		perPage = maxPerPage
+	}
+	// Whitelist: reject unknown sort/dir values (defence in depth; store also validates).
+	if !validIndexSorts[sort] {
+		sort = "total_clones"
+	}
+	if !validIndexDirs[dir] {
+		dir = "desc"
 	}
 	return sort, dir, query, page, perPage
 }
