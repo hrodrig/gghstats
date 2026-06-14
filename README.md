@@ -376,6 +376,31 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_RATE_LIMIT_PERIOD` | `1m` | Time window for rate limiting (Go duration, e.g. `30s`, `5m`) |
 | `GGHSTATS_RATE_LIMIT_BURST` | `20` | Maximum burst of requests allowed before smoothing kicks in |
 
+### Rate limiting
+
+gghstats applies **per-IP token-bucket rate limiting** to all HTTP routes except `/metrics` and `/api/v1/healthz`. When a client exceeds the limit the server returns `429 Too Many Requests` with a JSON body `{"error":"rate_limit_exceeded"}` and a `Retry-After: 60` header.
+
+**Defaults:** 120 requests per minute, burst of 20. For most dashboard browsing this is generous; adjust for high-traffic or protected deployments.
+
+Behind a **reverse proxy** (nginx, Traefik, Caddy, haproxy), gghstats reads the client IP from `X-Forwarded-For` (preferred) or `X-Real-IP`. Ensure your proxy sets one of these headers, otherwise all requests appear to come from the proxy itself and share a single rate-limit bucket.
+
+```
+# Tighten for a protected API-only instance
+GGHSTATS_RATE_LIMIT_REQUESTS=60
+GGHSTATS_RATE_LIMIT_PERIOD=1m
+GGHSTATS_RATE_LIMIT_BURST=10
+
+# Relax for a public dashboard with many concurrent viewers
+GGHSTATS_RATE_LIMIT_REQUESTS=300
+GGHSTATS_RATE_LIMIT_PERIOD=1m
+GGHSTATS_RATE_LIMIT_BURST=50
+
+# Disable entirely (e.g. when your reverse proxy handles it)
+GGHSTATS_RATE_LIMIT_ENABLED=false
+```
+
+Inactive IPs are evicted from memory after 5 minutes of idle time.
+
 ### Web UI languages (i18n)
 
 **Scope:** dashboard HTML and a small set of **browser UI strings** (sync modal, theme toggle label, chart legends). **Not** translated: HTTP API JSON, CLI output, structured logs, or embed badge SVG text.
