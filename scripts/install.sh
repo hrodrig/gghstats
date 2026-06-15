@@ -2,7 +2,7 @@
 # Install gghstats from GitHub releases.
 # Usage: curl -fsSL https://raw.githubusercontent.com/hrodrig/gghstats/main/scripts/install.sh | sh
 # Or: BINDIR=~/bin sh install.sh
-# Pin a release: VERSION=v0.7.4 sh install.sh  (or VERSION=0.7.4)
+# Pin a release: VERSION=v0.7.8 sh install.sh  (or VERSION=0.7.8)
 
 set -e
 

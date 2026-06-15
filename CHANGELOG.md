@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+## [0.7.8] - 2026-06-15
+
+### Fixed
+
+- **README badge embeds:** exempt `/api/v1/badge/*` from per-IP rate limiting and IP whitelist (with `/metrics` and `/api/v1/healthz`). Fixes broken `![…](badge)` images when `GGHSTATS_WHITELIST_PATHS` includes `/api/` or GitHub/camo proxies share one client IP bucket.
+
+### Changed
+
+- **Docs:** sync README version badge and install examples to **0.7.8**; note badge routes in middleware section; man page and env examples.
+- **Docker release image:** Alpine **3.24** in `Dockerfile.release` (aligned with local `Dockerfile`).
+
 ## [0.7.7] - 2026-06-14
 
 ### Added

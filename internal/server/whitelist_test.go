@@ -99,7 +99,7 @@ func TestWhitelistMiddlewareAllowsWhitelisted(t *testing.T) {
 	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/8"})
 	handler := w.Middleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusOK)
-	}))
+	}), MiddlewareSkip{})
 
 	req := httptest.NewRequest("GET", "/", nil)
 	req.RemoteAddr = "10.1.2.3:12345"
@@ -114,7 +114,7 @@ func TestWhitelistMiddlewareBlocksNonWhitelisted(t *testing.T) {
 	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/8"})
 	handler := w.Middleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusOK)
-	}))
+	}), MiddlewareSkip{})
 
 	req := httptest.NewRequest("GET", "/", nil)
 	req.RemoteAddr = "192.168.1.1:12345"
@@ -133,7 +133,7 @@ func TestWhitelistMiddlewareXForwardedFor(t *testing.T) {
 	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/8"})
 	handler := w.Middleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusOK)
-	}))
+	}), MiddlewareSkip{})
 
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Header.Set("X-Forwarded-For", "10.5.5.5, 172.16.0.1")
@@ -152,7 +152,7 @@ func TestWhitelistMiddlewarePathScoped(t *testing.T) {
 	})
 	handler := w.Middleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusOK)
-	}))
+	}), MiddlewareSkip{})
 
 	// Non-whitelisted IP on /api/ → blocked.
 	req := httptest.NewRequest("GET", "/api/repos", nil)
@@ -188,10 +188,10 @@ func TestWhitelistMiddlewareExemptPaths(t *testing.T) {
 		http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			rw.WriteHeader(http.StatusOK)
 		}),
-		"/metrics", "/api/v1/healthz",
+		PublicMiddlewareSkip(),
 	)
 
-	for _, path := range []string{"/metrics", "/api/v1/healthz"} {
+	for _, path := range []string{"/metrics", "/api/v1/healthz", "/api/v1/badge/o/r"} {
 		req := httptest.NewRequest("GET", path, nil)
 		req.RemoteAddr = "192.168.1.1:12345" // not whitelisted
 		rec := httptest.NewRecorder()
@@ -208,6 +208,32 @@ func TestWhitelistMiddlewareExemptPaths(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 	if rec.Code != http.StatusForbidden {
 		t.Errorf("non-exempt /: got %d, want 403", rec.Code)
+	}
+}
+
+func TestWhitelistBadgeExemptWhenAPIPathsProtected(t *testing.T) {
+	w := NewWhitelist(WhitelistConfig{
+		CIDRs: "10.0.0.0/8",
+		Paths: "/api/",
+	})
+	handler := w.Middleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		rw.WriteHeader(http.StatusOK)
+	}), PublicMiddlewareSkip())
+
+	req := httptest.NewRequest("GET", "/api/v1/badge/o/r?metric=clones", nil)
+	req.RemoteAddr = "192.168.1.1:12345"
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("badge from non-whitelisted IP: got %d, want 200", rec.Code)
+	}
+
+	req = httptest.NewRequest("GET", "/api/repos", nil)
+	req.RemoteAddr = "192.168.1.1:12345"
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("API from non-whitelisted IP: got %d, want 403", rec.Code)
 	}
 }
 

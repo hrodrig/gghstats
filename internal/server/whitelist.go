@@ -68,14 +68,10 @@ func NewWhitelist(cfg WhitelistConfig) *Whitelist {
 
 // Middleware returns an HTTP middleware that only allows requests from
 // whitelisted IPs on configured paths. If paths are empty, all routes are
-// protected. Exempt paths (like /metrics, /api/v1/healthz) always pass through.
-func (w *Whitelist) Middleware(next http.Handler, exemptPaths ...string) http.Handler {
-	exempt := make(map[string]struct{}, len(exemptPaths))
-	for _, p := range exemptPaths {
-		exempt[p] = struct{}{}
-	}
+// protected. Exempt paths (metrics, healthz, badge embeds) always pass through.
+func (w *Whitelist) Middleware(next http.Handler, exempt MiddlewareSkip) http.Handler {
 	return http.HandlerFunc(func(wr http.ResponseWriter, r *http.Request) {
-		if _, ok := exempt[r.URL.Path]; ok {
+		if exempt.matches(r.URL.Path) {
 			next.ServeHTTP(wr, r)
 			return
 		}

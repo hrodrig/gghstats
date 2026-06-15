@@ -114,7 +114,7 @@ func TestRateLimiterAllowsWithinLimit(t *testing.T) {
 	handler := rl.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hits++
 		w.WriteHeader(http.StatusOK)
-	}))
+	}), MiddlewareSkip{})
 
 	for i := 0; i < 100; i++ {
 		req := httptest.NewRequest("GET", "/", nil)
@@ -141,7 +141,7 @@ func TestRateLimiterBlocksAfterBurst(t *testing.T) {
 
 	handler := rl.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	}))
+	}), MiddlewareSkip{})
 
 	// Burst of 5 should pass.
 	for i := 0; i < 5; i++ {
@@ -178,7 +178,7 @@ func TestRateLimiterSeparatePerIP(t *testing.T) {
 
 	handler := rl.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	}))
+	}), MiddlewareSkip{})
 
 	// IP A: 2 requests OK
 	for range 2 {
@@ -222,7 +222,7 @@ func TestRateLimiterSkipsExemptPaths(t *testing.T) {
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		}),
-		"/metrics", "/api/v1/healthz",
+		MiddlewareSkip{Exact: []string{"/metrics", "/api/v1/healthz"}, Prefixes: []string{BadgePathPrefix}},
 	)
 
 	// Exhaust the single burst.
@@ -243,14 +243,56 @@ func TestRateLimiterSkipsExemptPaths(t *testing.T) {
 		t.Errorf("expected 429 on /, got %d", rec.Code)
 	}
 
-	// healthz should still pass (exempt).
-	for _, path := range []string{"/metrics", "/api/v1/healthz"} {
+	// healthz and badges should still pass (exempt).
+	for _, path := range []string{"/metrics", "/api/v1/healthz", "/api/v1/badge/o/r?metric=clones"} {
 		req := httptest.NewRequest("GET", path, nil)
 		req.RemoteAddr = "10.0.0.1:12345"
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, req)
 		if rec.Code != 200 {
 			t.Errorf("exempt %s: got %d, want 200", path, rec.Code)
+		}
+	}
+}
+
+func TestRateLimiterSkipsBadgePrefix(t *testing.T) {
+	rl := NewRateLimiter(RateLimitConfig{
+		Enabled:  true,
+		Requests: 1,
+		Period:   time.Hour,
+		Burst:    1,
+	})
+	defer rl.Shutdown()
+
+	handler := rl.Middleware(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}),
+		PublicMiddlewareSkip(),
+	)
+
+	req := httptest.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "10.0.0.1:12345"
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != 200 {
+		t.Fatal("expected first request on / to pass")
+	}
+	req = httptest.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "10.0.0.1:12345"
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != 429 {
+		t.Fatalf("expected / to be rate limited, got %d", rec.Code)
+	}
+
+	for i := 0; i < 50; i++ {
+		req = httptest.NewRequest("GET", "/api/v1/badge/o/r?metric=clones", nil)
+		req.RemoteAddr = "10.0.0.1:12345"
+		rec = httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != 200 {
+			t.Fatalf("badge request %d: got %d, want 200", i, rec.Code)
 		}
 	}
 }
@@ -298,7 +340,7 @@ func TestRateLimiter429Body(t *testing.T) {
 
 	handler := rl.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	}))
+	}), MiddlewareSkip{})
 
 	// Exhaust.
 	req := httptest.NewRequest("GET", "/", nil)
@@ -338,7 +380,7 @@ func TestNewRateLimiterHandlesZeroRequests(t *testing.T) {
 
 	handler := rl.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	}))
+	}), MiddlewareSkip{})
 
 	for i := 0; i < 20; i++ {
 		req := httptest.NewRequest("GET", "/", nil)
@@ -361,7 +403,7 @@ func TestRateLimiterCleanup(t *testing.T) {
 
 	handler := rl.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	}))
+	}), MiddlewareSkip{})
 
 	// Make a request to populate the limiter.
 	req := httptest.NewRequest("GET", "/", nil)

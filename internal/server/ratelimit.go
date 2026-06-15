@@ -69,15 +69,11 @@ func (rl *RateLimiter) Shutdown() {
 	close(rl.done)
 }
 
-// Middleware wraps next with per-IP rate limiting. Paths matching skipPaths
-// (exact match on the request URL path) are exempt.
-func (rl *RateLimiter) Middleware(next http.Handler, skipPaths ...string) http.Handler {
-	skip := make(map[string]struct{}, len(skipPaths))
-	for _, p := range skipPaths {
-		skip[p] = struct{}{}
-	}
+// Middleware wraps next with per-IP rate limiting. Paths in skip are exempt
+// (exact or prefix match).
+func (rl *RateLimiter) Middleware(next http.Handler, skip MiddlewareSkip) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if _, ok := skip[r.URL.Path]; ok {
+		if skip.matches(r.URL.Path) {
 			next.ServeHTTP(w, r)
 			return
 		}
