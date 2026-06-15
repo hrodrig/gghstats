@@ -344,6 +344,8 @@ On a real release, push tag **`v<VERSION>`** (must match **`VERSION`**) so GoRel
 
 This repo’s [`.env.example`](.env.example) is for **local smoke tests** and **dev** `docker-compose.yml` in the gghstats clone only.
 
+**Sample env file:** **`gghstats --print-sample-config > /etc/gghstats/gghstats.env`** writes the annotated template to stdout (same as [`contrib/gghstats.env.example`](contrib/gghstats.env.example)). Use when the example file is not on disk (e.g. Homebrew cask).
+
 ### Environment file (local try-out)
 
 Copy [`.env.example`](.env.example) → `.env` in this repository when running `gghstats serve` on your laptop. **Servers:** use **gghstats-selfhosted**, not this file.

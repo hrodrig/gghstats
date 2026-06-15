@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **`gghstats --print-sample-config`** — writes annotated env template to stdout (same as `contrib/gghstats.env.example`).
+
 ## [0.7.8] - 2026-06-15
 
 ### Fixed
