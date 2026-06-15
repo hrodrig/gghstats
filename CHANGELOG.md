@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+## [0.7.8] - 2026-06-15
+
+### Fixed
+
+- **README badge embeds:** exempt `/api/v1/badge/*` from per-IP rate limiting and IP whitelist (with `/metrics` and `/api/v1/healthz`). Fixes broken `![…](badge)` images when `GGHSTATS_WHITELIST_PATHS` includes `/api/` or GitHub/camo proxies share one client IP bucket.
+
+### Changed
+
+- **Docs:** sync README version badge and install examples to **0.7.8**; note badge routes in middleware section; man page and env examples.
+- **Docker release image:** Alpine **3.24** in `Dockerfile.release` (aligned with local `Dockerfile`).
+
 ## [0.7.7] - 2026-06-14
 
 ### Added
@@ -304,7 +317,11 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.7.4...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.7.8...HEAD
+[0.7.8]: https://github.com/hrodrig/gghstats/compare/v0.7.7...v0.7.8
+[0.7.7]: https://github.com/hrodrig/gghstats/compare/v0.7.6...v0.7.7
+[0.7.6]: https://github.com/hrodrig/gghstats/compare/v0.7.5...v0.7.6
+[0.7.5]: https://github.com/hrodrig/gghstats/compare/v0.7.4...v0.7.5
 [0.7.4]: https://github.com/hrodrig/gghstats/compare/v0.7.3...v0.7.4
 [0.7.3]: https://github.com/hrodrig/gghstats/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/hrodrig/gghstats/compare/v0.7.1...v0.7.2

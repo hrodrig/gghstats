@@ -2,7 +2,7 @@
 # COPY the whole linux/ tree then pick the right binary for single-platform (snapshot) and
 # multi-platform (release) builds. Local multi-stage builds use Dockerfile (make docker-build).
 ARG TARGETPLATFORM
-FROM alpine:3.22
+FROM alpine:3.24
 LABEL org.opencontainers.image.title="gghstats"
 LABEL org.opencontainers.image.description="GitHub traffic dashboard and CLI"
 LABEL org.opencontainers.image.source="https://github.com/hrodrig/gghstats"

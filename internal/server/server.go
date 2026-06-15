@@ -183,10 +183,10 @@ func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 		h = logMiddleware(wrapWithHTTPMetrics(reg, mux))
 	}
 	if cfg.Whitelist != nil {
-		h = cfg.Whitelist.Middleware(h, MetricsPath, HealthzPath)
+		h = cfg.Whitelist.Middleware(h, PublicMiddlewareSkip())
 	}
 	if cfg.RateLimiter != nil {
-		h = cfg.RateLimiter.Middleware(h, MetricsPath, HealthzPath)
+		h = cfg.RateLimiter.Middleware(h, PublicMiddlewareSkip())
 	}
 	return h
 }
