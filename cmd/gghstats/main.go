@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hrodrig/gghstats/contrib"
 	"github.com/hrodrig/gghstats/internal/version"
 )
 
@@ -11,6 +12,7 @@ const usage = `gghstats — GitHub Traffic Stats Collector
 
 Usage:
   gghstats <command> [flags]
+  gghstats --print-sample-config
 
 Commands:
   serve    Start web dashboard with auto-sync scheduler
@@ -54,6 +56,10 @@ func main() {
 
 // runCLI runs the CLI and returns a process exit code (0 = success).
 func runCLI(args []string) int {
+	if len(args) >= 2 && isPrintSampleConfigArg(args[1]) {
+		fmt.Print(contrib.SampleEnv())
+		return 0
+	}
 	if len(args) < 2 {
 		fmt.Fprintln(os.Stderr, usage)
 		return 1
@@ -95,4 +101,8 @@ func runCLI(args []string) int {
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n%s\n", args[1], usage)
 		return 1
 	}
+}
+
+func isPrintSampleConfigArg(s string) bool {
+	return s == "--print-sample-config" || s == "-print-sample-config"
 }

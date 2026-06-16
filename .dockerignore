@@ -6,3 +6,5 @@
 !web/
 !assets/
 !assets/**
+!contrib/
+!contrib/**

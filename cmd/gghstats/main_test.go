@@ -8,6 +8,37 @@ import (
 	"testing"
 )
 
+func TestRunCLI_printSampleConfig(t *testing.T) {
+	stdoutSwapMu.Lock()
+	defer stdoutSwapMu.Unlock()
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := os.Stdout
+	os.Stdout = w
+	errCh := make(chan error, 1)
+	var out bytes.Buffer
+	go func() {
+		_, e := io.Copy(&out, r)
+		errCh <- e
+	}()
+
+	code := runCLI([]string{"gghstats", "--print-sample-config"})
+	w.Close()
+	os.Stdout = old
+	if e := <-errCh; e != nil {
+		t.Fatal(e)
+	}
+	if code != 0 {
+		t.Fatalf("print-sample-config: want 0, got %d", code)
+	}
+	if !strings.Contains(out.String(), "GGHSTATS_GITHUB_TOKEN=") {
+		t.Fatalf("expected sample env on stdout, got %q", out.String())
+	}
+}
+
 func TestRunCLIUsageAndErrors(t *testing.T) {
 	t.Parallel()
 	if code := runCLI([]string{"gghstats"}); code != 1 {

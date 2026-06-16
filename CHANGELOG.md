@@ -7,6 +7,16 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.9] - 2026-06-16
+
+### Added
+
+- **`gghstats --print-sample-config`** — writes annotated env template to stdout (same as `contrib/gghstats.env.example`); documented in README.
+
+### Fixed
+
+- **Docker image build:** whitelist **`contrib/`** in `.dockerignore` for embedded sample env template.
+
 ## [0.7.8] - 2026-06-15
 
 ### Fixed
@@ -317,7 +327,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.7.8...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.7.9...HEAD
+[0.7.9]: https://github.com/hrodrig/gghstats/compare/v0.7.8...v0.7.9
 [0.7.8]: https://github.com/hrodrig/gghstats/compare/v0.7.7...v0.7.8
 [0.7.7]: https://github.com/hrodrig/gghstats/compare/v0.7.6...v0.7.7
 [0.7.6]: https://github.com/hrodrig/gghstats/compare/v0.7.5...v0.7.6
