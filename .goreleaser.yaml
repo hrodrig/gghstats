@@ -112,6 +112,9 @@ homebrew_casks:
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     url:
       verified: "github.com/hrodrig/gghstats/"
+    caveats: |
+      Sample environment file is not bundled with the Homebrew cask.
+      Generate it with `gghstats --print-sample-config > /etc/gghstats/gghstats.env`.
     hooks:
       post:
         install: |
