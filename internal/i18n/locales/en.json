@@ -175,6 +175,10 @@
     "sync_last_repo": "Last sync ({{repo}}): {{when}}",
     "sync_last": "Last sync: {{when}}",
     "sync_failed": "Sync failed",
+    "sync_start_failed": "Could not start sync",
+    "sync_already_running": "Sync already running",
+    "sync_ip_not_whitelisted": "Your IP is not whitelisted for the API (check GGHSTATS_WHITELIST)",
+    "sync_rate_limited": "Rate limited — wait a minute and try again",
     "sync_done": "Sync finished",
     "token_required": "API token required",
     "token_save_sync": "Save & sync"

@@ -31,14 +31,14 @@ func TestParseWhitelistEnvValues(t *testing.T) {
 }
 
 func TestNewWhitelistEmptyReturnsNil(t *testing.T) {
-	w := NewWhitelist(WhitelistConfig{CIDRs: ""})
+	w := NewWhitelist(WhitelistConfig{CIDRs: ""}, "")
 	if w != nil {
 		t.Error("expected nil for empty CIDRs")
 	}
 }
 
 func TestNewWhitelistSingleIP(t *testing.T) {
-	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.1"})
+	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.1"}, "")
 	if w == nil {
 		t.Fatal("expected non-nil")
 	}
@@ -51,7 +51,7 @@ func TestNewWhitelistSingleIP(t *testing.T) {
 }
 
 func TestNewWhitelistCIDR(t *testing.T) {
-	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/24"})
+	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/24"}, "")
 	if w == nil {
 		t.Fatal("expected non-nil")
 	}
@@ -67,7 +67,7 @@ func TestNewWhitelistCIDR(t *testing.T) {
 }
 
 func TestNewWhitelistMultiple(t *testing.T) {
-	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/24, 192.168.1.1"})
+	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/24, 192.168.1.1"}, "")
 	if w == nil {
 		t.Fatal("expected non-nil")
 	}
@@ -83,7 +83,7 @@ func TestNewWhitelistMultiple(t *testing.T) {
 }
 
 func TestNewWhitelistInvalidCIDRSkipped(t *testing.T) {
-	w := NewWhitelist(WhitelistConfig{CIDRs: "not-an-ip, 10.0.0.1, bad/cidr"})
+	w := NewWhitelist(WhitelistConfig{CIDRs: "not-an-ip, 10.0.0.1, bad/cidr"}, "")
 	if w == nil {
 		t.Fatal("expected non-nil with at least one valid entry")
 	}
@@ -96,7 +96,7 @@ func TestNewWhitelistInvalidCIDRSkipped(t *testing.T) {
 }
 
 func TestWhitelistMiddlewareAllowsWhitelisted(t *testing.T) {
-	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/8"})
+	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/8"}, "")
 	handler := w.Middleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusOK)
 	}), MiddlewareSkip{})
@@ -111,7 +111,7 @@ func TestWhitelistMiddlewareAllowsWhitelisted(t *testing.T) {
 }
 
 func TestWhitelistMiddlewareBlocksNonWhitelisted(t *testing.T) {
-	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/8"})
+	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/8"}, "")
 	handler := w.Middleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusOK)
 	}), MiddlewareSkip{})
@@ -130,7 +130,7 @@ func TestWhitelistMiddlewareBlocksNonWhitelisted(t *testing.T) {
 }
 
 func TestWhitelistMiddlewareXForwardedFor(t *testing.T) {
-	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/8"})
+	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/8"}, "")
 	handler := w.Middleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusOK)
 	}), MiddlewareSkip{})
@@ -149,7 +149,7 @@ func TestWhitelistMiddlewarePathScoped(t *testing.T) {
 	w := NewWhitelist(WhitelistConfig{
 		CIDRs: "10.0.0.0/8",
 		Paths: "/api/",
-	})
+	}, "")
 	handler := w.Middleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusOK)
 	}), MiddlewareSkip{})
@@ -183,7 +183,7 @@ func TestWhitelistMiddlewarePathScoped(t *testing.T) {
 }
 
 func TestWhitelistMiddlewareExemptPaths(t *testing.T) {
-	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/8"})
+	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/8"}, "")
 	handler := w.Middleware(
 		http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			rw.WriteHeader(http.StatusOK)
@@ -215,7 +215,7 @@ func TestWhitelistBadgeExemptWhenAPIPathsProtected(t *testing.T) {
 	w := NewWhitelist(WhitelistConfig{
 		CIDRs: "10.0.0.0/8",
 		Paths: "/api/",
-	})
+	}, "")
 	handler := w.Middleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusOK)
 	}), PublicMiddlewareSkip())
@@ -241,7 +241,7 @@ func TestWhitelistPathMatch(t *testing.T) {
 	w := NewWhitelist(WhitelistConfig{
 		CIDRs: "10.0.0.0/8",
 		Paths: "/api/,/h2h,/sync",
-	})
+	}, "")
 
 	tests := []struct {
 		path    string
@@ -261,6 +261,43 @@ func TestWhitelistPathMatch(t *testing.T) {
 		if got := w.pathMatches(tt.path); got != tt.matches {
 			t.Errorf("pathMatches(%q) = %v, want %v", tt.path, got, tt.matches)
 		}
+	}
+}
+
+func TestWhitelistBypassWithValidAPIToken(t *testing.T) {
+	const token = "secret-sync-token"
+	w := NewWhitelist(WhitelistConfig{
+		CIDRs: "10.0.0.0/8",
+		Paths: "/api/",
+	}, token)
+	handler := w.Middleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		rw.WriteHeader(http.StatusOK)
+	}), MiddlewareSkip{})
+
+	req := httptest.NewRequest("POST", "/api/v1/sync", nil)
+	req.RemoteAddr = "203.0.113.5:12345"
+	req.Header.Set("x-api-token", token)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("valid token bypass: got %d, want 200", rec.Code)
+	}
+
+	req = httptest.NewRequest("POST", "/api/v1/sync", nil)
+	req.RemoteAddr = "203.0.113.5:12345"
+	req.Header.Set("x-api-token", "wrong")
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("wrong token: got %d, want 403", rec.Code)
+	}
+
+	req = httptest.NewRequest("POST", "/api/v1/sync", nil)
+	req.RemoteAddr = "203.0.113.5:12345"
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("missing token: got %d, want 403", rec.Code)
 	}
 }
 

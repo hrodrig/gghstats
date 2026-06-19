@@ -132,7 +132,7 @@ func runServe(args []string) error {
 		defer rateLimiter.Shutdown()
 	}
 
-	whitelist := server.NewWhitelist(server.ParseWhitelistEnv())
+	whitelist := server.NewWhitelist(server.ParseWhitelistEnv(), cfg.APIToken)
 
 	syncOpts := sync.Options{
 		IncludePrivate: cfg.IncludePrivate,

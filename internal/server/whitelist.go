@@ -9,8 +9,9 @@ import (
 
 // Whitelist controls access by client IP/CIDR, optionally scoped to specific paths.
 type Whitelist struct {
-	cidrs []*net.IPNet
-	paths []string // empty = all paths
+	cidrs    []*net.IPNet
+	paths    []string // empty = all paths
+	apiToken string   // when set, valid x-api-token bypasses the whitelist
 }
 
 // WhitelistConfig holds parsed whitelist parameters.
@@ -28,12 +29,14 @@ func ParseWhitelistEnv() WhitelistConfig {
 }
 
 // NewWhitelist parses a WhitelistConfig and returns a ready-to-use Whitelist.
+// When apiToken is non-empty, requests bearing a matching x-api-token header
+// bypass the IP check (token-protected API routes remain gated by apiMiddleware).
 // Returns nil if no CIDRs are configured (whitelist disabled).
-func NewWhitelist(cfg WhitelistConfig) *Whitelist {
+func NewWhitelist(cfg WhitelistConfig, apiToken string) *Whitelist {
 	if cfg.CIDRs == "" {
 		return nil
 	}
-	w := &Whitelist{}
+	w := &Whitelist{apiToken: apiToken}
 	for _, raw := range strings.Split(cfg.CIDRs, ",") {
 		cidr := strings.TrimSpace(raw)
 		if cidr == "" {
@@ -76,6 +79,10 @@ func (w *Whitelist) Middleware(next http.Handler, exempt MiddlewareSkip) http.Ha
 			return
 		}
 		if !w.pathMatches(r.URL.Path) {
+			next.ServeHTTP(wr, r)
+			return
+		}
+		if w.apiToken != "" && r.Header.Get("x-api-token") == w.apiToken {
 			next.ServeHTTP(wr, r)
 			return
 		}

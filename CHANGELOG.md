@@ -7,6 +7,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.10] - 2026-06-19
+
+### Fixed
+
+- **Manual sync + IP whitelist:** valid `x-api-token` bypasses `GGHSTATS_WHITELIST` on protected paths so dashboard **Sync all** works remotely; clearer sync error messages (403/429) in the UI.
+
 ## [0.7.9] - 2026-06-16
 
 ### Added
@@ -327,7 +333,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.7.9...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.7.10...HEAD
+[0.7.10]: https://github.com/hrodrig/gghstats/compare/v0.7.9...v0.7.10
 [0.7.9]: https://github.com/hrodrig/gghstats/compare/v0.7.8...v0.7.9
 [0.7.8]: https://github.com/hrodrig/gghstats/compare/v0.7.7...v0.7.8
 [0.7.7]: https://github.com/hrodrig/gghstats/compare/v0.7.6...v0.7.7

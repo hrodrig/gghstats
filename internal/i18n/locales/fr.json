@@ -175,6 +175,10 @@
     "sync_last_repo": "Dernière synchronisation ({{repo}}) : {{when}}",
     "sync_last": "Dernière synchronisation : {{when}}",
     "sync_failed": "Échec de la synchronisation",
+    "sync_start_failed": "Impossible de démarrer la synchronisation",
+    "sync_already_running": "Synchronisation déjà en cours",
+    "sync_ip_not_whitelisted": "Votre IP n'est pas autorisée pour l'API (vérifiez GGHSTATS_WHITELIST)",
+    "sync_rate_limited": "Limite de débit — attendez une minute et réessayez",
     "sync_done": "Synchronisation terminée",
     "token_required": "Jeton API requis",
     "token_save_sync": "Enregistrer et synchroniser"
