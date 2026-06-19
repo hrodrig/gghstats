@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Manual sync + IP whitelist:** valid `x-api-token` bypasses `GGHSTATS_WHITELIST` on protected paths so dashboard **Sync all** works remotely; clearer sync error messages (403/429) in the UI.
+
 ## [0.7.9] - 2026-06-16
 
 ### Added

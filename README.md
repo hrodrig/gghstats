@@ -415,6 +415,8 @@ gghstats supports optional IP-based access control via `GGHSTATS_WHITELIST`. Whe
 
 By default the whitelist applies to **all routes** except `/metrics`, `/api/v1/healthz`, and **`/api/v1/badge/*`** (README embeds). Scope it to specific paths with `GGHSTATS_WHITELIST_PATHS` (comma-separated prefixes, e.g. `/api/,/h2h`). Paths not listed remain publicly accessible. Badge URLs stay public even when `/api/` is whitelisted.
 
+When **`GGHSTATS_API_TOKEN`** is set, requests that include a matching **`x-api-token`** header bypass the IP whitelist on protected paths (the token is still validated by the API handler). This lets remote operators run **`POST /api/v1/sync`** from the dashboard without opening `/api/` to the whole internet.
+
 ```bash
 # Internal network + VPN only
 GGHSTATS_WHITELIST=10.0.0.0/8,172.16.0.0/12,192.168.1.0/24

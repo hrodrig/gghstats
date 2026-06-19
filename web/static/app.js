@@ -734,10 +734,24 @@ function initSyncControl() {
         btn.disabled = false;
         return;
       }
+      if (res.status === 403) {
+        const body = await res.json().catch(() => ({}));
+        statusEl.textContent =
+          body.error === 'ip_not_whitelisted'
+            ? uiT('js.sync_ip_not_whitelisted')
+            : uiT('js.sync_failed');
+        btn.disabled = false;
+        return;
+      }
+      if (res.status === 429) {
+        statusEl.textContent = uiT('js.sync_rate_limited');
+        btn.disabled = false;
+        return;
+      }
       if (res.status === 409) {
-        statusEl.textContent = 'Sync already running';
+        statusEl.textContent = uiT('js.sync_already_running');
       } else if (!res.ok) {
-        statusEl.textContent = 'Could not start sync';
+        statusEl.textContent = uiT('js.sync_start_failed');
       }
       await refreshStatus();
     } catch {
