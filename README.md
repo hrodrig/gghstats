@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.7.9-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.7.10-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -123,7 +123,7 @@ export GGHSTATS_GITHUB_TOKEN=ghp_xxx
 gghstats run --open
 ```
 
-Or extract a [Release](https://github.com/hrodrig/gghstats/releases) tarball, or `go install github.com/hrodrig/gghstats/cmd/gghstats@latest`. Pin a version: `VERSION=v0.7.9 curl -fsSL …/install.sh | sh`.
+Or extract a [Release](https://github.com/hrodrig/gghstats/releases) tarball, or `go install github.com/hrodrig/gghstats/cmd/gghstats@latest`. Pin a version: `VERSION=v0.7.10 curl -fsSL …/install.sh | sh`.
 
 Open <http://localhost:8080> if you did not use **`--open`**. Data is stored in `./data/gghstats.db` (override with `GGHSTATS_DB`). A first sync may take a while if the default filter includes many repositories — narrow `GGHSTATS_FILTER` in [Configuration](#configuration) when you move beyond this smoke test.
 
@@ -167,7 +167,7 @@ Open <http://localhost:8080>. The template [`.env.example`](.env.example) docume
 curl -fsSL https://raw.githubusercontent.com/hrodrig/gghstats/main/scripts/install.sh | sh
 ```
 
-Downloads the latest [release](https://github.com/hrodrig/gghstats/releases) archive for your OS/arch into `/usr/local/bin` (override with `BINDIR=~/bin`). Review [`scripts/install.sh`](scripts/install.sh) before piping to `sh`; pin with `VERSION=v0.7.9`.
+Downloads the latest [release](https://github.com/hrodrig/gghstats/releases) archive for your OS/arch into `/usr/local/bin` (override with `BINDIR=~/bin`). Review [`scripts/install.sh`](scripts/install.sh) before piping to `sh`; pin with `VERSION=v0.7.10`.
 
 **From source (recommended for developers):**
 
@@ -182,15 +182,15 @@ This installs the binary to `$GOBIN` (default `$HOME/go/bin`). Ensure `$GOBIN` i
 | Platform | Command / path |
 |----------|----------------|
 | **Homebrew (macOS / Linux)** | `brew install hrodrig/gghstats/gghstats` — [tap](https://github.com/hrodrig/homebrew-gghstats) |
-| **Debian / Ubuntu** | `wget -q -O /tmp/gghstats.deb https://github.com/hrodrig/gghstats/releases/download/v0.7.9/gghstats_0.7.9_linux_amd64.deb && sudo dpkg -i /tmp/gghstats.deb` |
-| **Fedora / RHEL / AlmaLinux / Rocky / Oracle Linux** | `sudo dnf install https://github.com/hrodrig/gghstats/releases/download/v0.7.9/gghstats_0.7.9_linux_amd64.rpm` |
+| **Debian / Ubuntu** | `wget -q -O /tmp/gghstats.deb https://github.com/hrodrig/gghstats/releases/download/v0.7.10/gghstats_0.7.10_linux_amd64.deb && sudo dpkg -i /tmp/gghstats.deb` |
+| **Fedora / RHEL / AlmaLinux / Rocky / Oracle Linux** | `sudo dnf install https://github.com/hrodrig/gghstats/releases/download/v0.7.10/gghstats_0.7.10_linux_amd64.rpm` |
 | **Linux tarball** | `tar -xzf gghstats_*_linux_*.tar.gz` from [Releases](https://github.com/hrodrig/gghstats/releases); verify `checksums.txt` |
 | **FreeBSD** | `gghstats_*_freebsd_*.tar.gz` on [Releases](https://github.com/hrodrig/gghstats/releases); port + developer guide [`contrib/freebsd/README.md`](contrib/freebsd/README.md) (`gmake` in repo, `make` in ports tree) |
 | **OpenBSD** | `gghstats_*_openbsd_*.tar.gz` on [Releases](https://github.com/hrodrig/gghstats/releases); [`contrib/openbsd/README.md`](contrib/openbsd/README.md) and port [`contrib/openbsd/port/`](contrib/openbsd/port/) |
 | **macOS / Windows archives** | `.tar.gz` / `.zip` on [Releases](https://github.com/hrodrig/gghstats/releases) |
-| **OCI image** | `ghcr.io/hrodrig/gghstats:v0.7.9` or `:latest` (multi-arch) |
+| **OCI image** | `ghcr.io/hrodrig/gghstats:v0.7.10` or `:latest` (multi-arch) |
 
-Replace `v0.7.9` and `amd64` with your [release](https://github.com/hrodrig/gghstats/releases) version and architecture (e.g. `arm64`).
+Replace `v0.7.10` and `amd64` with your [release](https://github.com/hrodrig/gghstats/releases) version and architecture (e.g. `arm64`).
 
 After install, validate the UI locally:
 
