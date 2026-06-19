@@ -9,9 +9,9 @@ import (
 
 // Whitelist controls access by client IP/CIDR, optionally scoped to specific paths.
 type Whitelist struct {
-	cidrs     []*net.IPNet
-	paths     []string // empty = all paths
-	apiToken  string   // when set, valid x-api-token bypasses the whitelist
+	cidrs    []*net.IPNet
+	paths    []string // empty = all paths
+	apiToken string   // when set, valid x-api-token bypasses the whitelist
 }
 
 // WhitelistConfig holds parsed whitelist parameters.
