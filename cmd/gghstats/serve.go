@@ -115,34 +115,39 @@ func logServerStartup(cfg serveConfig) {
 		lvl = v
 	}
 	listenAddr := cfg.Host + ":" + cfg.Port
-	slog.Info(fmt.Sprintf("gghstats v%s starting on %s (db=%s, filter=%s, sync=%s, log=%s)",
+	metricsEnabled := os.Getenv("GGHSTATS_METRICS") != "false"
+	slog.Info(fmt.Sprintf("gghstats v%s starting on %s (db=%s, filter=%s, sync=%s, log=%s, metrics=%s)",
 		version.Version,
 		listenAddr,
 		cfg.DB,
 		cfg.Filter,
 		cfg.SyncInterval,
 		lvl,
+		map[bool]string{true: "enabled", false: "disabled"}[metricsEnabled],
 	))
 }
 
 func startCollector(cfg serveConfig) {
+	helpURL := "https://github.com/hrodrig/gghstats/"
 	if cfg.EnableCollector && cfg.EnableUpdateCheck {
 		slog.Info("Anonymous metric collection and update check are enabled. " +
-			"For details about collected data see https://github.com/hrodrig/gghstats/. " +
+			"For details about collected data see " + helpURL + " " +
 			"Thank you for supporting the gghstats project!")
 		go collector.CollectWithUpdate(collectFeatures(cfg))
 	} else if cfg.EnableCollector {
 		slog.Info("Anonymous metric collection is enabled. " +
-			"For details about collected data see https://github.com/hrodrig/gghstats/. " +
+			"For details about collected data see " + helpURL + " " +
 			"Thank you for supporting the gghstats project!")
 		go collector.Collect(collectFeatures(cfg))
 	} else if cfg.EnableUpdateCheck {
-		slog.Info("Update check is enabled.")
+		slog.Warn("Anonymous metric collection is disabled. " +
+			"If you enable it (GGHSTATS_ENABLE_COLLECTOR=true) you will help the project :) " +
+			"See " + helpURL)
 		go collector.CheckUpdate()
 	} else {
-		slog.Warn("Anonymous metrics collection is disabled. " +
-			"If you would like to enable it, set GGHSTATS_ENABLE_COLLECTOR=true " +
-			"to help the project with anonymous usage information.")
+		slog.Warn("Anonymous metric collection is disabled. " +
+			"If you enable it (GGHSTATS_ENABLE_COLLECTOR=true) you will help the project :) " +
+			"See " + helpURL)
 	}
 }
 
