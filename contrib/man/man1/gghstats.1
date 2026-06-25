@@ -1,5 +1,5 @@
 .\" Man page for gghstats(1)
-.TH GGHSTATS 1 "June 2026" "gghstats v0.7.8" "User Commands"
+.TH GGHSTATS 1 "June 2026" "gghstats v0.7.11" "User Commands"
 .SH NAME
 gghstats \- self-hosted GitHub repository traffic dashboard and CLI
 .SH SYNOPSIS
@@ -124,6 +124,42 @@ Comma-separated IPs/CIDRs allowed to access the server (empty = all allowed).
 .B GGHSTATS_WHITELIST_PATHS
 Comma-separated path prefixes where the whitelist applies (empty = all routes).
 Badge URLs under \fB/api/v1/badge/\fR remain public even when \fB/api/\fR is listed.
+.TP
+.B GGHSTATS_HEAD_HTML
+Arbitrary HTML injected just before \fB</head>\fR on every HTML page
+(e.g. analytics scripts, extra CSS). Default: empty.
+.TP
+.B GGHSTATS_REVERSE_PROXY_RULES
+JSON array of reverse-proxy rules. Each rule is an object with:
+.RS
+.TP
+.B local
+Local path prefix (e.g. \fB"/kiko"\fR).
+.TP
+.B url
+Remote backend base URL (e.g. \fB"https://events.example.com"\fR).
+.TP
+.B headers
+Optional map of extra headers to inject (e.g. \fB{"Host": "kiko-backend"}\fR).
+.RE
+Example:
+.RS
+.EX
+GGHSTATS_REVERSE_PROXY_RULES=[
+  {"local":"/kiko","url":"https://events.example.com","headers":{"Host":"kiko-backend"}}
+]
+.EE
+.RE
+.TP
+.B GGHSTATS_ENABLE_COLLECTOR
+Set to \fBtrue\fR to enable anonymous startup telemetry
+(sends non-identifying feature flags only). Default: \fBfalse\fR (disabled).
+.TP
+.B GGHSTATS_ENABLE_UPDATE_CHECK
+Set to \fBfalse\fR to disable the startup release check against the
+GitHub API (warns when a newer gghstats version exists).
+Default: \fBtrue\fR (enabled). Can be enabled independently of
+\fBGGHSTATS_ENABLE_COLLECTOR\fR.
 .SH EXAMPLES
 .TP
 Run the dashboard locally:

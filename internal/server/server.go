@@ -58,6 +58,10 @@ type Config struct {
 	RateLimiter *RateLimiter
 	// Whitelist, when non-nil, restricts access to whitelisted IPs on configured paths (see GGHSTATS_WHITELIST* env vars).
 	Whitelist *Whitelist
+	// HeadHTML is optional raw HTML injected just before </head> on every HTML page.
+	HeadHTML template.HTML
+	// ReverseProxyRules configures reverse-proxy mappings (see ReverseProxyRule).
+	ReverseProxyRules []ReverseProxyRule
 }
 
 func withCacheControl(directive string, next http.Handler) http.Handler {
@@ -78,6 +82,9 @@ func New(cfg Config) http.Handler {
 	mountStaticRoutes(mux, mustFaviconFS(), cfg.CustomCSSAbsPath)
 	mountAPIRoutes(mux, cfg)
 	mountHTMLRoutes(mux, cfg, tmpl)
+	if len(cfg.ReverseProxyRules) > 0 {
+		mountReverseProxyRoutes(mux, cfg.ReverseProxyRules)
+	}
 	return finalizeHandler(cfg, mux)
 }
 
@@ -182,11 +189,12 @@ func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 		mux.Handle("GET "+MetricsPath, metricsScrapeHandler(reg, cfg.DomainMetrics))
 		h = logMiddleware(wrapWithHTTPMetrics(reg, mux))
 	}
+	skip := PublicMiddlewareSkip(cfg.ReverseProxyRules)
 	if cfg.Whitelist != nil {
-		h = cfg.Whitelist.Middleware(h, PublicMiddlewareSkip())
+		h = cfg.Whitelist.Middleware(h, skip)
 	}
 	if cfg.RateLimiter != nil {
-		h = cfg.RateLimiter.Middleware(h, PublicMiddlewareSkip())
+		h = cfg.RateLimiter.Middleware(h, skip)
 	}
 	return h
 }
@@ -281,6 +289,8 @@ type layoutData struct {
 	CanonicalURL    template.URL
 	MetaDescription string
 	RobotsNoindex   bool
+	// HeadHTML is optional raw HTML injected just before </head> (e.g. analytics scripts).
+	HeadHTML template.HTML
 }
 
 // templateDict builds a map for {{call .Tfmt "key" (dict "a" 1)}} in templates.
@@ -753,6 +763,7 @@ func renderLayoutStatus(w http.ResponseWriter, r *http.Request, tmpl *template.T
 	}
 	data = fillLayoutDefaults(data)
 	data = applyLayoutSEO(r, cfg, data)
+	data.HeadHTML = cfg.HeadHTML
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache, must-revalidate")
 	w.WriteHeader(status)

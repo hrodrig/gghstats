@@ -93,3 +93,34 @@ func TestLoadServeConfigInvalidSyncIntervalIgnored(t *testing.T) {
 		t.Errorf("want default 1h when interval invalid, got %v", cfg.SyncInterval)
 	}
 }
+
+func TestLoadServeConfigCollectorAndUpdateDefaults(t *testing.T) {
+	t.Setenv("GGHSTATS_ENABLE_COLLECTOR", "")
+	t.Setenv("GGHSTATS_ENABLE_UPDATE_CHECK", "")
+
+	cfg := loadServeConfig()
+	if cfg.EnableCollector {
+		t.Errorf("EnableCollector default want false (opt-in)")
+	}
+	if !cfg.EnableUpdateCheck {
+		t.Errorf("EnableUpdateCheck default want true (opt-out)")
+	}
+}
+
+func TestLoadServeConfigCollectorOptIn(t *testing.T) {
+	t.Setenv("GGHSTATS_ENABLE_COLLECTOR", "true")
+
+	cfg := loadServeConfig()
+	if !cfg.EnableCollector {
+		t.Errorf("EnableCollector want true after GGHSTATS_ENABLE_COLLECTOR=true")
+	}
+}
+
+func TestLoadServeConfigUpdateCheckOptOut(t *testing.T) {
+	t.Setenv("GGHSTATS_ENABLE_UPDATE_CHECK", "false")
+
+	cfg := loadServeConfig()
+	if cfg.EnableUpdateCheck {
+		t.Errorf("EnableUpdateCheck want false after GGHSTATS_ENABLE_UPDATE_CHECK=false")
+	}
+}

@@ -6,21 +6,21 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hrodrig/gghstats/internal/server"
 	"github.com/hrodrig/gghstats/internal/version"
 )
 
-func TestLinePrefixWriter(t *testing.T) {
+func TestFormatLogHandler(t *testing.T) {
 	t.Parallel()
 	var buf bytes.Buffer
-	lw := &linePrefixWriter{w: &buf}
-	log := slog.New(slog.NewTextHandler(lw, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	log := slog.New(server.NewFormatLogHandler(&buf, slog.LevelInfo))
 	log.Info("hello", "k", 1)
 	out := buf.String()
-	if !strings.HasPrefix(out, logLinePrefix) {
-		t.Fatalf("want line prefixed with %q, got %q", logLinePrefix, out)
+	if !strings.HasPrefix(out, "20") {
+		t.Fatalf("expected timestamp prefix, got %q", out)
 	}
-	if !strings.Contains(out, "hello") {
-		t.Fatalf("expected message in output: %q", out)
+	if !strings.Contains(out, " - gghstats - INFO - hello k=1") {
+		t.Fatalf("unexpected format: %q", out)
 	}
 }
 

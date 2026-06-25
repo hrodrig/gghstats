@@ -7,11 +7,29 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [0.7.10] - 2026-06-19
+## [0.7.11] - 2026-06-25
+
+### Added
+
+- **Head HTML injection (`GGHSTATS_HEAD_HTML`):** arbitrary HTML injected just before `</head>` on every dashboard page. Enables first-party analytics, extra CSS, meta tags, etc., without modifying templates.
+- **Reverse proxy rules (`GGHSTATS_REVERSE_PROXY_RULES`):** JSON array of `{local, url, headers}` mappings that mount reverse proxies on the same HTTP server. Each rule serves a local path prefix from a remote backend, bypassing CSP and mixed-content issues.
+- **Anonymous usage collector** (`internal/collector/`): opt-in telemetry package (disabled by default). Collects anonymous feature-flag hashes on startup (no credentials, paths, or repo names). Set `GGHSTATS_ENABLE_COLLECTOR=true` to enable.
+- **Update check (`GGHSTATS_ENABLE_UPDATE_CHECK`):** checks GitHub API for newer gghstats releases on startup; logs a warning when a newer version is found. Enabled by default; set `false` to disable.
+
+### Changed
+
+- **`kikolog.go` → `logformat.go`:** renamed internal log handler from `kikoHandler`/`NewKikoLogHandler` to `formatHandler`/`NewFormatLogHandler`; app name moved to `version.AppName`.
+- **`PublicMiddlewareSkip()`:** now accepts `[]ReverseProxyRule` and derives proxy prefix exemptions dynamically instead of hardcoding `/kiko/`. Without this, any `local` path other than `/kiko/` would be blocked by rate-limit or whitelist middleware.
+- **Log format:** cleaned up to consistently use ` - ` separators (e.g. `gghstats - INFO - message`) without padding artifacts.
 
 ### Fixed
 
-- **Manual sync + IP whitelist:** valid `x-api-token` bypasses `GGHSTATS_WHITELIST` on protected paths so dashboard **Sync all** works remotely; clearer sync error messages (403/429) in the UI.
+- **Reverse-proxy middleware exemption:** `/kiko/` was hardcoded in `PublicMiddlewareSkip`; any rule with a different `local` path got rate-limited or whitelist-blocked. Now all configured `ReverseProxyRule.Local` paths are dynamically added to the skip list.
+- **ModifyResponse CSP stripping:** verified for `.css`, `.gif`, and `.js` content types; large body streaming and upstream timeout tested.
+
+### Security
+
+- **Reverse proxy CSP sanitisation:** backend `Content-Security-Policy` headers are stripped from proxied responses, preventing the upstream analytics backend from controlling the dashboard's CSP.
 
 ## [0.7.9] - 2026-06-16
 
@@ -333,7 +351,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.7.10...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.7.11...HEAD
+[0.7.11]: https://github.com/hrodrig/gghstats/compare/v0.7.10...v0.7.11
 [0.7.10]: https://github.com/hrodrig/gghstats/compare/v0.7.9...v0.7.10
 [0.7.9]: https://github.com/hrodrig/gghstats/compare/v0.7.8...v0.7.9
 [0.7.8]: https://github.com/hrodrig/gghstats/compare/v0.7.7...v0.7.8
