@@ -381,6 +381,8 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_WHITELIST_PATHS` | (none) | Comma-separated path prefixes where whitelist applies (empty = all routes) |
 | `GGHSTATS_HEAD_HTML` | (none) | Raw HTML injected just before `</head>` on every page (analytics scripts, extra CSS, meta tags). See [`.env.example`](.env.example) |
 | `GGHSTATS_REVERSE_PROXY_RULES` | (none) | JSON array of reverse-proxy rules: each rule maps a local path prefix to a remote backend, with optional header injection. See [`.env.example`](.env.example) for format |
+| `GGHSTATS_ENABLE_COLLECTOR` | `false` | Set to `true` to enable anonymous startup telemetry. Sends only non-identifying boolean feature flags (no credentials, paths, or repo names). See [`.env.example`](.env.example) |
+| `GGHSTATS_ENABLE_UPDATE_CHECK` | `true` | Set to `false` to disable the startup release check against the GitHub API (logs a warning when a newer gghstats version exists) |
 
 ### Rate limiting
 
