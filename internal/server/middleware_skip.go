@@ -13,11 +13,26 @@ type MiddlewareSkip struct {
 }
 
 // PublicMiddlewareSkip returns paths that must stay reachable without rate limits
-// or whitelist checks (metrics scrape, probes, README badge embeds).
-func PublicMiddlewareSkip() MiddlewareSkip {
+// or whitelist checks (metrics scrape, probes, README badge embeds, static assets,
+// and reverse-proxy routes.
+//
+// proxyRules are used to derive dynamic prefix exemptions — every active rule's
+// Local path is added as a prefix so custom proxy paths are not blocked by
+// rate-limit or whitelist middleware.
+func PublicMiddlewareSkip(proxyRules []ReverseProxyRule) MiddlewareSkip {
+	prefixes := []string{BadgePathPrefix, "/static/"}
+	for _, r := range proxyRules {
+		if r.Local != "" {
+			p := r.Local
+			if !strings.HasSuffix(p, "/") {
+				p += "/"
+			}
+			prefixes = append(prefixes, p)
+		}
+	}
 	return MiddlewareSkip{
 		Exact:    []string{MetricsPath, HealthzPath},
-		Prefixes: []string{BadgePathPrefix},
+		Prefixes: prefixes,
 	}
 }
 

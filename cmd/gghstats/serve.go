@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,29 +15,35 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hrodrig/gghstats/internal/collector"
 	"github.com/hrodrig/gghstats/internal/github"
 	"github.com/hrodrig/gghstats/internal/i18n"
 	"github.com/hrodrig/gghstats/internal/metrics"
 	"github.com/hrodrig/gghstats/internal/server"
 	"github.com/hrodrig/gghstats/internal/store"
 	"github.com/hrodrig/gghstats/internal/sync"
+	"github.com/hrodrig/gghstats/internal/version"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 type serveConfig struct {
-	GithubToken      string
-	DB               string
-	Host             string
-	Port             string
-	Filter           string
-	IncludePrivate   bool
-	APIToken         string
-	SyncInterval     time.Duration
-	SyncOnStartup    bool
-	OpenBrowser      bool
-	BadgePublic      bool
-	BadgeCacheMaxAge int
-	PublicURL        string
+	GithubToken       string
+	DB                string
+	Host              string
+	Port              string
+	Filter            string
+	IncludePrivate    bool
+	APIToken          string
+	SyncInterval      time.Duration
+	SyncOnStartup     bool
+	OpenBrowser       bool
+	BadgePublic       bool
+	BadgeCacheMaxAge  int
+	PublicURL         string
+	HeadHTML          string
+	ReverseProxyRules string
+	EnableCollector   bool
+	EnableUpdateCheck bool
 }
 
 func loadServeConfig() serveConfig {
@@ -68,14 +75,17 @@ func loadServeConfig() serveConfig {
 		}
 	}
 
+	cfg.HeadHTML = os.Getenv("GGHSTATS_HEAD_HTML")
+	cfg.ReverseProxyRules = os.Getenv("GGHSTATS_REVERSE_PROXY_RULES")
+	cfg.EnableCollector = os.Getenv("GGHSTATS_ENABLE_COLLECTOR") == "true"
+	cfg.EnableUpdateCheck = os.Getenv("GGHSTATS_ENABLE_UPDATE_CHECK") != "false"
+
 	return cfg
 }
 
 // envOrDefault is defined in flags.go as envOr
 
-func runServe(args []string) error {
-	cfg := loadServeConfig()
-
+func parseServeFlags(cfg *serveConfig, args []string) error {
 	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
 	fs.Usage = func() {
@@ -91,20 +101,80 @@ func runServe(args []string) error {
 		}
 		return err
 	}
-
 	if cfg.GithubToken == "" {
 		return fmt.Errorf("GGHSTATS_GITHUB_TOKEN is required")
 	}
+	return nil
+}
 
+func logServerStartup(cfg serveConfig) {
 	writeServeStartupBanner(os.Stderr, cfg)
 	initServeLogging()
+	lvl := "info"
+	if v := os.Getenv("GGHSTATS_LOG_LEVEL"); v != "" {
+		lvl = v
+	}
+	listenAddr := cfg.Host + ":" + cfg.Port
+	metricsEnabled := os.Getenv("GGHSTATS_METRICS") != "false"
+	slog.Info(fmt.Sprintf("gghstats v%s starting on %s (db=%s, filter=%s, sync=%s, log=%s, metrics=%s)",
+		version.Version,
+		listenAddr,
+		cfg.DB,
+		cfg.Filter,
+		cfg.SyncInterval,
+		lvl,
+		map[bool]string{true: "enabled", false: "disabled"}[metricsEnabled],
+	))
+}
 
-	slog.Info("gghstats starting",
-		"db", cfg.DB,
-		"filter", cfg.Filter,
-		"sync_interval", cfg.SyncInterval,
-		"sync_on_startup", cfg.SyncOnStartup,
-	)
+func startCollector(cfg serveConfig) {
+	helpURL := "https://github.com/hrodrig/gghstats/"
+	if cfg.EnableCollector && cfg.EnableUpdateCheck {
+		slog.Info("Anonymous metric collection and update check are enabled. " +
+			"For details about collected data see " + helpURL + " " +
+			"Thank you for supporting the gghstats project!")
+		go collector.CollectWithUpdate(collectFeatures(cfg))
+	} else if cfg.EnableCollector {
+		slog.Info("Anonymous metric collection is enabled. " +
+			"For details about collected data see " + helpURL + " " +
+			"Thank you for supporting the gghstats project!")
+		go collector.Collect(collectFeatures(cfg))
+	} else if cfg.EnableUpdateCheck {
+		slog.Info("Update check is enabled.")
+		slog.Warn("Anonymous metric collection is disabled. " +
+			"If you enable it (GGHSTATS_ENABLE_COLLECTOR=true) you will help the project :) " +
+			"See " + helpURL)
+		go collector.CheckUpdate()
+	} else {
+		slog.Warn("Anonymous metric collection is disabled. " +
+			"If you enable it (GGHSTATS_ENABLE_COLLECTOR=true) you will help the project :) " +
+			"See " + helpURL)
+	}
+}
+
+func collectFeatures(cfg serveConfig) collector.ServeFeatures {
+	return collector.ServeFeatures{
+		BadgePublic:      cfg.BadgePublic,
+		MetricsEnabled:   os.Getenv("GGHSTATS_METRICS") != "false",
+		MetricsPerRepo:   os.Getenv("GGHSTATS_METRICS_PER_REPO") == "true",
+		SyncOnStartup:    cfg.SyncOnStartup,
+		HasAPIToken:      cfg.APIToken != "",
+		HasPublicURL:     cfg.PublicURL != "",
+		HasCustomCSS:     os.Getenv("GGHSTATS_CUSTOM_CSS") != "",
+		RateLimitEnabled: cfg.APIToken != "" || os.Getenv("GGHSTATS_RATE_LIMIT_ENABLED") == "true",
+		Port:             cfg.Port,
+		Host:             cfg.Host,
+	}
+}
+
+func runServe(args []string) error {
+	cfg := loadServeConfig()
+
+	if err := parseServeFlags(&cfg, args); err != nil {
+		return err
+	}
+
+	logServerStartup(cfg)
 
 	db, err := store.Open(cfg.DB)
 	if err != nil {
@@ -153,22 +223,26 @@ func runServe(args []string) error {
 
 	// Start HTTP server
 	handler := server.New(server.Config{
-		Store:            db,
-		APIToken:         cfg.APIToken,
-		SyncCoordinator:  coord,
-		BadgePublic:      cfg.BadgePublic,
-		BadgeCacheMaxAge: cfg.BadgeCacheMaxAge,
-		PublicURL:        cfg.PublicURL,
-		DisableMetrics:   os.Getenv("GGHSTATS_METRICS") == "false",
-		MetricsRegistry:  metricsReg,
-		DomainMetrics:    domainMetrics,
-		CustomCSSAbsPath: cssAbs,
-		CustomCSSQuery:   cssQuery,
-		DefaultLocale:    i18n.EnvDefaultLocale(),
-		EnabledLocales:   i18n.EnvEnabledLocales(),
-		RateLimiter:      rateLimiter,
-		Whitelist:        whitelist,
+		Store:             db,
+		APIToken:          cfg.APIToken,
+		SyncCoordinator:   coord,
+		BadgePublic:       cfg.BadgePublic,
+		BadgeCacheMaxAge:  cfg.BadgeCacheMaxAge,
+		PublicURL:         cfg.PublicURL,
+		DisableMetrics:    os.Getenv("GGHSTATS_METRICS") == "false",
+		MetricsRegistry:   metricsReg,
+		DomainMetrics:     domainMetrics,
+		CustomCSSAbsPath:  cssAbs,
+		CustomCSSQuery:    cssQuery,
+		DefaultLocale:     i18n.EnvDefaultLocale(),
+		EnabledLocales:    i18n.EnvEnabledLocales(),
+		RateLimiter:       rateLimiter,
+		Whitelist:         whitelist,
+		HeadHTML:          template.HTML(cfg.HeadHTML),
+		ReverseProxyRules: server.ParseReverseProxyRules(cfg.ReverseProxyRules),
 	})
+
+	startCollector(cfg)
 
 	addr := cfg.Host + ":" + cfg.Port
 	srv := &http.Server{
@@ -176,14 +250,17 @@ func runServe(args []string) error {
 		Handler: handler,
 	}
 
-	// Graceful shutdown
+	return serveHTTP(srv, cfg, cancel)
+}
+
+func serveHTTP(srv *http.Server, cfg serveConfig, cancel context.CancelFunc) error {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		logURL := serveDashboardURL(cfg.Host, cfg.Port)
 		if cfg.Host == "0.0.0.0" || cfg.Host == "::" || cfg.Host == "[::]" {
-			slog.Info("listening", "url", logURL, "bind", addr)
+			slog.Info("listening", "url", logURL, "bind", srv.Addr)
 		} else {
 			slog.Info("listening", "url", logURL)
 		}

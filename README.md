@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.7.10-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.7.11-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -379,6 +379,8 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_RATE_LIMIT_BURST` | `20` | Maximum burst of requests allowed before smoothing kicks in |
 | `GGHSTATS_WHITELIST` | (none) | Comma-separated IPs/CIDRs allowed to access the server (empty = all allowed) |
 | `GGHSTATS_WHITELIST_PATHS` | (none) | Comma-separated path prefixes where whitelist applies (empty = all routes) |
+| `GGHSTATS_HEAD_HTML` | (none) | Raw HTML injected just before `</head>` on every page (analytics scripts, extra CSS, meta tags). See [`.env.example`](.env.example) |
+| `GGHSTATS_REVERSE_PROXY_RULES` | (none) | JSON array of reverse-proxy rules: each rule maps a local path prefix to a remote backend, with optional header injection. See [`.env.example`](.env.example) for format |
 
 ### Rate limiting
 
@@ -386,7 +388,7 @@ gghstats applies **per-IP token-bucket rate limiting** to all HTTP routes except
 
 **Middleware order (outermost first):** IP whitelist → rate limiting → request logging → Prometheus HTTP metrics → route handlers.
 
-**Always exempt** (no whitelist check, no rate limit): `/metrics`, `/api/v1/healthz`, and **`/api/v1/badge/*`** (README embeds; GitHub and other proxies must fetch SVG without auth or throttling).
+**Always exempt** (no whitelist check, no rate limit): `/metrics`, `/api/v1/healthz`, and **`/api/v1/badge/*`** (README embeds; GitHub and other proxies must fetch SVG without auth or throttling). **Reverse-proxy paths** configured via `GGHSTATS_REVERSE_PROXY_RULES` are also exempt (each rule's `local` prefix is automatically added to the skip list).
 
 **Defaults:** 120 requests per minute, burst of 20. For most dashboard browsing this is generous; adjust for high-traffic or protected deployments.
 

@@ -32,21 +32,23 @@ Server (gghstats serve or gghstats run):
   --open                   Open the default browser when the server is ready
 
 Server env vars (serve):
-  GGHSTATS_GITHUB_TOKEN    GitHub personal access token (required)
-  GGHSTATS_DB              SQLite path (default: ./data/gghstats.db)
-  GGHSTATS_HOST            Bind address (default: 127.0.0.1; use 0.0.0.0 in Docker)
-  GGHSTATS_PORT            Listen port (default: 8080)
-  GGHSTATS_FILTER          Repo filter (default: * = all)
-  GGHSTATS_SYNC_INTERVAL   Sync frequency (default: 1h)
-  GGHSTATS_SYNC_ON_STARTUP Run full sync before serving (default: true; false = use existing DB, sync later)
-  GGHSTATS_API_TOKEN       Protect /api/repos (and badges when GGHSTATS_BADGE_PUBLIC=false)
-  GGHSTATS_BADGE_PUBLIC    Badge SVG public (default true; set false to require x-api-token)
-  GGHSTATS_PUBLIC_URL      Optional public base URL (badges, /robots.txt, /sitemap.xml)
-  GGHSTATS_OPEN_BROWSER    Open default browser on startup (default false; same as --open)
-  GGHSTATS_LOG_LEVEL       Log level: debug, info (default), warn, error
-  GGHSTATS_METRICS         Set to false to disable GET /metrics (Prometheus); default enabled
-  GGHSTATS_METRICS_PER_REPO Set to true to expose per-repo gauges (higher cardinality)
-  GGHSTATS_CUSTOM_CSS      Optional .css path: overrides / extends neo-brutalist app.css (simpler UI, branding)
+  GGHSTATS_GITHUB_TOKEN        GitHub personal access token (required)
+  GGHSTATS_DB                  SQLite path (default: ./data/gghstats.db)
+  GGHSTATS_HOST                Bind address (default: 127.0.0.1; use 0.0.0.0 in Docker)
+  GGHSTATS_PORT                Listen port (default: 8080)
+  GGHSTATS_FILTER              Repo filter (default: * = all)
+  GGHSTATS_SYNC_INTERVAL       Sync frequency (default: 1h)
+  GGHSTATS_SYNC_ON_STARTUP     Run full sync before serving (default: true; false = use existing DB, sync later)
+  GGHSTATS_API_TOKEN           Protect /api/repos (and badges when GGHSTATS_BADGE_PUBLIC=false)
+  GGHSTATS_BADGE_PUBLIC        Badge SVG public (default true; set false to require x-api-token)
+  GGHSTATS_PUBLIC_URL          Optional public base URL (badges, /robots.txt, /sitemap.xml)
+  GGHSTATS_OPEN_BROWSER        Open default browser on startup (default false; same as --open)
+  GGHSTATS_LOG_LEVEL           Log level: debug, info (default), warn, error
+  GGHSTATS_METRICS             Set to false to disable GET /metrics (Prometheus); default enabled
+  GGHSTATS_METRICS_PER_REPO    Set to true to expose per-repo gauges (higher cardinality)
+  GGHSTATS_CUSTOM_CSS          Optional .css path: overrides / extends neo-brutalist app.css (simpler UI, branding)
+  GGHSTATS_HEAD_HTML           Raw HTML injected just before </head> on every page (analytics, extra CSS)
+  GGHSTATS_REVERSE_PROXY_RULES JSON array of reverse-proxy rules. See contrib/gghstats.env.example for format.
 
 Run 'gghstats <command> --help' for command-specific flags.`
 
