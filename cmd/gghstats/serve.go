@@ -165,7 +165,7 @@ func collectFeatures(cfg serveConfig) collector.ServeFeatures {
 		HasAPIToken:      cfg.APIToken != "",
 		HasPublicURL:     cfg.PublicURL != "",
 		HasCustomCSS:     os.Getenv("GGHSTATS_CUSTOM_CSS") != "",
-		RateLimitEnabled: cfg.APIToken != "" || os.Getenv("GGHSTATS_RATE_LIMIT_ENABLED") == "true",
+		RateLimitEnabled: server.ParseRateLimitEnv().Enabled,
 		Port:             cfg.Port,
 		Host:             cfg.Host,
 	}
