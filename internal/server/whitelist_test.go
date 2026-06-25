@@ -188,7 +188,7 @@ func TestWhitelistMiddlewareExemptPaths(t *testing.T) {
 		http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			rw.WriteHeader(http.StatusOK)
 		}),
-		PublicMiddlewareSkip(),
+		PublicMiddlewareSkip(nil),
 	)
 
 	for _, path := range []string{"/metrics", "/api/v1/healthz", "/api/v1/badge/o/r"} {
@@ -218,7 +218,7 @@ func TestWhitelistBadgeExemptWhenAPIPathsProtected(t *testing.T) {
 	}, "")
 	handler := w.Middleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusOK)
-	}), PublicMiddlewareSkip())
+	}), PublicMiddlewareSkip(nil))
 
 	req := httptest.NewRequest("GET", "/api/v1/badge/o/r?metric=clones", nil)
 	req.RemoteAddr = "192.168.1.1:12345"

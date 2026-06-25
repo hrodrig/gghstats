@@ -9,10 +9,11 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/hrodrig/gghstats/internal/server"
 	"github.com/hrodrig/gghstats/internal/version"
 )
 
-// logLinePrefix is written at the start of every slog line (structured logs, stderr).
+// logLinePrefix is written at the start of every log line (structured logs, stderr).
 const logLinePrefix = "gghstats "
 
 // linePrefixWriter buffers stderr output and prefixes each full line with logLinePrefix.
@@ -76,9 +77,6 @@ func serveLogLevel() slog.Level {
 }
 
 func initServeLogging() {
-	lw := &linePrefixWriter{w: os.Stderr}
-	h := slog.NewTextHandler(lw, &slog.HandlerOptions{
-		Level: serveLogLevel(),
-	})
+	h := server.NewFormatLogHandler(os.Stderr, serveLogLevel())
 	slog.SetDefault(slog.New(h))
 }

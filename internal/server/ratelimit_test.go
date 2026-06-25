@@ -268,7 +268,7 @@ func TestRateLimiterSkipsBadgePrefix(t *testing.T) {
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		}),
-		PublicMiddlewareSkip(),
+		PublicMiddlewareSkip(nil),
 	)
 
 	req := httptest.NewRequest("GET", "/", nil)
