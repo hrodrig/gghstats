@@ -145,13 +145,13 @@ func startCollector(cfg serveConfig) {
 		go collector.Collect(collectFeatures(cfg))
 	} else if cfg.EnableUpdateCheck {
 		slog.Info("Update check is enabled.")
-		slog.Warn("Anonymous metric collection is disabled. " +
-			"If you enable it (GGHSTATS_ENABLE_COLLECTOR=true) you will help the project :) " +
+		slog.Info("Anonymous metric collection is disabled. " +
+			"Set GGHSTATS_ENABLE_COLLECTOR=true to help improve gghstats. " +
 			"See " + helpURL)
 		go collector.CheckUpdate()
 	} else {
-		slog.Warn("Anonymous metric collection is disabled. " +
-			"If you enable it (GGHSTATS_ENABLE_COLLECTOR=true) you will help the project :) " +
+		slog.Info("Anonymous metric collection is disabled. " +
+			"Set GGHSTATS_ENABLE_COLLECTOR=true to help improve gghstats. " +
 			"See " + helpURL)
 	}
 }
