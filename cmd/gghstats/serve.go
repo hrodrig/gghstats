@@ -83,7 +83,11 @@ func loadServeConfig() serveConfig {
 	return cfg
 }
 
-// envOrDefault is defined in flags.go as envOr
+// errServeHelp is returned by parseServeFlags when -h/--help is requested.
+// runServe treats it as a successful no-op so the help banner prints once
+// and the process exits without starting the HTTP server, scheduler, or
+// collector (otherwise the test/CLI would block in serveHTTP's signal wait).
+var errServeHelp = errors.New("serve help requested")
 
 func parseServeFlags(cfg *serveConfig, args []string) error {
 	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
@@ -97,7 +101,7 @@ func parseServeFlags(cfg *serveConfig, args []string) error {
 	fs.BoolVar(&cfg.OpenBrowser, "open", cfg.OpenBrowser, "Open the default browser when the server is ready")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
-			return nil
+			return errServeHelp
 		}
 		return err
 	}
@@ -171,6 +175,9 @@ func runServe(args []string) error {
 	cfg := loadServeConfig()
 
 	if err := parseServeFlags(&cfg, args); err != nil {
+		if errors.Is(err, errServeHelp) {
+			return nil
+		}
 		return err
 	}
 
