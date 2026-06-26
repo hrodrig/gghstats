@@ -122,3 +122,40 @@ func TestPerRepoDisabledNoOp(t *testing.T) {
 		t.Fatal("per-repo gauges should not be registered")
 	}
 }
+
+func TestDomainObserveSyncError(t *testing.T) {
+	reg := prometheus.NewRegistry()
+	d := RegisterDomain(reg, DomainConfig{})
+
+	// nil-safe
+	var nilD *Domain
+	nilD.ObserveSyncError("ignored")
+	d.ObserveSyncError("")
+	d.ObserveSyncError("views")
+	d.ObserveSyncError("views")
+	d.ObserveSyncError("clones")
+
+	mfs, err := reg.Gather()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]float64{"views": 2, "clones": 1}
+	got := map[string]float64{}
+	for _, mf := range mfs {
+		if mf.GetName() != "gghstats_sync_errors_total" {
+			continue
+		}
+		for _, m := range mf.GetMetric() {
+			for _, lp := range m.GetLabel() {
+				if lp.GetName() == "kind" {
+					got[lp.GetValue()] = m.GetCounter().GetValue()
+				}
+			}
+		}
+	}
+	for k, v := range want {
+		if got[k] != v {
+			t.Fatalf("kind=%s got %v want %v", k, got[k], v)
+		}
+	}
+}

@@ -36,6 +36,7 @@ type serveConfig struct {
 	APIToken          string
 	SyncInterval      time.Duration
 	SyncOnStartup     bool
+	SyncWorkers       int
 	OpenBrowser       bool
 	BadgePublic       bool
 	BadgeCacheMaxAge  int
@@ -57,6 +58,7 @@ func loadServeConfig() serveConfig {
 		APIToken:         os.Getenv("GGHSTATS_API_TOKEN"),
 		SyncInterval:     1 * time.Hour,
 		SyncOnStartup:    envBool("GGHSTATS_SYNC_ON_STARTUP", true),
+		SyncWorkers:      4,
 		OpenBrowser:      envBool("GGHSTATS_OPEN_BROWSER", false),
 		BadgePublic:      os.Getenv("GGHSTATS_BADGE_PUBLIC") != "false",
 		BadgeCacheMaxAge: 300,
@@ -72,6 +74,12 @@ func loadServeConfig() serveConfig {
 	if v := os.Getenv("GGHSTATS_SYNC_INTERVAL"); v != "" {
 		if d, err := time.ParseDuration(v); err == nil {
 			cfg.SyncInterval = d
+		}
+	}
+
+	if v := os.Getenv("GGHSTATS_SYNC_WORKERS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			cfg.SyncWorkers = n
 		}
 	}
 
@@ -98,6 +106,7 @@ func parseServeFlags(cfg *serveConfig, args []string) error {
 		fmt.Fprintf(fs.Output(), "\nEnvironment variables apply when flags are omitted (see: gghstats --help).\n")
 	}
 	fs.StringVar(&cfg.Port, "port", cfg.Port, "HTTP listen port (overrides `GGHSTATS_PORT`; default 8080)")
+	fs.IntVar(&cfg.SyncWorkers, "sync-workers", cfg.SyncWorkers, "Concurrent repos per sync cycle (overrides `GGHSTATS_SYNC_WORKERS`; default 4)")
 	fs.BoolVar(&cfg.OpenBrowser, "open", cfg.OpenBrowser, "Open the default browser when the server is ready")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -215,6 +224,7 @@ func runServe(args []string) error {
 		IncludePrivate: cfg.IncludePrivate,
 		Filter:         cfg.Filter,
 		SyncStars:      true,
+		Workers:        cfg.SyncWorkers,
 	}
 	coord := sync.NewCoordinator(gh, db, syncOpts)
 	if domainMetrics != nil {

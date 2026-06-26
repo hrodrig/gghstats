@@ -10,6 +10,8 @@ gghstats \- self-hosted GitHub repository traffic dashboard and CLI
 .B gghstats serve
 .RB [ \-\-port
 .IR PORT ]
+.RB [ \-\-sync-workers
+.IR N ]
 .RB [ \-\-open ]
 .PP
 .B gghstats run
@@ -65,6 +67,10 @@ SQLite database path (default: \fB./data/gghstats.db\fR).
 .BR \-\-port ", " PORT
 Listen port (overrides \fBGGHSTATS_PORT\fR; default \fB8080\fR).
 .TP
+.BR \-\-sync-workers ", " N
+Concurrent repositories synced per cycle (overrides \fBGGHSTATS_SYNC_WORKERS\fR;
+default \fB4\fR). Lower if you hit GitHub secondary rate limits on large accounts.
+.TP
 .BR \-\-open
 Open the default browser when the server is ready (or \fBGGHSTATS_OPEN_BROWSER=1\fR).
 .SH ENVIRONMENT
@@ -89,6 +95,14 @@ Sync frequency (default: \fB1h\fR).
 .TP
 .B GGHSTATS_SYNC_ON_STARTUP
 Run sync before serving (default: \fBtrue\fR).
+.TP
+.B GGHSTATS_SYNC_WORKERS
+Concurrent repositories synced per cycle (default: \fB4\fR).
+Sync uses exponential-backoff retries with full jitter on transient
+errors (HTTP 429, 403 rate-limited, 5xx) and honors
+\fBX-RateLimit-Reset\fR when the GitHub API advertises a near-future reset.
+Failures are classified per step (views, clones, referrers, paths,
+stars, repo metadata) and exposed as \fBgghstats_sync_errors_total{kind}\fR.
 .TP
 .B GGHSTATS_OPEN_BROWSER
 Open the default browser on startup (default: \fBfalse\fR; same as \fB\-\-open\fR).

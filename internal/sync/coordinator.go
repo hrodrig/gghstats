@@ -102,7 +102,7 @@ func (c *Coordinator) runBlocking(opt Options, scope, repo string) error {
 	c.markRunningLocked(scope, repo)
 	c.mu.Unlock()
 
-	err := Run(c.gh, c.db, opt)
+	err := Run(c.gh, c.db, opt, c.metrics)
 	c.finishRun(err)
 	return err
 }
@@ -117,7 +117,7 @@ func (c *Coordinator) startBackground(opt Options, scope, repo string) error {
 	c.mu.Unlock()
 
 	go func() {
-		err := Run(c.gh, c.db, opt)
+		err := Run(c.gh, c.db, opt, c.metrics)
 		c.finishRun(err)
 	}()
 	return nil
