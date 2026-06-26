@@ -58,6 +58,21 @@ func TestGitHubRateLimitRemaining(t *testing.T) {
 	}
 }
 
+func TestGitHubRateLimitReset(t *testing.T) {
+	if _, ok := GitHubRateLimitReset(nil); ok {
+		t.Fatal("nil response should not report reset")
+	}
+	resp := &http.Response{Header: http.Header{"X-RateLimit-Reset": []string{"not-a-number"}}}
+	if _, ok := GitHubRateLimitReset(resp); ok {
+		t.Fatal("invalid header should not report reset")
+	}
+	resp = &http.Response{Header: make(http.Header)}
+	resp.Header.Set("X-RateLimit-Reset", "1700000000")
+	if n, ok := GitHubRateLimitReset(resp); !ok || n != 1700000000 {
+		t.Fatalf("reset = %d, ok = %v, want 1700000000 true", n, ok)
+	}
+}
+
 func TestIsTimeout(t *testing.T) {
 	if IsTimeout(errors.New("plain")) {
 		t.Fatal("plain error is not a timeout")

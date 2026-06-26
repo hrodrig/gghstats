@@ -29,6 +29,11 @@ func NewClient(token string) *Client {
 		retryConfig: DefaultRetry,
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
+			Transport: &http.Transport{
+				MaxIdleConns:        16,
+				MaxIdleConnsPerHost: 4,
+				IdleConnTimeout:     90 * time.Second,
+			},
 		},
 	}
 }

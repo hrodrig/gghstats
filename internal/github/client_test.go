@@ -284,3 +284,17 @@ func TestNextPagePath(t *testing.T) {
 		}
 	}
 }
+
+func TestNewClientTransportReuse(t *testing.T) {
+	c := NewClient("tok")
+	tr, ok := c.HTTPClient.Transport.(*http.Transport)
+	if !ok {
+		t.Fatalf("expected *http.Transport, got %T", c.HTTPClient.Transport)
+	}
+	if tr.MaxIdleConnsPerHost < 4 {
+		t.Fatalf("MaxIdleConnsPerHost = %d, want >= 4", tr.MaxIdleConnsPerHost)
+	}
+	if tr.MaxIdleConns < tr.MaxIdleConnsPerHost {
+		t.Fatalf("MaxIdleConns (%d) should be >= MaxIdleConnsPerHost (%d)", tr.MaxIdleConns, tr.MaxIdleConnsPerHost)
+	}
+}
