@@ -7,6 +7,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-06-26
+
 ### Added
 
 - **`data-gghstats-role` semantic HTML attributes:** stable DOM anchors (`sidebar`, `header`, `content`, `footer`, `kpi-card`, `kpi-value`, `stat-card`, `stat-value`, `repo-title`, `fork-label`, `chart-card`, `error-panel`, `error-code`, `nav`) added to dashboard templates. CustomCSS (`GGHSTATS_CUSTOM_CSS`) can target these without depending on Bootstrap utility classes that change between major versions.
