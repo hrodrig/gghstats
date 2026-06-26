@@ -1,6 +1,7 @@
 package github
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,21 +14,29 @@ const defaultBaseURL = "https://api.github.com"
 
 // Client talks to the GitHub REST API for traffic endpoints.
 type Client struct {
-	BaseURL    string
-	Token      string
-	HTTPClient *http.Client
-	metrics    MetricsRecorder
+	BaseURL     string
+	Token       string
+	HTTPClient  *http.Client
+	retryConfig RetryConfig
+	metrics     MetricsRecorder
 }
 
 // NewClient returns a Client configured with the given token.
 func NewClient(token string) *Client {
 	return &Client{
-		BaseURL: defaultBaseURL,
-		Token:   token,
+		BaseURL:     defaultBaseURL,
+		Token:       token,
+		retryConfig: DefaultRetry,
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
 	}
+}
+
+// SetRetry overrides the retry policy for this client. Pass RetryConfig{}
+// to disable retries (MaxAttempts <= 1).
+func (c *Client) SetRetry(cfg RetryConfig) {
+	c.retryConfig = cfg
 }
 
 // ListRepos returns all repositories accessible to the authenticated user.
@@ -112,11 +121,17 @@ func (c *Client) Stargazers(repo string) ([]Star, error) {
 // --- HTTP helpers ---
 
 func (c *Client) get(path string, dest interface{}) error {
-	return c.getWithAccept(path, "application/vnd.github+json", dest)
+	return c.getCtx(context.Background(), path, "application/vnd.github+json", dest)
 }
 
+// getWithAccept is retained for test compatibility; defaults to background ctx.
 func (c *Client) getWithAccept(path, accept string, dest interface{}) error {
-	resp, err := c.doGet(path, accept)
+	return c.getCtx(context.Background(), path, accept, dest)
+}
+
+// getCtx is the canonical helper: get + JSON decode with retry.
+func (c *Client) getCtx(ctx context.Context, path, accept string, dest interface{}) error {
+	resp, err := c.doGetWithRetry(ctx, path, accept)
 	if err != nil {
 		return err
 	}
@@ -153,10 +168,15 @@ func (c *Client) doGet(path, accept string) (*http.Response, error) {
 
 // getPaginated follows Link headers to collect all pages into a single slice.
 func (c *Client) getPaginated(path string, dest interface{}) error {
-	return c.getPaginatedWithAccept(path, "application/vnd.github+json", dest)
+	return c.getPaginatedCtx(context.Background(), path, "application/vnd.github+json", dest)
 }
 
 func (c *Client) getPaginatedWithAccept(path, accept string, dest interface{}) error {
+	return c.getPaginatedCtx(context.Background(), path, accept, dest)
+}
+
+// getPaginatedCtx is the canonical paginated helper: respects retry policy.
+func (c *Client) getPaginatedCtx(ctx context.Context, path, accept string, dest interface{}) error {
 	slicePtr, ok := dest.(*[]Star)
 	_ = slicePtr
 	// Use generic approach: accumulate raw JSON arrays
@@ -164,7 +184,10 @@ func (c *Client) getPaginatedWithAccept(path, accept string, dest interface{}) e
 	currentPath := path
 
 	for currentPath != "" {
-		resp, err := c.doGet(currentPath, accept)
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		resp, err := c.doGetWithRetry(ctx, currentPath, accept)
 		if err != nil {
 			return err
 		}

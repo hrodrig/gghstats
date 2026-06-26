@@ -23,6 +23,7 @@ type Domain struct {
 	githubRequests *prometheus.CounterVec
 	githubRateRem  *prometheus.GaugeVec
 	syncDuration   *prometheus.HistogramVec
+	syncErrors     *prometheus.CounterVec
 	lastSyncTS     prometheus.Gauge
 	reposTotal     *prometheus.GaugeVec
 	dbSizeBytes    prometheus.Gauge
@@ -81,6 +82,13 @@ func RegisterDomain(reg prometheus.Registerer, cfg DomainConfig) *Domain {
 			},
 			[]string{"status"},
 		),
+		syncErrors: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "gghstats_sync_errors_total",
+				Help: "Sync errors by classification kind (worker = repo-level failure).",
+			},
+			[]string{"kind"},
+		),
 		lastSyncTS: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "gghstats_last_sync_timestamp_seconds",
 			Help: "Unix timestamp of the last successful full sync.",
@@ -102,6 +110,7 @@ func RegisterDomain(reg prometheus.Registerer, cfg DomainConfig) *Domain {
 		d.githubRequests,
 		d.githubRateRem,
 		d.syncDuration,
+		d.syncErrors,
 		d.lastSyncTS,
 		d.reposTotal,
 		d.dbSizeBytes,
@@ -175,6 +184,16 @@ func (d *Domain) ObserveSync(duration time.Duration, success bool) {
 		d.lastSyncTS.Set(float64(time.Now().UTC().Unix()))
 		d.RefreshStoreGauges()
 	}
+}
+
+// ObserveSyncError increments the per-kind sync error counter. kind is a
+// short classifier such as "worker", "repo_meta", "views", "clones",
+// "referrers", "paths", "stars", or "stargazers".
+func (d *Domain) ObserveSyncError(kind string) {
+	if d == nil || kind == "" {
+		return
+	}
+	d.syncErrors.WithLabelValues(kind).Inc()
 }
 
 // RefreshStoreGauges updates repos_total, db_size_bytes, and optional per-repo gauges.

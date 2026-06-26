@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -16,10 +17,14 @@ type Options struct {
 	IncludePrivate bool
 	Filter         string // filter expression (e.g. "hrodrig/*,!fork")
 	SyncStars      bool   // fetch stargazer history (expensive for large repos)
+	Workers        int    // concurrent repos. 1 = serial, 0 = 1 (sequential). Caller sets default.
 }
 
 // Run performs a full sync cycle: discover repos, fetch metrics, store.
-func Run(gh *github.Client, db *store.Store, opts Options) error {
+// When opts.Workers >= 2, repos are processed concurrently by a worker
+// pool. Errors from individual repos are logged and counted but do not
+// abort the cycle.
+func Run(gh *github.Client, db *store.Store, opts Options, rec ErrRecorder) error {
 	repos, err := resolveRepos(gh, opts)
 	if err != nil {
 		return fmt.Errorf("resolve repos: %w", err)
@@ -31,14 +36,13 @@ func Run(gh *github.Client, db *store.Store, opts Options) error {
 	}
 
 	today := time.Now().UTC().Format("2006-01-02")
-	slog.Info("sync started", "repos", len(repos), "date", today)
+	slog.Info("sync started", "repos", len(repos), "date", today, "workers", workerCount(opts.Workers))
 
-	for _, repo := range repos {
-		if err := syncRepo(gh, db, repo, today, opts.SyncStars); err != nil {
-			slog.Error("sync repo failed", "repo", repo.FullName, "error", err)
-			continue
-		}
-	}
+	runWorkers(context.Background(), repos, workerOptions{
+		Workers: workerCount(opts.Workers),
+		Metrics: rec,
+		Work:    func(ctx context.Context, r github.Repo) error { return syncRepo(gh, db, r, today, opts.SyncStars, rec) },
+	})
 
 	if err := db.UpdateDeltas(); err != nil {
 		slog.Error("update deltas failed", "error", err)
@@ -46,6 +50,16 @@ func Run(gh *github.Client, db *store.Store, opts Options) error {
 
 	slog.Info("sync completed", "repos", len(repos))
 	return nil
+}
+
+// workerCount normalizes the user-supplied worker count to a safe minimum.
+// Zero or negative values collapse to 1 (serial); callers should pick a
+// sensible default (e.g. 4) when leaving the field unset.
+func workerCount(n int) int {
+	if n < 1 {
+		return 1
+	}
+	return n
 }
 
 func resolveRepos(gh *github.Client, opts Options) ([]github.Repo, error) {
@@ -70,39 +84,40 @@ func resolveRepos(gh *github.Client, opts Options) ([]github.Repo, error) {
 	return applyFilter(all, opts.Filter), nil
 }
 
-func syncRepo(gh *github.Client, db *store.Store, repo github.Repo, today string, syncStars bool) error {
+func syncRepo(gh *github.Client, db *store.Store, repo github.Repo, today string, syncStars bool, rec ErrRecorder) error {
 	name := repo.FullName
 	slog.Info("syncing", "repo", name)
 
-	var err error
-	repo, err = ensureRepoMetadata(gh, repo)
+	repo, err := ensureRepoMetadata(gh, repo, rec)
 	if err != nil {
 		return err
 	}
-	if err := upsertRepoRecord(gh, db, repo); err != nil {
+	if err := upsertRepoRecord(gh, db, repo, rec); err != nil {
 		return err
 	}
-	syncRepoTraffic(gh, db, name)
-	syncRepoSnapshots(gh, db, name, today)
-	syncRepoStars(gh, db, repo, name, today, syncStars)
+	syncRepoTraffic(gh, db, name, rec)
+	syncRepoSnapshots(gh, db, name, today, rec)
+	syncRepoStars(gh, db, repo, name, today, syncStars, rec)
 	return nil
 }
 
-func ensureRepoMetadata(gh *github.Client, repo github.Repo) (github.Repo, error) {
+func ensureRepoMetadata(gh *github.Client, repo github.Repo, rec ErrRecorder) (github.Repo, error) {
 	if repo.ID != 0 {
 		return repo, nil
 	}
 	meta, err := gh.Repo(repo.FullName)
 	if err != nil {
+		recordSyncErr(rec, "repo_meta")
 		return repo, fmt.Errorf("repo metadata: %w", err)
 	}
 	return *meta, nil
 }
 
-func upsertRepoRecord(gh *github.Client, db *store.Store, repo github.Repo) error {
+func upsertRepoRecord(gh *github.Client, db *store.Store, repo github.Repo, rec ErrRecorder) error {
 	name := repo.FullName
 	prs, err := gh.OpenPullRequests(name)
 	if err != nil {
+		recordSyncErr(rec, "open_prs")
 		slog.Warn("open PRs failed", "repo", name, "error", err)
 		prs = nil
 	}
@@ -122,9 +137,10 @@ func upsertRepoRecord(gh *github.Client, db *store.Store, repo github.Repo) erro
 	return nil
 }
 
-func syncRepoTraffic(gh *github.Client, db *store.Store, name string) {
+func syncRepoTraffic(gh *github.Client, db *store.Store, name string, rec ErrRecorder) {
 	views, err := gh.Views(name)
 	if err != nil {
+		recordSyncErr(rec, "views")
 		slog.Warn("views failed", "repo", name, "error", err)
 	} else {
 		for _, v := range views.Views {
@@ -134,6 +150,7 @@ func syncRepoTraffic(gh *github.Client, db *store.Store, name string) {
 	}
 	clones, err := gh.Clones(name)
 	if err != nil {
+		recordSyncErr(rec, "clones")
 		slog.Warn("clones failed", "repo", name, "error", err)
 	} else {
 		for _, c := range clones.Clones {
@@ -143,9 +160,10 @@ func syncRepoTraffic(gh *github.Client, db *store.Store, name string) {
 	}
 }
 
-func syncRepoSnapshots(gh *github.Client, db *store.Store, name, today string) {
+func syncRepoSnapshots(gh *github.Client, db *store.Store, name, today string, rec ErrRecorder) {
 	refs, err := gh.Referrers(name)
 	if err != nil {
+		recordSyncErr(rec, "referrers")
 		slog.Warn("referrers failed", "repo", name, "error", err)
 	} else {
 		for _, r := range refs {
@@ -154,6 +172,7 @@ func syncRepoSnapshots(gh *github.Client, db *store.Store, name, today string) {
 	}
 	paths, err := gh.PopularPaths(name)
 	if err != nil {
+		recordSyncErr(rec, "paths")
 		slog.Warn("paths failed", "repo", name, "error", err)
 	} else {
 		for _, p := range paths {
@@ -162,10 +181,11 @@ func syncRepoSnapshots(gh *github.Client, db *store.Store, name, today string) {
 	}
 }
 
-func syncRepoStars(gh *github.Client, db *store.Store, repo github.Repo, name, today string, syncStars bool) {
+func syncRepoStars(gh *github.Client, db *store.Store, repo github.Repo, name, today string, syncStars bool, rec ErrRecorder) {
 	if syncStars {
 		stars, err := gh.Stargazers(name)
 		if err != nil {
+			recordSyncErr(rec, "stargazers")
 			slog.Warn("stargazers failed", "repo", name, "error", err)
 			return
 		}
@@ -173,6 +193,15 @@ func syncRepoStars(gh *github.Client, db *store.Store, repo github.Repo, name, t
 		return
 	}
 	db.UpsertStar(name, today, repo.StargazersCount)
+}
+
+// recordSyncErr is a nil-safe wrapper that increments the per-kind error
+// counter when rec is configured.
+func recordSyncErr(rec ErrRecorder, kind string) {
+	if rec == nil {
+		return
+	}
+	rec.ObserveSyncError(kind)
 }
 
 // storeStarHistory converts individual star events into daily cumulative counts.

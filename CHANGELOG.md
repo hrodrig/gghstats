@@ -7,6 +7,23 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.13] - 2026-06-26
+
+### Added
+
+- **`--sync-workers` / `GGHSTATS_SYNC_WORKERS`:** configurable worker pool size for the sync cycle (default 4). Concurrency between repositories keeps large accounts within the GitHub REST rate budget while remaining well below the secondary rate limit.
+- **`gghstats_sync_errors_total{kind}`:** Prometheus counter that classifies sync failures by step (`worker`, `repo_meta`, `open_prs`, `views`, `clones`, `referrers`, `paths`, `stargazers`). Useful for dashboards in `gghstats-selfhosted`.
+- **Exponential-backoff retries with full jitter:** GitHub API calls retry on HTTP 429, 403 (rate-limited), 5xx, and network errors. Honors `X-RateLimit-Reset` when the API advertises a near-future reset. Default 4 attempts, 1s base, 60s cap. Disable with `client.SetRetry(github.RetryConfig{})`.
+
+### Changed
+
+- **Sync loop is now concurrent:** `internal/sync.Run` dispatches repos through a bounded worker pool instead of serial `for`. Existing single-repo `fetch` command is unchanged.
+- **SQLite DSN:** added `_busy_timeout=5000` so brief lock contention during sync writes surfaces as a wait rather than `SQLITE_BUSY`.
+
+### Fixed
+
+- **Large-account sync time:** sync now scales with `min(repos, workers)` HTTP round-trips instead of `repos * 7` sequential requests, removing the silent Secondary Rate Limit cliff for accounts with 200+ repositories.
+
 ## [0.7.11] - 2026-06-25
 
 ### Added

@@ -103,7 +103,7 @@ func TestRunNoRepos(t *testing.T) {
 	c.BaseURL = srv.URL
 	s := tempStore(t)
 
-	if err := Run(c, s, Options{}); err != nil {
+	if err := Run(c, s, Options{}, nil); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 }
@@ -141,7 +141,7 @@ func TestRunOneExplicitRepo(t *testing.T) {
 	c.BaseURL = srv.URL
 	s := tempStore(t)
 
-	err := Run(c, s, Options{Repos: []string{repoPath}})
+	err := Run(c, s, Options{Repos: []string{repoPath}}, nil)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -198,7 +198,7 @@ func TestRunWithStarHistory(t *testing.T) {
 	c.BaseURL = srv.URL
 	s := tempStore(t)
 
-	err := Run(c, s, Options{Repos: []string{repoPath}, SyncStars: true})
+	err := Run(c, s, Options{Repos: []string{repoPath}, SyncStars: true}, nil)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -232,7 +232,7 @@ func TestUpsertRepoRecordClampsNegativeIssues(t *testing.T) {
 	s := tempStore(t)
 
 	repo := github.Repo{ID: 9, FullName: repoPath, OpenIssuesCount: 2}
-	if err := upsertRepoRecord(gh, s, repo); err != nil {
+	if err := upsertRepoRecord(gh, s, repo, nil); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -253,7 +253,7 @@ func TestUpsertRepoRecordOpenPRsFailure(t *testing.T) {
 	s := tempStore(t)
 
 	repo := github.Repo{ID: 9, FullName: repoPath, OpenIssuesCount: 4, StargazersCount: 1}
-	if err := upsertRepoRecord(gh, s, repo); err != nil {
+	if err := upsertRepoRecord(gh, s, repo, nil); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -278,7 +278,7 @@ func TestSyncRepoTrafficPartialFailure(t *testing.T) {
 	gh := github.NewClient("tok")
 	gh.BaseURL = srv.URL
 	s := tempStore(t)
-	syncRepoTraffic(gh, s, repoPath)
+	syncRepoTraffic(gh, s, repoPath, nil)
 
 	rows, err := s.ClonesByRange(repoPath, "2026-03-20", "2026-03-20")
 	if err != nil {
@@ -310,7 +310,7 @@ func TestSyncRepoSnapshotsStoresReferrersAndPaths(t *testing.T) {
 	if err := s.UpsertRepo(repoPath, "", 0, 0, 0, 0, 0, false, false, ""); err != nil {
 		t.Fatal(err)
 	}
-	syncRepoSnapshots(gh, s, repoPath, today)
+	syncRepoSnapshots(gh, s, repoPath, today, nil)
 
 	refs, err := s.ReferrersByRange(repoPath, today, today)
 	if err != nil {
@@ -336,7 +336,7 @@ func TestSyncRepoStarsWithoutHistory(t *testing.T) {
 		t.Fatal(err)
 	}
 	repo := github.Repo{FullName: repoPath, StargazersCount: 42}
-	syncRepoStars(github.NewClient("tok"), s, repo, repoPath, today, false)
+	syncRepoStars(github.NewClient("tok"), s, repo, repoPath, today, false, nil)
 
 	rows, err := s.StarsByRepo(repoPath)
 	if err != nil {
@@ -362,7 +362,7 @@ func TestStoreStarHistoryEmpty(t *testing.T) {
 func TestEnsureRepoMetadataSkipsFetchWhenPresent(t *testing.T) {
 	gh := github.NewClient("tok")
 	gh.BaseURL = "http://should-not-be-called.example"
-	got, err := ensureRepoMetadata(gh, github.Repo{ID: 1, FullName: "o/r"})
+	got, err := ensureRepoMetadata(gh, github.Repo{ID: 1, FullName: "o/r"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
