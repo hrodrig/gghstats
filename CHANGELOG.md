@@ -7,6 +7,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.13] - 2026-06-26
+
 ### Added
 
 - **`--sync-workers` / `GGHSTATS_SYNC_WORKERS`:** configurable worker pool size for the sync cycle (default 4). Concurrency between repositories keeps large accounts within the GitHub REST rate budget while remaining well below the secondary rate limit.
