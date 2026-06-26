@@ -37,7 +37,7 @@
 </head>
 <body class="app-brutalist">
   <div class="app-shell d-lg-flex min-vh-100">
-    <nav class="navbar app-brutal-topbar d-lg-none border-bottom border-3 border-dark">
+    <nav class="navbar app-brutal-topbar d-lg-none border-bottom border-3 border-dark" data-gghstats-role="topbar">
       <div class="container-fluid">
         <a href="/" class="navbar-brand fw-bold mb-0 text-uppercase ls-tight text-decoration-none app-brutal-site-brand" title="{{call .T "nav.home"}}" aria-label="gghstats — {{call .T "nav.home"}}">gghstats</a>
         <button class="navbar-toggler app-brutal-toggler border-3 border-dark rounded-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#brutalSidebar" aria-controls="brutalSidebar" aria-label="{{call .T "nav.open_nav"}}">
@@ -46,7 +46,7 @@
       </div>
     </nav>
 
-    <div class="offcanvas-lg offcanvas-start app-brutal-sidebar border-end border-3 border-dark" tabindex="-1" id="brutalSidebar" aria-labelledby="brutalSidebarLabel">
+    <div class="offcanvas-lg offcanvas-start app-brutal-sidebar border-end border-3 border-dark" tabindex="-1" id="brutalSidebar" aria-labelledby="brutalSidebarLabel" data-gghstats-role="sidebar">
       <div class="offcanvas-header border-bottom border-3 border-dark d-lg-none py-3">
         <span id="brutalSidebarLabel" class="offcanvas-title fw-bold text-uppercase">{{call .T "nav.menu"}}</span>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="{{call .T "nav.close"}}"></button>
@@ -55,7 +55,7 @@
         <div class="d-none d-lg-flex align-items-center px-3 py-4 border-bottom border-3 border-dark">
           <a href="/" class="fs-4 fw-bold text-uppercase ls-tight text-decoration-none app-brutal-site-brand" title="{{call .T "nav.home"}}" aria-label="gghstats — {{call .T "nav.home"}}">gghstats</a>
         </div>
-        <nav class="nav flex-column px-2 py-4 gap-1 flex-grow-1" aria-label="Main navigation">
+        <nav class="nav flex-column px-2 py-4 gap-1 flex-grow-1" aria-label="Main navigation" data-gghstats-role="nav">
           <a class="nav-link app-brutal-nav px-3 py-2 text-uppercase fw-semibold small{{if or (eq .PageID "index") (eq .PageID "repo")}} active{{end}}" href="/" title="{{call .T "nav.repositories"}}">{{call .T "nav.repositories"}}</a>
           <a class="nav-link app-brutal-nav px-3 py-2 text-uppercase fw-semibold small{{if eq .PageID "h2h"}} active{{end}}" href="/h2h" title="{{call .T "h2h.title"}}">{{call .T "nav.h2h"}}</a>
         </nav>
@@ -81,7 +81,7 @@
     </div>
 
     <div class="app-brutal-main flex-grow-1 d-flex flex-column min-vh-100">
-      <header class="app-brutal-header border-bottom border-3 border-dark px-4 py-3">
+      <header class="app-brutal-header border-bottom border-3 border-dark px-4 py-3" data-gghstats-role="header">
         <h1 class="h3 mb-0 fw-bold text-uppercase ls-tight">{{.Title}}</h1>
         {{if .Breadcrumbs}}
         <nav class="mt-2" aria-label="breadcrumb">
@@ -94,11 +94,11 @@
         {{end}}
       </header>
 
-      <div class="flex-grow-1 p-4 app-brutal-content">
+      <div class="flex-grow-1 p-4 app-brutal-content" data-gghstats-role="content">
         {{.Content}}
       </div>
 
-      <footer class="app-brutal-footer border-top border-3 border-dark py-3 px-4 mt-auto">
+      <footer class="app-brutal-footer border-top border-3 border-dark py-3 px-4 mt-auto" data-gghstats-role="footer">
         <div class="app-brutal-console-footer" role="contentinfo" aria-label="System footer">
           <div class="app-brutal-console-prompt" aria-hidden="true"><span class="app-brutal-console-gt">&gt;</span></div>
           <div class="app-brutal-console-body flex-grow-1 min-w-0">

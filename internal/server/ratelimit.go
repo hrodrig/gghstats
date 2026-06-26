@@ -10,21 +10,29 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/time/rate"
 )
 
 // RateLimiter is a per-IP token-bucket rate limiter.
 type RateLimiter struct {
-	limiters sync.Map // string → *rateLimiterEntry
-	rate     rate.Limit
-	burst    int
-	maxIdle  time.Duration
-	done     chan struct{}
+	limiters       sync.Map // string → *rateLimiterEntry
+	rate           rate.Limit
+	burst          int
+	maxIdle        time.Duration
+	done           chan struct{}
+	rateLimitedReq *prometheus.CounterVec
 }
 
 type rateLimiterEntry struct {
 	limiter  *rate.Limiter
 	lastSeen time.Time
+}
+
+// SetRateLimitMetrics attaches Prometheus counters for the rate limiter.
+// tracked (nil is safe — no metrics).
+func (rl *RateLimiter) SetRateLimitMetrics(vec *prometheus.CounterVec) {
+	rl.rateLimitedReq = vec
 }
 
 // RateLimitConfig holds rate limiter parameters.
@@ -80,11 +88,17 @@ func (rl *RateLimiter) Middleware(next http.Handler, skip MiddlewareSkip) http.H
 		ip := clientIP(r)
 		entry := rl.getOrCreate(ip)
 		if !entry.limiter.Allow() {
+			if rl.rateLimitedReq != nil {
+				rl.rateLimitedReq.WithLabelValues("blocked").Inc()
+			}
 			w.Header().Set("Retry-After", "60")
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusTooManyRequests)
 			_, _ = w.Write([]byte(`{"error":"rate_limit_exceeded"}`))
 			return
+		}
+		if rl.rateLimitedReq != nil {
+			rl.rateLimitedReq.WithLabelValues("allowed").Inc()
 		}
 		next.ServeHTTP(w, r)
 	})

@@ -7,6 +7,13 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **`data-gghstats-role` semantic HTML attributes:** stable DOM anchors (`sidebar`, `header`, `content`, `footer`, `kpi-card`, `kpi-value`, `stat-card`, `stat-value`, `repo-title`, `fork-label`, `chart-card`, `error-panel`, `error-code`, `nav`) added to dashboard templates. CustomCSS (`GGHSTATS_CUSTOM_CSS`) can target these without depending on Bootstrap utility classes that change between major versions.
+- **`gghstats_rate_limited_requests_total{status}`:** counter of rate-limiter outcomes (`allowed` | `blocked`). Helps operators tune `GGHSTATS_RATE_LIMIT_*` and alert on systematic 429s from misconfigured proxies.
+- **`gghstats_whitelist_requests_total{status}`:** counter of whitelist decisions (`allowed` | `blocked`). Surfaces whether `GGHSTATS_WHITELIST` is blocking legitimate traffic or silently allowing everything.
+- **`gghstats_badge_requests_total{status}` + `gghstats_badge_duration_seconds{status}`:** per-badge-outcome counter and latency histogram (`ok`, `not_found`, `error`, `unauthorized`, `bad_request`). Previously badge requests were only visible in the generic HTTP metrics.
+
 ### Changed
 
 - **HTTP transport (GitHub client):** set explicit `MaxIdleConnsPerHost=4`, `MaxIdleConns=16`, `IdleConnTimeout=90s` on the `http.Transport`. Avoids redundant TLS handshakes when 4 sync workers hit `api.github.com` in parallel.
