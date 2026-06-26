@@ -13,6 +13,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - **`gghstats_rate_limited_requests_total{status}`:** counter of rate-limiter outcomes (`allowed` | `blocked`). Helps operators tune `GGHSTATS_RATE_LIMIT_*` and alert on systematic 429s from misconfigured proxies.
 - **`gghstats_whitelist_requests_total{status}`:** counter of whitelist decisions (`allowed` | `blocked`). Surfaces whether `GGHSTATS_WHITELIST` is blocking legitimate traffic or silently allowing everything.
 - **`gghstats_badge_requests_total{status}` + `gghstats_badge_duration_seconds{status}`:** per-badge-outcome counter and latency histogram (`ok`, `not_found`, `error`, `unauthorized`, `bad_request`). Previously badge requests were only visible in the generic HTTP metrics.
+- **Cosign keyless signing:** checksums.txt and container images (`ghcr.io/hrodrig/gghstats:vX.Y.Z`) signed via Sigstore OIDC. Verify with `cosign verify-blob --certificate-identity ... --certificate-oidc-issuer ... checksums.txt`.
+- **SBOM (SPDX + CycloneDX):** source-level software bill of materials per release (`gghstats_vX.Y.Z_sbom.spdx.json` + `.cyclonedx.json`). Generated via syft, attached to every GitHub release.
 
 ### Changed
 
