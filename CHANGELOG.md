@@ -7,6 +7,32 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-06-26
+
+### Added
+
+- **`data-gghstats-role` semantic HTML attributes:** stable DOM anchors (`sidebar`, `header`, `content`, `footer`, `kpi-card`, `kpi-value`, `stat-card`, `stat-value`, `repo-title`, `fork-label`, `chart-card`, `error-panel`, `error-code`, `nav`) added to dashboard templates. CustomCSS (`GGHSTATS_CUSTOM_CSS`) can target these without depending on Bootstrap utility classes that change between major versions.
+- **`gghstats_rate_limited_requests_total{status}`:** counter of rate-limiter outcomes (`allowed` | `blocked`). Helps operators tune `GGHSTATS_RATE_LIMIT_*` and alert on systematic 429s from misconfigured proxies.
+- **`gghstats_whitelist_requests_total{status}`:** counter of whitelist decisions (`allowed` | `blocked`). Surfaces whether `GGHSTATS_WHITELIST` is blocking legitimate traffic or silently allowing everything.
+- **`gghstats_badge_requests_total{status}` + `gghstats_badge_duration_seconds{status}`:** per-badge-outcome counter and latency histogram (`ok`, `not_found`, `error`, `unauthorized`, `bad_request`). Previously badge requests were only visible in the generic HTTP metrics.
+- **Cosign keyless signing:** checksums.txt and container images (`ghcr.io/hrodrig/gghstats:vX.Y.Z`) signed via Sigstore OIDC. Verify with `cosign verify-blob --certificate-identity ... --certificate-oidc-issuer ... checksums.txt`.
+- **SBOM (SPDX + CycloneDX):** source-level software bill of materials per release (`gghstats_vX.Y.Z_sbom.spdx.json` + `.cyclonedx.json`). Generated via syft, attached to every GitHub release.
+
+### Changed
+
+- **HTTP transport (GitHub client):** set explicit `MaxIdleConnsPerHost=4`, `MaxIdleConns=16`, `IdleConnTimeout=90s` on the `http.Transport`. Avoids redundant TLS handshakes when 4 sync workers hit `api.github.com` in parallel.
+- **SQLite connection pool:** `db.SetMaxOpenConns(4)`, `db.SetMaxIdleConns(2)`, `db.SetConnMaxIdleTime(5m)`. Prevents unbounded pool growth under HTTP bursts while keeping WAL's reader parallelism.
+- **SQLite PRAGMA `synchronous=NORMAL`:** add `_pragma=synchronous(NORMAL)` to the DSN. Trades a small crash-safety window (last few transactions can roll back on power loss) for ~2x faster WAL writes; safe for a single-host self-hosted dashboard.
+
+### Fixed
+
+- **SQLite DSN:** switched to `_pragma=...` for all PRAGMAs (`busy_timeout`, `journal_mode`, `synchronous`). The legacy `_busy_timeout=5000` parameter in `modernc.org/sqlite` was silently ignored — the busy timeout was 0 in practice, exposing sync writes to `SQLITE_BUSY` under contention. The 5s wait now actually applies.
+
+### Added
+
+- **`gghstats_github_rate_limit_reset_seconds{resource}`:** gauge populated from the GitHub `X-RateLimit-Reset` header. Lets dashboards plot "minutes until rate-limit reset" via `time() - metric`.
+- **`gghstats_sync_repos_processed_total{status}`:** counter of repositories processed per sync cycle, by outcome (`success` = all steps OK, `error` = at least one step failed). Independent of `gghstats_sync_errors_total{kind}` (per-step classifier).
+
 ## [0.7.13] - 2026-06-26
 
 ### Added

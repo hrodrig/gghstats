@@ -46,6 +46,9 @@ type Config struct {
 	MetricsRegistry *prometheus.Registry
 	// DomainMetrics refreshes store gauges on scrape when non-nil.
 	DomainMetrics *metrics.Domain
+	// ServerMetrics carries per-middleware metric vectors (rate limiter, whitelist, badges).
+	// Created by serve.go and injected into middleware structs and badge handler.
+	ServerMetrics *ServerMetrics
 	// CustomCSSAbsPath, if non-empty, is the absolute path to a regular CSS file served at GET /theme/custom.css.
 	CustomCSSAbsPath string
 	// CustomCSSQuery is the cache-busting query for the layout link (e.g. "v=1715888123"); empty disables the link.
@@ -75,6 +78,16 @@ func withCacheControl(directive string, next http.Handler) http.Handler {
 func New(cfg Config) http.Handler {
 	cfg = normalizeLocaleConfig(cfg)
 	i18n.MustLoad()
+	// Register per-middleware metric vectors before mounting routes so badge
+	// handler can be wrapped with its own latency/counter metrics.
+	if !cfg.DisableMetrics {
+		reg := cfg.MetricsRegistry
+		if reg == nil {
+			reg = newMetricsRegistry()
+			cfg.MetricsRegistry = reg
+		}
+		cfg.ServerMetrics = initMiddlewareMetrics(reg)
+	}
 	mux := http.NewServeMux()
 	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
 		"dict": templateDict,
@@ -143,6 +156,9 @@ func mountAPIRoutes(mux *http.ServeMux, cfg Config) {
 		mux.HandleFunc("POST /api/v1/sync", apiMiddleware(cfg.APIToken, handleAPISyncStart(cfg.SyncCoordinator)))
 	}
 	badgeHandler := badgeMiddleware(cfg, handleBadge(cfg, cfg.Store))
+	if sm := cfg.ServerMetrics; sm != nil {
+		badgeHandler = wrapBadgeWithMetrics(badgeHandler, sm.BadgeRequests, sm.BadgeDuration)
+	}
 	mux.HandleFunc("GET /api/v1/badge/{owner}/{repo}", badgeHandler)
 }
 
@@ -188,6 +204,14 @@ func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 		}
 		mux.Handle("GET "+MetricsPath, metricsScrapeHandler(reg, cfg.DomainMetrics))
 		h = logMiddleware(wrapWithHTTPMetrics(reg, mux))
+		// Inject per-middleware metric vectors so RateLimiter and Whitelist
+		// record decisions at the point of reject/accept.
+		if cfg.RateLimiter != nil && cfg.ServerMetrics != nil {
+			cfg.RateLimiter.SetRateLimitMetrics(cfg.ServerMetrics.RateLimitedRequests)
+		}
+		if cfg.Whitelist != nil && cfg.ServerMetrics != nil {
+			cfg.Whitelist.SetWhitelistMetrics(cfg.ServerMetrics.WhitelistRequests)
+		}
 	}
 	skip := PublicMiddlewareSkip(cfg.ReverseProxyRules)
 	if cfg.Whitelist != nil {

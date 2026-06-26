@@ -51,7 +51,7 @@ func TestRunRetriesTransientErrorAndSucceeds(t *testing.T) {
 	gh.BaseURL = srv.URL
 	gh.SetRetry(github.RetryConfig{MaxAttempts: 3, BaseDelay: time.Millisecond, MaxDelay: 10 * time.Millisecond})
 
-	rec := &fakeRec{kinds: map[string]int{}}
+	rec := &fakeRec{kinds: map[string]int{}, repos: map[string]int{}}
 	if err := Run(gh, db, Options{Repos: []string{repoPath}}, rec); err != nil {
 		t.Fatalf("Run: %v", err)
 	}

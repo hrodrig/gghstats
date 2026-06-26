@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
@@ -23,10 +24,16 @@ func Open(path string) (*Store, error) {
 		return nil, fmt.Errorf("create db directory: %w", err)
 	}
 
-	db, err := sql.Open("sqlite", path+"?_journal_mode=WAL&_busy_timeout=5000")
+	db, err := sql.Open("sqlite", path+"?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)")
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
+	// Cap the connection pool: WAL allows concurrent readers + a single writer
+	// without blocking; 4 open connections is enough for the dashboard under
+	// normal load and prevents unbounded growth under HTTP bursts.
+	db.SetMaxOpenConns(4)
+	db.SetMaxIdleConns(2)
+	db.SetConnMaxIdleTime(5 * time.Minute)
 
 	s := &Store{db: db}
 	if err := s.migrate(); err != nil {

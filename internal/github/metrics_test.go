@@ -9,6 +9,7 @@ type spyMetrics struct {
 	endpoint  string
 	status    string
 	remaining int
+	reset     int64
 	calls     int
 }
 
@@ -22,6 +23,10 @@ func (s *spyMetrics) SetGitHubRateLimitRemaining(remaining int) {
 	s.remaining = remaining
 }
 
+func (s *spyMetrics) SetGitHubRateLimitReset(resetUnix int64) {
+	s.reset = resetUnix
+}
+
 func TestClientRecordResponse(t *testing.T) {
 	spy := &spyMetrics{}
 	c := NewClient("token")
@@ -29,9 +34,10 @@ func TestClientRecordResponse(t *testing.T) {
 
 	okResp := &http.Response{StatusCode: http.StatusOK, Header: make(http.Header)}
 	okResp.Header.Set("X-RateLimit-Remaining", "12")
+	okResp.Header.Set("X-RateLimit-Reset", "1700000000")
 	c.recordResponse("/repos/o/r/traffic/views", okResp, nil)
-	if spy.calls != 1 || spy.endpoint != "traffic_views" || spy.status != "success" || spy.remaining != 12 {
-		t.Fatalf("spy = %+v, want traffic_views success remaining 12", spy)
+	if spy.calls != 1 || spy.endpoint != "traffic_views" || spy.status != "success" || spy.remaining != 12 || spy.reset != 1700000000 {
+		t.Fatalf("spy = %+v, want traffic_views success remaining 12 reset 1700000000", spy)
 	}
 
 	spy.calls = 0
@@ -44,5 +50,18 @@ func TestClientRecordResponse(t *testing.T) {
 	c.recordResponse("/repos/o/r", nil, nil)
 	if spy.calls != 1 {
 		t.Fatal("nil metrics should not record")
+	}
+}
+
+func TestClientRecordResponseIgnoresMissingReset(t *testing.T) {
+	spy := &spyMetrics{}
+	c := NewClient("token")
+	c.SetMetrics(spy)
+	resp := &http.Response{StatusCode: http.StatusOK, Header: make(http.Header)}
+	resp.Header.Set("X-RateLimit-Remaining", "10")
+	// no X-RateLimit-Reset
+	c.recordResponse("/repos/o/r", resp, nil)
+	if spy.reset != 0 {
+		t.Fatalf("reset = %d, want 0 when header missing", spy.reset)
 	}
 }

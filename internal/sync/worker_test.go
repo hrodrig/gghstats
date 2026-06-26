@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -10,11 +11,21 @@ import (
 )
 
 type countingRec struct {
+	mu     sync.Mutex
 	counts map[string]int
+	repos  map[string]int
 }
 
 func (c *countingRec) ObserveSyncError(kind string) {
+	c.mu.Lock()
 	c.counts[kind]++
+	c.mu.Unlock()
+}
+
+func (c *countingRec) ObserveSyncRepo(status string) {
+	c.mu.Lock()
+	c.repos[status]++
+	c.mu.Unlock()
 }
 
 func TestRunWorkersProcessesAll(t *testing.T) {
@@ -25,8 +36,10 @@ func TestRunWorkersProcessesAll(t *testing.T) {
 		{FullName: "a/4"},
 	}
 	var seen atomic.Int32
+	rec := &countingRec{counts: map[string]int{}, repos: map[string]int{}}
 	runWorkers(context.Background(), repos, workerOptions{
 		Workers: 2,
+		Metrics: rec,
 		Work: func(_ context.Context, _ github.Repo) error {
 			seen.Add(1)
 			return nil
@@ -34,6 +47,12 @@ func TestRunWorkersProcessesAll(t *testing.T) {
 	})
 	if got := seen.Load(); got != int32(len(repos)) {
 		t.Fatalf("processed %d, want %d", got, len(repos))
+	}
+	if rec.repos["success"] != len(repos) {
+		t.Fatalf("success count = %d, want %d (repos=%v)", rec.repos["success"], len(repos), rec.repos)
+	}
+	if rec.repos["error"] != 0 {
+		t.Fatalf("error count = %d, want 0", rec.repos["error"])
 	}
 }
 
@@ -43,7 +62,7 @@ func TestRunWorkersRecordsErrors(t *testing.T) {
 		{FullName: "a/2"},
 		{FullName: "a/3"},
 	}
-	rec := &countingRec{counts: map[string]int{}}
+	rec := &countingRec{counts: map[string]int{}, repos: map[string]int{}}
 	runWorkers(context.Background(), repos, workerOptions{
 		Workers: 2,
 		Metrics: rec,
@@ -56,6 +75,12 @@ func TestRunWorkersRecordsErrors(t *testing.T) {
 	})
 	if rec.counts["worker"] != 1 {
 		t.Fatalf("errors = %d, want 1", rec.counts["worker"])
+	}
+	if rec.repos["error"] != 1 {
+		t.Fatalf("repo error count = %d, want 1", rec.repos["error"])
+	}
+	if rec.repos["success"] != 2 {
+		t.Fatalf("repo success count = %d, want 2", rec.repos["success"])
 	}
 }
 

@@ -6,6 +6,7 @@ name: Release
 permissions:
   contents: write
   packages: write
+  id-token: write
 
 on:
   push:
@@ -17,6 +18,7 @@ jobs:
     permissions:
       contents: write
       packages: write
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,6 +64,13 @@ jobs:
             echo "::error::Homebrew tap publish secret is not set (Actions secret for write access to hrodrig/homebrew-gghstats). See .github/workflows/release.yml."
             exit 1
           fi
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      # GoReleaser sboms: invokes syft; not bundled by goreleaser-action.
+      - name: Install syft (SBOM)
+        uses: anchore/sbom-action/download-syft@v0
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6

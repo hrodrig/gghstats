@@ -10,6 +10,7 @@ import (
 type MetricsRecorder interface {
 	ObserveGitHubRequest(endpoint, status string)
 	SetGitHubRateLimitRemaining(remaining int)
+	SetGitHubRateLimitReset(resetUnix int64)
 }
 
 // SetMetrics attaches an optional Prometheus recorder to the client.
@@ -27,6 +28,9 @@ func (c *Client) recordResponse(path string, resp *http.Response, err error) {
 	if resp != nil {
 		if rem, ok := metrics.GitHubRateLimitRemaining(resp); ok {
 			c.metrics.SetGitHubRateLimitRemaining(rem)
+		}
+		if reset, ok := metrics.GitHubRateLimitReset(resp); ok {
+			c.metrics.SetGitHubRateLimitReset(reset)
 		}
 	}
 }

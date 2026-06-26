@@ -14,7 +14,9 @@ func TestDomainNilSafe(t *testing.T) {
 	var d *Domain
 	d.ObserveGitHubRequest("repos", "success")
 	d.SetGitHubRateLimitRemaining(1)
+	d.SetGitHubRateLimitReset(1700000000)
 	d.ObserveSync(time.Second, true)
+	d.ObserveSyncRepo("success")
 	d.RefreshStoreGauges()
 }
 
@@ -37,8 +39,12 @@ func TestDomainObserveGitHubAndSync(t *testing.T) {
 
 	d.ObserveGitHubRequest("repos", "success")
 	d.SetGitHubRateLimitRemaining(99)
+	d.SetGitHubRateLimitReset(1700000000)
 	d.ObserveSync(3*time.Second, true)
 	d.ObserveSync(time.Second, false)
+	d.ObserveSyncRepo("success")
+	d.ObserveSyncRepo("error")
+	d.ObserveSyncRepo("error")
 
 	cnt, err := d.githubRequests.GetMetricWithLabelValues("repos", "success")
 	if err != nil {
@@ -54,6 +60,13 @@ func TestDomainObserveGitHubAndSync(t *testing.T) {
 	if v := testutil.ToFloat64(rem); v != 99 {
 		t.Fatalf("rate limit remaining = %v, want 99", v)
 	}
+	rst, err := d.githubRateRst.GetMetricWithLabelValues("core")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v := testutil.ToFloat64(rst); v != 1700000000 {
+		t.Fatalf("rate limit reset = %v, want 1700000000", v)
+	}
 	if !metricFamilyHasSample(reg, "gghstats_sync_duration_seconds", "status", "success") {
 		t.Fatal("expected success sync duration observation")
 	}
@@ -62,6 +75,22 @@ func TestDomainObserveGitHubAndSync(t *testing.T) {
 	}
 	if v := testutil.ToFloat64(d.lastSyncTS); v <= 0 {
 		t.Fatalf("last sync ts = %v, want > 0", v)
+	}
+
+	// sync_repos_processed_total
+	successCnt, err := d.syncReposProc.GetMetricWithLabelValues("success")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v := testutil.ToFloat64(successCnt); v != 1 {
+		t.Fatalf("sync_repos_processed_total{success} = %v, want 1", v)
+	}
+	errorCnt, err := d.syncReposProc.GetMetricWithLabelValues("error")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v := testutil.ToFloat64(errorCnt); v != 2 {
+		t.Fatalf("sync_repos_processed_total{error} = %v, want 2", v)
 	}
 }
 

@@ -1,9 +1,9 @@
 {{define "not_found"}}
 <div class="row justify-content-center">
   <div class="col-12 col-lg-9 col-xl-7">
-    <div class="app-brutal-error-panel">
+    <div class="app-brutal-error-panel" data-gghstats-role="error-panel">
       <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
-        <div class="app-brutal-error-code text-uppercase" aria-hidden="true">404</div>
+        <div class="app-brutal-error-code text-uppercase" aria-hidden="true" data-gghstats-role="error-code">404</div>
         <div class="text-end small app-brutal-muted font-monospace text-break">{{call .T "not_found.err_code"}}</div>
       </div>
       <h2 class="h4 fw-bold text-uppercase ls-tight mb-3">{{.Heading}}</h2>

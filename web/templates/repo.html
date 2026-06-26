@@ -4,39 +4,39 @@
     <div class="card shadow-sm border-0">
       <div class="card-body">
         <h1 class="h3 card-title mb-2">
-          <a href="https://github.com/{{.Repo.Name}}" class="link-primary text-decoration-none d-inline-flex align-items-center gap-2" target="_blank" rel="noopener noreferrer" title="{{.Repo.Name}}">
+          <a href="https://github.com/{{.Repo.Name}}" class="link-primary text-decoration-none d-inline-flex align-items-center gap-2" target="_blank" rel="noopener noreferrer" title="{{.Repo.Name}}" data-gghstats-role="repo-title">
             <span>{{.Repo.Name}}</span>
             <span class="visually-hidden"> (opens in new tab)</span>
             {{template "icon-external-link" .}}
           </a>
         </h1>
         {{if and .Repo.Fork .Repo.ParentFullName}}
-        <p class="text-muted small mb-2 fork-of">{{call .T "repo.fork_of"}} <a href="https://github.com/{{.Repo.ParentFullName}}" target="_blank" rel="noopener noreferrer" title="{{.Repo.ParentFullName}}">{{.Repo.ParentFullName}}</a></p>
+        <p class="text-muted small mb-2 fork-of" data-gghstats-role="fork-label">{{call .T "repo.fork_of"}} <a href="https://github.com/{{.Repo.ParentFullName}}" target="_blank" rel="noopener noreferrer" title="{{.Repo.ParentFullName}}">{{.Repo.ParentFullName}}</a></p>
         {{end}}
         {{if .Repo.Description}}<p class="text-secondary mb-4">{{.Repo.Description}}</p>{{end}}
         <div class="row g-3">
           <div class="col-6 col-md-3">
-            <div class="app-brutal-stat p-3 text-center h-100">
+            <div class="app-brutal-stat p-3 text-center h-100" data-gghstats-role="stat-card">
               <div class="text-muted text-uppercase small fw-semibold letter-spacing-tight">{{call .T "repo.total_clones"}}</div>
-              <div class="fs-4 fw-bold text-primary mt-1">{{.Repo.CloneUniques}} <span class="text-muted fw-normal fs-6">/</span> {{.Repo.TotalClones}}</div>
+              <div class="fs-4 fw-bold text-primary mt-1" data-gghstats-role="stat-value">{{.Repo.CloneUniques}} <span class="text-muted fw-normal fs-6">/</span> {{.Repo.TotalClones}}</div>
             </div>
           </div>
           <div class="col-6 col-md-3">
-            <div class="app-brutal-stat p-3 text-center h-100">
+            <div class="app-brutal-stat p-3 text-center h-100" data-gghstats-role="stat-card">
               <div class="text-muted text-uppercase small fw-semibold letter-spacing-tight">{{call .T "repo.total_views"}}</div>
-              <div class="fs-4 fw-bold text-primary mt-1">{{.Repo.TotalUniques}} <span class="text-muted fw-normal fs-6">/</span> {{.Repo.TotalViews}}</div>
+              <div class="fs-4 fw-bold text-primary mt-1" data-gghstats-role="stat-value">{{.Repo.TotalUniques}} <span class="text-muted fw-normal fs-6">/</span> {{.Repo.TotalViews}}</div>
             </div>
           </div>
           <div class="col-6 col-md-3">
-            <div class="app-brutal-stat p-3 text-center h-100">
+            <div class="app-brutal-stat p-3 text-center h-100" data-gghstats-role="stat-card">
               <div class="text-muted text-uppercase small fw-semibold letter-spacing-tight">{{call .T "repo.stars"}}</div>
-              <div class="fs-4 fw-bold mt-1">{{.Repo.Stars}}</div>
+              <div class="fs-4 fw-bold mt-1" data-gghstats-role="stat-value">{{.Repo.Stars}}</div>
             </div>
           </div>
           <div class="col-6 col-md-3">
-            <div class="app-brutal-stat p-3 text-center h-100">
+            <div class="app-brutal-stat p-3 text-center h-100" data-gghstats-role="stat-card">
               <div class="text-muted text-uppercase small fw-semibold letter-spacing-tight">{{call .T "repo.forks"}}</div>
-              <div class="fs-4 fw-bold mt-1">{{.Repo.Forks}}</div>
+              <div class="fs-4 fw-bold mt-1" data-gghstats-role="stat-value">{{.Repo.Forks}}</div>
             </div>
           </div>
         </div>
@@ -82,7 +82,7 @@
 
 <div class="row g-4 mb-4">
   <div class="col-lg-6">
-    <div class="card shadow-sm border-0 h-100 app-brutal-chart-card">
+    <div class="card shadow-sm border-0 h-100 app-brutal-chart-card" data-gghstats-role="chart-card">
       <div class="card-header fw-semibold bg-body-secondary border-bottom">{{.ChartClonesTitle}}</div>
       <div class="card-body app-brutal-chart-well">
         <canvas id="chart_clones" class="chart-canvas" aria-label="{{.ChartClonesTitle}}"></canvas>
@@ -90,7 +90,7 @@
     </div>
   </div>
   <div class="col-lg-6">
-    <div class="card shadow-sm border-0 h-100 app-brutal-chart-card">
+    <div class="card shadow-sm border-0 h-100 app-brutal-chart-card" data-gghstats-role="chart-card">
       <div class="card-header fw-semibold bg-body-secondary border-bottom">{{.ChartViewsTitle}}</div>
       <div class="card-body app-brutal-chart-well">
         <canvas id="chart_views" class="chart-canvas" aria-label="{{.ChartViewsTitle}}"></canvas>

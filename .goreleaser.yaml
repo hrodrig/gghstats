@@ -56,6 +56,37 @@ archives:
 checksum:
   name_template: checksums.txt
 
+# Cosign keyless signing (GitHub Actions OIDC). Requires `id-token: write`
+# in release.yml and sigstore/cosign-installer. Signs checksums.txt and
+# container images pushed to ghcr.io.
+signs:
+  - cmd: cosign
+    env:
+      - COSIGN_EXPERIMENTAL=1
+    certificate: "${artifact}.pem"
+    args:
+      - sign-blob
+      - "--output-signature=${signature}"
+      - "--output-certificate=${certificate}"
+      - "${artifact}"
+      - --yes
+    artifacts: checksum
+
+# SBOM (Software Bill of Materials) generation via syft.
+# One SPDX + one CycloneDX document per release (source tree catalog).
+# Container image SBOM attestation deferred (docker driver limit).
+sboms:
+  - id: gghstats-sbom-spdx
+    artifacts: source
+    documents:
+      - "gghstats_{{ .Version }}_sbom.spdx.json"
+    args: ["$artifact", "--output", "spdx-json=$document"]
+  - id: gghstats-sbom-cdx
+    artifacts: source
+    documents:
+      - "gghstats_{{ .Version }}_sbom.cyclonedx.json"
+    args: ["$artifact", "--output", "cyclonedx-json=$document"]
+
 changelog:
   use: git
   sort: asc
@@ -91,6 +122,16 @@ dockers_v2:
       org.opencontainers.image.version: "{{ .Version }}"
     # No `annotations:` here — GoReleaser passes them as manifest index annotations; GitHub's
     # buildx setup errors with: "index annotations not supported for single platform export".
+
+# Cosign keyless signing for container manifests built by dockers_v2.
+docker_signs:
+  - cmd: cosign
+    env:
+      - COSIGN_EXPERIMENTAL=1
+    args:
+      - sign
+      - "${artifact}@${digest}"
+      - --yes
 
 # Homebrew: publish cask to https://github.com/hrodrig/homebrew-gghstats (brew install hrodrig/gghstats/gghstats).
 # Homebrew cask push uses a maintainer PAT in CI (see .github/workflows/release.yml).

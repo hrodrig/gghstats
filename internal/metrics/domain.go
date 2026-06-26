@@ -22,8 +22,10 @@ type Domain struct {
 
 	githubRequests *prometheus.CounterVec
 	githubRateRem  *prometheus.GaugeVec
+	githubRateRst  *prometheus.GaugeVec
 	syncDuration   *prometheus.HistogramVec
 	syncErrors     *prometheus.CounterVec
+	syncReposProc  *prometheus.CounterVec
 	lastSyncTS     prometheus.Gauge
 	reposTotal     *prometheus.GaugeVec
 	dbSizeBytes    prometheus.Gauge
@@ -74,6 +76,13 @@ func RegisterDomain(reg prometheus.Registerer, cfg DomainConfig) *Domain {
 			},
 			[]string{"resource"},
 		),
+		githubRateRst: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "gghstats_github_rate_limit_reset_seconds",
+				Help: "GitHub REST rate limit reset as Unix timestamp (from X-RateLimit-Reset).",
+			},
+			[]string{"resource"},
+		),
 		syncDuration: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
 				Name:    "gghstats_sync_duration_seconds",
@@ -88,6 +97,13 @@ func RegisterDomain(reg prometheus.Registerer, cfg DomainConfig) *Domain {
 				Help: "Sync errors by classification kind (worker = repo-level failure).",
 			},
 			[]string{"kind"},
+		),
+		syncReposProc: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "gghstats_sync_repos_processed_total",
+				Help: "Repositories processed per sync cycle by status (success = all steps OK, error = any step failed).",
+			},
+			[]string{"status"},
 		),
 		lastSyncTS: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "gghstats_last_sync_timestamp_seconds",
@@ -109,8 +125,10 @@ func RegisterDomain(reg prometheus.Registerer, cfg DomainConfig) *Domain {
 	toRegister := []prometheus.Collector{
 		d.githubRequests,
 		d.githubRateRem,
+		d.githubRateRst,
 		d.syncDuration,
 		d.syncErrors,
+		d.syncReposProc,
 		d.lastSyncTS,
 		d.reposTotal,
 		d.dbSizeBytes,
@@ -170,6 +188,15 @@ func (d *Domain) SetGitHubRateLimitRemaining(remaining int) {
 	d.githubRateRem.WithLabelValues("core").Set(float64(remaining))
 }
 
+// SetGitHubRateLimitReset updates the rate limit reset gauge with the Unix
+// timestamp from the X-RateLimit-Reset header.
+func (d *Domain) SetGitHubRateLimitReset(resetUnix int64) {
+	if d == nil {
+		return
+	}
+	d.githubRateRst.WithLabelValues("core").Set(float64(resetUnix))
+}
+
 // ObserveSync records sync duration and last-success timestamp.
 func (d *Domain) ObserveSync(duration time.Duration, success bool) {
 	if d == nil {
@@ -194,6 +221,16 @@ func (d *Domain) ObserveSyncError(kind string) {
 		return
 	}
 	d.syncErrors.WithLabelValues(kind).Inc()
+}
+
+// ObserveSyncRepo records a single repo's outcome in the per-cycle counter.
+// status is "success" when all steps completed, "error" when at least one
+// step failed (regardless of whether other steps succeeded).
+func (d *Domain) ObserveSyncRepo(status string) {
+	if d == nil || status == "" {
+		return
+	}
+	d.syncReposProc.WithLabelValues(status).Inc()
 }
 
 // RefreshStoreGauges updates repos_total, db_size_bytes, and optional per-repo gauges.

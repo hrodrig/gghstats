@@ -45,6 +45,23 @@ func GitHubRateLimitRemaining(resp *http.Response) (int, bool) {
 	return n, true
 }
 
+// GitHubRateLimitReset parses X-RateLimit-Reset when present. Returns the
+// Unix timestamp (seconds) and ok=true; ok=false when missing or invalid.
+func GitHubRateLimitReset(resp *http.Response) (int64, bool) {
+	if resp == nil {
+		return 0, false
+	}
+	v := resp.Header.Get("X-RateLimit-Reset")
+	if v == "" {
+		return 0, false
+	}
+	n, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return n, true
+}
+
 // IsTimeout reports whether err is a client timeout (for future use).
 func IsTimeout(err error) bool {
 	var ne interface{ Timeout() bool }

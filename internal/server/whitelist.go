@@ -5,13 +5,22 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Whitelist controls access by client IP/CIDR, optionally scoped to specific paths.
 type Whitelist struct {
-	cidrs    []*net.IPNet
-	paths    []string // empty = all paths
-	apiToken string   // when set, valid x-api-token bypasses the whitelist
+	cidrs        []*net.IPNet
+	paths        []string // empty = all paths
+	apiToken     string   // when set, valid x-api-token bypasses the whitelist
+	whitelistReq *prometheus.CounterVec
+}
+
+// SetWhitelistMetrics attaches Prometheus counters for whitelist decisions.
+// nil is safe.
+func (w *Whitelist) SetWhitelistMetrics(vec *prometheus.CounterVec) {
+	w.whitelistReq = vec
 }
 
 // WhitelistConfig holds parsed whitelist parameters.
@@ -88,10 +97,16 @@ func (w *Whitelist) Middleware(next http.Handler, exempt MiddlewareSkip) http.Ha
 		}
 		ip := clientIP(r)
 		if !w.allowed(ip) {
+			if w.whitelistReq != nil {
+				w.whitelistReq.WithLabelValues("blocked").Inc()
+			}
 			wr.Header().Set("Content-Type", "application/json")
 			wr.WriteHeader(http.StatusForbidden)
 			_, _ = wr.Write([]byte(`{"error":"ip_not_whitelisted"}`))
 			return
+		}
+		if w.whitelistReq != nil {
+			w.whitelistReq.WithLabelValues("allowed").Inc()
 		}
 		next.ServeHTTP(wr, r)
 	})

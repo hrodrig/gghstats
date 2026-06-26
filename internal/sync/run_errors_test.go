@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/hrodrig/gghstats/internal/github"
@@ -12,11 +13,21 @@ import (
 )
 
 type fakeRec struct {
+	mu    sync.Mutex
 	kinds map[string]int
+	repos map[string]int
 }
 
 func (f *fakeRec) ObserveSyncError(kind string) {
+	f.mu.Lock()
 	f.kinds[kind]++
+	f.mu.Unlock()
+}
+
+func (f *fakeRec) ObserveSyncRepo(status string) {
+	f.mu.Lock()
+	f.repos[status]++
+	f.mu.Unlock()
 }
 
 func TestRunClassifiesViewsFailure(t *testing.T) {
@@ -49,7 +60,7 @@ func TestRunClassifiesViewsFailure(t *testing.T) {
 
 	gh := github.NewClient("tok")
 	gh.BaseURL = srv.URL
-	rec := &fakeRec{kinds: map[string]int{}}
+	rec := &fakeRec{kinds: map[string]int{}, repos: map[string]int{}}
 
 	if err := Run(gh, db, Options{Repos: []string{repoPath}}, rec); err != nil {
 		t.Fatalf("Run: %v", err)
@@ -81,7 +92,7 @@ func TestRunRepoMetaFailureClassified(t *testing.T) {
 
 	gh := github.NewClient("tok")
 	gh.BaseURL = srv.URL
-	rec := &fakeRec{kinds: map[string]int{}}
+	rec := &fakeRec{kinds: map[string]int{}, repos: map[string]int{}}
 
 	_ = Run(gh, db, Options{}, rec)
 	if rec.kinds["worker"] < 1 {

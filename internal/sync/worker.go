@@ -12,6 +12,7 @@ import (
 // It is satisfied by *metrics.Domain. Pass nil to disable error metrics.
 type ErrRecorder interface {
 	ObserveSyncError(kind string)
+	ObserveSyncRepo(status string)
 }
 
 // workerOptions configures runWorkers behavior.
@@ -52,8 +53,11 @@ func runWorkers(ctx context.Context, repos []github.Repo, opts workerOptions) {
 				if err := opts.Work(ctx, repo); err != nil {
 					if opts.Metrics != nil {
 						opts.Metrics.ObserveSyncError("worker")
+						opts.Metrics.ObserveSyncRepo("error")
 					}
 					slog.Error("sync repo failed", "repo", repo.FullName, "error", err)
+				} else if opts.Metrics != nil {
+					opts.Metrics.ObserveSyncRepo("success")
 				}
 			}
 		}()

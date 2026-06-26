@@ -1,37 +1,37 @@
 {{define "index"}}
 <div class="row g-3 mb-4">
   <div class="col-6 col-xl-3">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100" data-gghstats-role="kpi-card">
       <div class="card-body">
         <div class="text-uppercase text-muted small fw-semibold mb-1 letter-spacing-tight">{{call .T "index.kpi_repos"}}</div>
-        <div class="fs-3 fw-bold text-body">{{.Total}}</div>
+        <div class="fs-3 fw-bold text-body" data-gghstats-role="kpi-value">{{.Total}}</div>
         <div class="small text-muted">{{call .T "index.kpi_repos_sub"}}</div>
       </div>
     </div>
   </div>
   <div class="col-6 col-xl-3">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100" data-gghstats-role="kpi-card">
       <div class="card-body">
         <div class="text-uppercase text-muted small fw-semibold mb-1 letter-spacing-tight">{{call .T "index.kpi_stars"}}</div>
-        <div class="fs-3 fw-bold text-body">{{.KPIStars}}</div>
+        <div class="fs-3 fw-bold text-body" data-gghstats-role="kpi-value">{{.KPIStars}}</div>
         <div class="small text-muted">{{call .T "index.kpi_stars_sub"}}</div>
       </div>
     </div>
   </div>
   <div class="col-6 col-xl-3">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100" data-gghstats-role="kpi-card">
       <div class="card-body">
         <div class="text-uppercase text-muted small fw-semibold mb-1 letter-spacing-tight">{{call .T "index.kpi_clones"}}</div>
-        <div class="fs-3 fw-bold text-body">{{.KPIClones}}</div>
+        <div class="fs-3 fw-bold text-body" data-gghstats-role="kpi-value">{{.KPIClones}}</div>
         <div class="small text-muted">{{call .T "index.kpi_clones_sub"}}</div>
       </div>
     </div>
   </div>
   <div class="col-6 col-xl-3">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100" data-gghstats-role="kpi-card">
       <div class="card-body">
         <div class="text-uppercase text-muted small fw-semibold mb-1 letter-spacing-tight">{{call .T "index.kpi_views"}}</div>
-        <div class="fs-3 fw-bold text-body">{{.KPIViews}}</div>
+        <div class="fs-3 fw-bold text-body" data-gghstats-role="kpi-value">{{.KPIViews}}</div>
         <div class="small text-muted">{{call .T "index.kpi_views_sub"}}</div>
       </div>
     </div>
