@@ -7,7 +7,7 @@
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
 [![gghstats clones](https://gghstats.hermesrodriguez.com/api/v1/badge/hrodrig/gghstats?metric=clones)](https://gghstats.hermesrodriguez.com/hrodrig/gghstats)
-[![Go 1.26.4](https://img.shields.io/badge/go-1.26.4-00ADD8?logo=go)](https://go.dev/)
+[![Go 1.26.5](https://img.shields.io/badge/go-1.26.5-00ADD8?logo=go)](https://go.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![pkg.go.dev](https://pkg.go.dev/badge/github.com/hrodrig/gghstats)](https://pkg.go.dev/github.com/hrodrig/gghstats)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hrodrig/gghstats)](https://goreportcard.com/report/github.com/hrodrig/gghstats)

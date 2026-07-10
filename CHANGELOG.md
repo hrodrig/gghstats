@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Go toolchain:** Bump `go.mod` **1.26.4** → **1.26.5** (align with Dockerfile). Fixes **GO-2026-5856** (`crypto/tls` Encrypted Client Hello privacy leak) reported by `govulncheck` in CI.
+
 ## [0.8.1] - 2026-07-09
 
 ### Fixed
