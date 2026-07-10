@@ -7,6 +7,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-07-09
+
+### Fixed
+
+- **Dockerfile:** Bump Go toolchain `golang:1.26.4-alpine` → `1.26.5-alpine`. Fixes GO-2026-4970 (High, stdlib) detected by `make docker-scan`.
+
 ## [0.8.0] - 2026-06-26
 
 ### Added
@@ -394,7 +400,9 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.7.11...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.8.0...HEAD
+[0.8.1]: https://github.com/hrodrig/gghstats/compare/v0.8.0...v0.8.1
+[0.8.0]: https://github.com/hrodrig/gghstats/compare/v0.7.11...v0.8.0
 [0.7.11]: https://github.com/hrodrig/gghstats/compare/v0.7.10...v0.7.11
 [0.7.10]: https://github.com/hrodrig/gghstats/compare/v0.7.9...v0.7.10
 [0.7.9]: https://github.com/hrodrig/gghstats/compare/v0.7.8...v0.7.9
