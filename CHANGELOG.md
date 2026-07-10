@@ -11,7 +11,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-- **Dockerfile:** Bump Go toolchain `golang:1.26.4-alpine` → `1.26.5-alpine`. Fixes GO-2026-4970 (High, stdlib) detected by `make docker-scan`.
+- **Go toolchain:** Bump `go.mod` and Dockerfile to **1.26.5** (was `go.mod` 1.26.4 / image `golang:1.26.4-alpine`). Fixes **GO-2026-4970** (High, stdlib; `make docker-scan`) and **GO-2026-5856** (`crypto/tls` ECH privacy leak; `govulncheck` in CI).
 
 ## [0.8.0] - 2026-06-26
 
