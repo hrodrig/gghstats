@@ -65,6 +65,18 @@ func main() {
 	os.Exit(runCLI(os.Args))
 }
 
+type cliCmd func(args []string) error
+
+var cliCommands = map[string]cliCmd{
+	"serve":   runServe,
+	"run":     runServe,
+	"fetch":   runFetch,
+	"report":  runReport,
+	"export":  runExport,
+	"backup":  runBackup,
+	"restore": runRestore,
+}
+
 // runCLI runs the CLI and returns a process exit code (0 = success).
 func runCLI(args []string) int {
 	if len(args) >= 2 && isPrintSampleConfigArg(args[1]) {
@@ -76,43 +88,8 @@ func runCLI(args []string) int {
 		return 1
 	}
 
-	switch args[1] {
-	case "serve", "run":
-		if err := runServe(args[2:]); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			return 1
-		}
-		return 0
-	case "fetch":
-		if err := runFetch(args[2:]); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			return 1
-		}
-		return 0
-	case "report":
-		if err := runReport(args[2:]); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			return 1
-		}
-		return 0
-	case "export":
-		if err := runExport(args[2:]); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			return 1
-		}
-		return 0
-	case "backup":
-		if err := runBackup(args[2:]); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			return 1
-		}
-		return 0
-	case "restore":
-		if err := runRestore(args[2:]); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			return 1
-		}
-		return 0
+	cmd := args[1]
+	switch cmd {
 	case "version":
 		fmt.Printf("gghstats %s (commit: %s, built: %s)\n",
 			version.Version, version.Commit, version.BuildDate)
@@ -120,10 +97,18 @@ func runCLI(args []string) int {
 	case "--help", "-h", "help":
 		fmt.Println(usage)
 		return 0
-	default:
-		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n%s\n", args[1], usage)
+	}
+
+	run, ok := cliCommands[cmd]
+	if !ok {
+		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n%s\n", cmd, usage)
 		return 1
 	}
+	if err := run(args[2:]); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return 1
+	}
+	return 0
 }
 
 func isPrintSampleConfigArg(s string) bool {
