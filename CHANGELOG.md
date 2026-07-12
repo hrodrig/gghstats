@@ -7,6 +7,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-12
+
 ### Added
 
 - **Repo page trends:** clone momentum (7d / 30d) on the repository detail page, reusing `internal/h2h` (`Momentum7d` / `Momentum30d`) with the same percent formatting as H2H.
@@ -18,6 +20,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - **README comparison table** vs niche peers; **`internal/collector/README.md`** documents opt-in telemetry.
 - **ROADMAP.md** and **SPEC.md:** product direction and normative HTTP API / sync contracts (aligned with worker pool and GitHub retries).
 - **docs/plan-v0.9.x.md**, **plan-v0.10.x.md**, **plan-v0.11.x.md**, **plan-v1.0.0.md:** scoped band plans (exit criteria + checklists).
+- **docs/README.md:** index for band plans and VHS terminal demo.
+- **docs/demo.tape** / **docs/demo.gif:** Charm VHS CLI walkthrough (embedded in README Demo).
 
 ### Changed
 
@@ -29,7 +33,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-- **CHANGELOG compare link:** `[Unreleased]` now points at `v0.8.1...HEAD` (was still `v0.8.0...HEAD`).
+- **CHANGELOG compare link:** `[Unreleased]` pointed at `v0.8.1...HEAD` (was still `v0.8.0...HEAD` during the 0.9 cycle).
 
 ## [0.8.1] - 2026-07-09
 
@@ -424,7 +428,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/hrodrig/gghstats/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/hrodrig/gghstats/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/hrodrig/gghstats/compare/v0.7.11...v0.8.0
 [0.7.11]: https://github.com/hrodrig/gghstats/compare/v0.7.10...v0.7.11

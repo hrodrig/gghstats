@@ -47,5 +47,6 @@ Do not start Line B until one track has landed.
 - [x] Demo mode
 - [x] README comparison table
 - [x] Quick wins batch (headers / SRI / log status / collector README; `(repo, date)` already covered by SQLite PRIMARY KEY)
-- [x] CHANGELOG `[Unreleased]` updated
-- [x] SPEC touched only if API/JSON fields change (N/A)
+- [x] CHANGELOG `[Unreleased]` folded into **0.9.0**
+- [x] SPEC updated for demo, distroless default DB, security headers, backup/restore
+- [x] Shipped as **v0.9.0** (2026-07-12)

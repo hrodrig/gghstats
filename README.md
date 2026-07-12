@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.8.1-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.9.0-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -26,6 +26,12 @@ If you want your **own self-hosted** deployment (Docker Compose, Traefik with TL
 ## Demo
 
 **Live:** [gghstats.hermesrodriguez.com](https://gghstats.hermesrodriguez.com)
+
+CLI walkthrough (Charm [VHS](https://github.com/charmbracelet/vhs)):
+
+![gghstats CLI — help, version, serve, backup](docs/demo.gif)
+
+Regenerate: `make install && PATH="$(go env GOPATH)/bin:$PATH" bash -c "vhs docs/demo.tape"` — see [docs/README.md](docs/README.md).
 
 ### Beyond GitHub’s 14-day Traffic tab
 

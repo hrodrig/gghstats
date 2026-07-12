@@ -1,6 +1,6 @@
 # Spec — HTTP API and sync
 
-Normative operator contracts for **gghstats** as of **v0.8.1**.  
+Normative operator contracts for **gghstats** as of **v0.9.0**.  
 Narrative examples and env tables: **[README.md](README.md)**. Product direction: **[ROADMAP.md](ROADMAP.md)**.
 
 This document describes **current** behavior. Changes that break clients must bump SemVer appropriately and update this file + CHANGELOG.
@@ -15,6 +15,8 @@ This document describes **current** behavior. Changes that break clients must bu
 | Storage | SQLite (`GGHSTATS_DB`); WAL; pragmatic `synchronous=NORMAL` |
 | Writers | At most **one sync cycle** at a time (`sync.Coordinator`) |
 | Auth to GitHub | Personal access token (`GGHSTATS_GITHUB_TOKEN`) only — no GitHub App / OAuth in-tree |
+| Demo | `--demo` / `GGHSTATS_DEMO=true`: sample data, no token, sync/update-check off |
+| Container | Distroless `static-debian13:nonroot`; default in-image DB `/data/gghstats.db` |
 
 ---
 
@@ -35,6 +37,8 @@ This document describes **current** behavior. Changes that break clients must bu
 When `GGHSTATS_API_TOKEN` is set, a matching **`x-api-token`** header bypasses the IP whitelist on protected paths (token still validated by the API handler).
 
 There is **no** generic REST CRUD layer.
+
+**Security headers** on all HTTP responses: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera/mic/geolocation disabled).
 
 ---
 
@@ -116,7 +120,16 @@ Also: `gghstats_sync_repos_processed_total{status}` with `success` | `error`.
 
 ---
 
-## 5. Stability policy
+## 5. CLI data ops (non-HTTP)
+
+| Command | Contract |
+|---------|----------|
+| `gghstats backup --output PATH` | Snapshot DB via SQLite `VACUUM INTO` |
+| `gghstats restore --input PATH` | Replace target DB by file copy; stop `serve` if the DB is open |
+
+---
+
+## 6. Stability policy
 
 Until **1.0.0**, the JSON API may gain additive fields without a major bump.  
 Removing or renaming documented fields/routes is a **breaking** change (major after 1.0; clear CHANGELOG note before).
@@ -125,6 +138,6 @@ Prometheus metric names introduced in release notes are treated as operator-faci
 
 ---
 
-## 6. Out of scope
+## 7. Out of scope
 
 See **Non-goals** in [ROADMAP.md](ROADMAP.md). Multi-writer SQLite, GitHub Apps, and production cluster manifests are not part of this spec.
