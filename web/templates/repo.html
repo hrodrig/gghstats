@@ -40,6 +40,25 @@
             </div>
           </div>
         </div>
+        {{if .HasMomentum}}
+        <div class="row g-3 mt-1" data-gghstats-role="trends">
+          <div class="col-12">
+            <p class="text-muted small mb-2">{{call .T "repo.trends_blurb"}}</p>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="app-brutal-stat p-3 text-center h-100" data-gghstats-role="trend-card">
+              <div class="text-muted text-uppercase small fw-semibold letter-spacing-tight">{{call .T "repo.momentum_7d"}}</div>
+              <div class="fs-4 fw-bold mt-1 {{if .Momentum7dUp}}text-success{{else}}text-danger{{end}}" data-gghstats-role="trend-value">{{.Momentum7d}}</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="app-brutal-stat p-3 text-center h-100" data-gghstats-role="trend-card">
+              <div class="text-muted text-uppercase small fw-semibold letter-spacing-tight">{{call .T "repo.momentum_30d"}}</div>
+              <div class="fs-4 fw-bold mt-1 {{if .Momentum30dUp}}text-success{{else}}text-danger{{end}}" data-gghstats-role="trend-value">{{.Momentum30d}}</div>
+            </div>
+          </div>
+        </div>
+        {{end}}
       </div>
     </div>
   </div>

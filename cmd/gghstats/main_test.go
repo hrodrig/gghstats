@@ -73,6 +73,16 @@ func TestRunCLISubcommandFailures(t *testing.T) {
 			t.Fatalf("want exit 1, got %d", code)
 		}
 	})
+	t.Run("backup_missing_output", func(t *testing.T) {
+		if code := runCLI([]string{"gghstats", "backup"}); code != 1 {
+			t.Fatalf("want exit 1, got %d", code)
+		}
+	})
+	t.Run("restore_missing_input", func(t *testing.T) {
+		if code := runCLI([]string{"gghstats", "restore"}); code != 1 {
+			t.Fatalf("want exit 1, got %d", code)
+		}
+	})
 	t.Run("report_missing_repo", func(t *testing.T) {
 		t.Setenv("GGHSTATS_REPO", "")
 		t.Setenv("GGHSTATS_GITHUB_TOKEN", "")

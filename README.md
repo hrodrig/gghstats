@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.8.1-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.9.0-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -26,6 +26,12 @@ If you want your **own self-hosted** deployment (Docker Compose, Traefik with TL
 ## Demo
 
 **Live:** [gghstats.hermesrodriguez.com](https://gghstats.hermesrodriguez.com)
+
+CLI walkthrough (Charm [VHS](https://github.com/charmbracelet/vhs)):
+
+![gghstats CLI — help, version, serve, backup](docs/demo.gif)
+
+Regenerate: `make install && PATH="$(go env GOPATH)/bin:$PATH" bash -c "vhs docs/demo.tape"` — see [docs/README.md](docs/README.md).
 
 ### Beyond GitHub’s 14-day Traffic tab
 
@@ -69,6 +75,7 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 - [Star History](#star-history)
 - [Acknowledgments](#acknowledgments)
 - [License](#license)
+- [Roadmap](ROADMAP.md) · [Spec (API & sync)](SPEC.md)
 
 ## Features
 
@@ -81,6 +88,21 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 - CLI mode for fetch/report/export
 - Single binary, SQLite storage, no external DB dependency
 - Docker image on GHCR; Compose / Helm examples live in **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**
+- **Demo mode:** `gghstats serve --demo` (or `GGHSTATS_DEMO=true`) — sample data, no GitHub token
+- **Backup:** `gghstats backup --output …` / `gghstats restore --input …`
+
+### Compared to similar tools
+
+| | **gghstats** | ghstats (Rust) | git-clone-stats (Python) |
+|--|--------------|----------------|---------------------------|
+| Self-hosted dashboard | Yes | Limited / different focus | Script-oriented |
+| History beyond GitHub’s 14-day window | Yes (SQLite) | Varies | Varies |
+| Single static binary | Yes (Go) | Yes (Rust) | No (Python runtime) |
+| H2H + clone momentum trends | Yes | — | — |
+| Cosign + SBOM on releases | Yes | Check upstream | Check upstream |
+| Bring-your-own frontend (API-only) | Planned 0.11 | — | — |
+
+gghstats stays **single binary + SQLite**; production Compose/Helm live in **gghstats-selfhosted**.
 
 ### Repository page charts (Clones & Views)
 
@@ -98,6 +120,15 @@ Exact colors depend on light/dark theme (Bootstrap `--bs-primary` / `--bs-info`,
 ## Quick start
 
 The steps below are a **minimal path** to install gghstats, run the dashboard once, and **try the UI** (repository list, charts, H2H, languages). They are **not** a production or server deployment.
+
+### Demo mode (no GitHub token)
+
+```bash
+gghstats serve --demo --open
+# or: GGHSTATS_DEMO=true gghstats run --open
+```
+
+Uses a separate sample dataset (`demo/alpha`, `demo/beta`, `demo/gamma`) when the DB is empty. Sync and update-check are disabled. For real traffic, unset demo and set `GGHSTATS_GITHUB_TOKEN`.
 
 **Running gghstats on a VPS, with TLS, Traefik, Compose stacks, Helm, or observability** — use **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**. That repository owns production manifests, env layout (`GGHSTATS_HOST_DATA`), and operator docs; this repo ships the application binary and image only.
 
@@ -135,6 +166,7 @@ Quick validation only. **Production Docker / Compose / Traefik / Helm:** **[gghs
 docker run --rm -d \
   -e GGHSTATS_GITHUB_TOKEN=ghp_xxx \
   -e GGHSTATS_FILTER="your-github-user/*" \
+  -e GGHSTATS_DB=/data/gghstats.db \
   -p 8080:8080 \
   -v gghstats-data:/data \
   --name gghstats \
@@ -913,7 +945,7 @@ make release                          # runs release-check then goreleaser relea
 - Update **`contrib/man/man1/gghstats.1`** — `.TH` date and `gghstats v<VERSION>` (see **[AGENTS.md](AGENTS.md)** — Man page sync). Optional: `make install-man` and `man gghstats`.
 - If shipping BSD ports: **`gmake port-freebsd-sync`** and/or **`gmake port-openbsd-sync`** after bumping **`VERSION`** (GNU make in repo root).
 - Ensure **CI** and **Security** workflows are green before pushing the release tag.
-- **Docker:** `Dockerfile` is for local `make docker-build` / `docker-scan`. **GoReleaser** uses **`Dockerfile.release`** (pre-built Linux binaries; same pattern as multi-arch release images).
+- **Docker:** `Dockerfile` is for local `make docker-build` / `docker-scan`. **GoReleaser** uses **`Dockerfile.release`** (pre-built Linux binaries; same pattern as multi-arch release images). Runtime base is **`gcr.io/distroless/static-debian13:nonroot`** (static Go binary, no shell/package manager).
 
 [Back to top](#gghstats)
 
@@ -957,24 +989,24 @@ Clarification for operators and contributors — not a scalability guarantee.
 
 Clarification — not a separate DB write lock.
 
-- **`sync.Coordinator` uses a `sync.Mutex`** so only **one full sync cycle** runs at a time (startup, scheduled tick, or `POST /api/v1/sync`). That is application-level **mutual exclusion between sync runs**, not a mutex around every `Upsert*`.
-- **Inside a run**, `sync.Run` iterates repos **sequentially** (`for _, repo := range repos`); each repo triggers several GitHub GETs, then SQLite upserts. There is **no** worker pool or parallel repo sync.
-- **SQLite** still enforces one writer at a time; the coordinator avoids overlapping sync goroutines, and the sequential loop avoids multiplying concurrent writers from a single process.
+- **`sync.Coordinator` uses a `sync.Mutex`** so only **one sync cycle** runs at a time (startup, scheduled tick, or `POST /api/v1/sync`). That is application-level **mutual exclusion between sync runs**, not a mutex around every `Upsert*`.
+- **Inside a run**, `sync.Run` processes repos via a **bounded worker pool** (`GGHSTATS_SYNC_WORKERS` / `--sync-workers`, default **4**). Values below 1 collapse to serial. Per-repo failures are logged and counted; they do not abort the cycle.
+- **SQLite** still enforces one writer at a time; the pool parallelizes GitHub I/O while DB writes share the connection pool. See **[SPEC.md](SPEC.md)** for the normative sync contract.
 
 ### GitHub API usage and rate limits
-
-Clarification — no built-in backoff today.
 
 - **Authentication:** a **personal access token** via `GGHSTATS_GITHUB_TOKEN` (`Authorization: Bearer …` on REST calls). There is **no** GitHub App or OAuth flow in-tree.
 - **Scheduler:** `GGHSTATS_SYNC_INTERVAL` (default **`1h`**) starts the next cycle only when the previous one finished; if a run is still in progress, the tick is **skipped** (`ErrInProgress`). Set **`GGHSTATS_SYNC_ON_STARTUP=false`** to skip the blocking full sync at process start (UI uses existing DB; trigger sync via the dashboard or `POST /api/v1/sync`).
 - **Per repo**, a typical sync issues several requests (metadata, open PRs, views, clones, referrers, paths; optional full stargazer history when star sync is enabled). Failures on individual endpoints are logged and the repo loop **continues** (`slog.Warn`, no abort of the whole run).
-- **No** explicit handling of `429`, `403` rate-limit responses, `Retry-After`, or exponential backoff in `internal/github`. A non-200 response becomes an error for that call; traffic endpoints are best-effort per repo.
-- **Pragmatic scope:** for a personal or small-org PAT and hourly (or slower) sync, GitHub limits are usually enough. Very large repo lists, aggressive intervals, or star-history on huge repos can hit limits — then increase the interval, narrow `GGHSTATS_FILTER`, or expect partial data until a later run succeeds.
+- **Retries:** the GitHub client retries **429**, rate-limit **403**, **5xx**, and network errors with exponential backoff and full jitter (default 4 attempts; honors `X-RateLimit-Reset` when advertised). See **[SPEC.md](SPEC.md)**.
+- **Pragmatic scope:** for a personal or small-org PAT and hourly (or slower) sync, GitHub limits are usually enough. Very large repo lists, aggressive intervals, or star-history on huge repos can still hit limits — then increase the interval, narrow `GGHSTATS_FILTER`, or lower worker count.
 
 [Back to top](#gghstats)
 
 ## Community standards
 
+- Roadmap: [`ROADMAP.md`](ROADMAP.md) — priority lines and release bands to 1.x ([band plans](docs/plan-v0.9.x.md))
+- Spec: [`SPEC.md`](SPEC.md) — HTTP API and sync contracts (source of truth vs older Database notes below if they diverge)
 - License: `LICENSE`
 - Contributing: `CONTRIBUTING.md`
 - Code of conduct: `CODE_OF_CONDUCT.md`

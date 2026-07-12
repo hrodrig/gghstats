@@ -155,7 +155,10 @@
     "referrers": "Top-Referrer",
     "paths": "Top-Pfade",
     "no_referrers": "Noch keine Referrer-Daten.",
-    "no_paths": "Noch keine Pfad-Daten."
+    "no_paths": "Noch keine Pfad-Daten.",
+    "trends_blurb": "Clone-Momentum gegenüber dem vorherigen Fenster gleicher Länge (gleiche Formel wie H2H).",
+    "momentum_7d": "Momentum (7d)",
+    "momentum_30d": "Momentum (30d)"
   },
   "not_found": {
     "title": "Nicht gefunden",

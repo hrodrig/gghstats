@@ -20,6 +20,8 @@ Commands:
   fetch    Fetch traffic data from GitHub API and store locally
   report   Display traffic summary in the terminal
   export   Export traffic data to CSV
+  backup   Snapshot the SQLite database (VACUUM INTO)
+  restore  Replace the SQLite database from a backup file
   version  Print version information
 
 CLI flags (fetch/report/export):
@@ -27,12 +29,19 @@ CLI flags (fetch/report/export):
   --token  TOKEN           GitHub token (or GGHSTATS_GITHUB_TOKEN env var)
   --db     PATH            SQLite database path (default: ./data/gghstats.db)
 
+Backup / restore:
+  --db     PATH            SQLite database path (or GGHSTATS_DB)
+  --output PATH            backup: destination file (required)
+  --input  PATH            restore: backup file to copy from (required)
+
 Server (gghstats serve or gghstats run):
   --port PORT              Listen port (overrides GGHSTATS_PORT; default 8080)
   --open                   Open the default browser when the server is ready
+  --demo                   Sample data UI; no GitHub token (or GGHSTATS_DEMO=true)
 
 Server env vars (serve):
-  GGHSTATS_GITHUB_TOKEN        GitHub personal access token (required)
+  GGHSTATS_GITHUB_TOKEN        GitHub personal access token (required unless demo)
+  GGHSTATS_DEMO                true = demo mode (sample data; no token / no sync)
   GGHSTATS_DB                  SQLite path (default: ./data/gghstats.db)
   GGHSTATS_HOST                Bind address (default: 127.0.0.1; use 0.0.0.0 in Docker)
   GGHSTATS_PORT                Listen port (default: 8080)
@@ -56,6 +65,18 @@ func main() {
 	os.Exit(runCLI(os.Args))
 }
 
+type cliCmd func(args []string) error
+
+var cliCommands = map[string]cliCmd{
+	"serve":   runServe,
+	"run":     runServe,
+	"fetch":   runFetch,
+	"report":  runReport,
+	"export":  runExport,
+	"backup":  runBackup,
+	"restore": runRestore,
+}
+
 // runCLI runs the CLI and returns a process exit code (0 = success).
 func runCLI(args []string) int {
 	if len(args) >= 2 && isPrintSampleConfigArg(args[1]) {
@@ -67,31 +88,8 @@ func runCLI(args []string) int {
 		return 1
 	}
 
-	switch args[1] {
-	case "serve", "run":
-		if err := runServe(args[2:]); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			return 1
-		}
-		return 0
-	case "fetch":
-		if err := runFetch(args[2:]); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			return 1
-		}
-		return 0
-	case "report":
-		if err := runReport(args[2:]); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			return 1
-		}
-		return 0
-	case "export":
-		if err := runExport(args[2:]); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			return 1
-		}
-		return 0
+	cmd := args[1]
+	switch cmd {
 	case "version":
 		fmt.Printf("gghstats %s (commit: %s, built: %s)\n",
 			version.Version, version.Commit, version.BuildDate)
@@ -99,10 +97,18 @@ func runCLI(args []string) int {
 	case "--help", "-h", "help":
 		fmt.Println(usage)
 		return 0
-	default:
-		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n%s\n", args[1], usage)
+	}
+
+	run, ok := cliCommands[cmd]
+	if !ok {
+		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n%s\n", cmd, usage)
 		return 1
 	}
+	if err := run(args[2:]); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return 1
+	}
+	return 0
 }
 
 func isPrintSampleConfigArg(s string) bool {

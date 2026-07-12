@@ -7,6 +7,34 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-12
+
+### Added
+
+- **Repo page trends:** clone momentum (7d / 30d) on the repository detail page, reusing `internal/h2h` (`Momentum7d` / `Momentum30d`) with the same percent formatting as H2H.
+- **`gghstats backup` / `gghstats restore`:** snapshot SQLite with `VACUUM INTO` (`--output`); restore by file copy (`--input` onto `--db` / `GGHSTATS_DB`). Stop `serve` before restore if the DB is in use.
+- **Demo mode:** `gghstats serve --demo` / `GGHSTATS_DEMO=true` seeds sample repos (`demo/alpha|beta|gamma`) when the DB is empty; no GitHub token, sync, or update check.
+- **Security headers baseline:** `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` on all HTTP responses.
+- **SRI** for Chart.js 4.4.1, Luxon 3.5.0, and chartjs-adapter-luxon 1.3.1 (pinned unpkg URLs + `integrity`).
+- **Access logs:** `http` slog lines include `status`.
+- **README comparison table** vs niche peers; **`internal/collector/README.md`** documents opt-in telemetry.
+- **ROADMAP.md** and **SPEC.md:** product direction and normative HTTP API / sync contracts (aligned with worker pool and GitHub retries).
+- **docs/plan-v0.9.x.md**, **plan-v0.10.x.md**, **plan-v0.11.x.md**, **plan-v1.0.0.md:** scoped band plans (exit criteria + checklists).
+- **docs/README.md:** index for band plans and VHS terminal demo.
+- **docs/demo.tape** / **docs/demo.gif:** Charm VHS CLI walkthrough (embedded in README Demo).
+
+### Changed
+
+- **Container runtime:** switch from Alpine 3.24 to **`gcr.io/distroless/static-debian13:nonroot`** (`Dockerfile` + `Dockerfile.release`, same pattern as groot). Builder uses `golang:1.26.5-bookworm` with `CGO_ENABLED=0`. Default in-image `GGHSTATS_DB=/data/gghstats.db`.
+- **ROADMAP.md / docs/plan-v0.11.x.md:** 0.11.x primary goal is **API-only mode** + JSON dogfood (Line D); webhooks moved to stretch / 1.1+. Name stays gghstats.
+- **ROADMAP.md:** release bands to 1.x with links to per-band plans under `docs/`; priority lines A–D.
+- **README Database / sync notes:** document worker pool and GitHub client retries (was still describing serial sync and no backoff).
+- **docs/plan-v0.9.x.md:** band checklist complete (trends, backup, demo, comparison, quick wins).
+
+### Fixed
+
+- **CHANGELOG compare link:** `[Unreleased]` pointed at `v0.8.1...HEAD` (was still `v0.8.0...HEAD` during the 0.9 cycle).
+
 ## [0.8.1] - 2026-07-09
 
 ### Fixed
@@ -400,7 +428,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/hrodrig/gghstats/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/hrodrig/gghstats/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/hrodrig/gghstats/compare/v0.7.11...v0.8.0
 [0.7.11]: https://github.com/hrodrig/gghstats/compare/v0.7.10...v0.7.11

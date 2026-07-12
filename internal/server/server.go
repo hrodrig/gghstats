@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/hrodrig/gghstats/assets"
+	"github.com/hrodrig/gghstats/internal/h2h"
 	"github.com/hrodrig/gghstats/internal/i18n"
 	"github.com/hrodrig/gghstats/internal/metrics"
 	"github.com/hrodrig/gghstats/internal/store"
@@ -220,6 +221,7 @@ func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 	if cfg.RateLimiter != nil {
 		h = cfg.RateLimiter.Middleware(h, skip)
 	}
+	h = securityHeadersMiddleware(h)
 	return h
 }
 
@@ -228,9 +230,15 @@ func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 func logMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		next.ServeHTTP(w, r)
+		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(rec, r)
 		if r.URL.Path != HealthzPath {
-			slog.Info("http", "method", r.Method, "path", r.URL.Path, "dur", time.Since(start).Round(time.Millisecond))
+			slog.Info("http",
+				"method", r.Method,
+				"path", r.URL.Path,
+				"status", rec.status,
+				"dur", time.Since(start).Round(time.Millisecond),
+			)
 		}
 	})
 }
@@ -698,6 +706,17 @@ func handleRepoPage(cfg Config, db *store.Store, tmpl *template.Template) http.H
 		clonesJSON, _ := json.Marshal(clones)
 		starsJSON, _ := json.Marshal(stars)
 
+		var momentum7d, momentum30d string
+		var momentum7dUp, momentum30dUp bool
+		if m, err := h2h.LoadRepoMetrics(db, fullName); err != nil {
+			slog.Warn("repo page momentum", "repo", fullName, "error", err)
+		} else if m != nil {
+			momentum7d = h2h.FormatMomentumPct(m.Momentum7d)
+			momentum30d = h2h.FormatMomentumPct(m.Momentum30d)
+			momentum7dUp = m.Momentum7d >= 0
+			momentum30dUp = m.Momentum30d >= 0
+		}
+
 		lb := bindPageLocale(r, cfg)
 		data := struct {
 			localeBinder
@@ -712,6 +731,11 @@ func handleRepoPage(cfg Config, db *store.Store, tmpl *template.Template) http.H
 			ChartViewsTitle  string
 			ChartStarsTitle  string
 			SyncRepoAria     string
+			Momentum7d       string
+			Momentum30d      string
+			Momentum7dUp     bool
+			Momentum30dUp    bool
+			HasMomentum      bool
 		}{
 			localeBinder:     lb,
 			Repo:             summary,
@@ -725,6 +749,11 @@ func handleRepoPage(cfg Config, db *store.Store, tmpl *template.Template) http.H
 			ChartViewsTitle:  lb.Tfmt("repo.chart_views", map[string]string{"repo": fullName}),
 			ChartStarsTitle:  lb.Tfmt("repo.chart_stars", map[string]string{"repo": fullName}),
 			SyncRepoAria:     lb.Tfmt("common.sync_repo_aria", map[string]string{"repo": fullName}),
+			Momentum7d:       momentum7d,
+			Momentum30d:      momentum30d,
+			Momentum7dUp:     momentum7dUp,
+			Momentum30dUp:    momentum30dUp,
+			HasMomentum:      momentum7d != "" && momentum30d != "",
 		}
 
 		content := executeTemplate(tmpl, "repo", data)

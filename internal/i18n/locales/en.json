@@ -155,7 +155,10 @@
     "referrers": "Top referrers",
     "paths": "Top paths",
     "no_referrers": "No referrer data yet.",
-    "no_paths": "No path data yet."
+    "no_paths": "No path data yet.",
+    "trends_blurb": "Clone momentum vs the previous window of the same length (same formula as H2H).",
+    "momentum_7d": "Momentum (7d)",
+    "momentum_30d": "Momentum (30d)"
   },
   "not_found": {
     "title": "Not found",

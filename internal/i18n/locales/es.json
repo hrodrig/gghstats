@@ -155,7 +155,10 @@
     "referrers": "Principales referrers",
     "paths": "Principales rutas",
     "no_referrers": "Sin datos de referrers aún.",
-    "no_paths": "Sin datos de rutas aún."
+    "no_paths": "Sin datos de rutas aún.",
+    "trends_blurb": "Momento de clones frente a la ventana anterior de la misma duración (misma fórmula que H2H).",
+    "momentum_7d": "Momento (7d)",
+    "momentum_30d": "Momento (30d)"
   },
   "not_found": {
     "title": "No encontrado",

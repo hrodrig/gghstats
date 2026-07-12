@@ -362,6 +362,10 @@ func TestRepoPage(t *testing.T) {
 	db.UpsertRepo("owner/repo", "desc", 5, 1, 5, 0, 0, false, false, "")
 	db.UpsertView("owner/repo", "2026-03-20", 10, 5)
 	db.UpsertClone("owner/repo", "2026-03-20", 3, 2)
+	today := time.Now().UTC().Format("2006-01-02")
+	prev := time.Now().UTC().AddDate(0, 0, -8).Format("2006-01-02")
+	db.UpsertClone("owner/repo", today, 20, 10)
+	db.UpsertClone("owner/repo", prev, 5, 2)
 
 	handler := New(Config{Store: db})
 
@@ -371,6 +375,13 @@ func TestRepoPage(t *testing.T) {
 
 	if w.Code != 200 {
 		t.Errorf("status = %d, want 200", w.Code)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `data-gghstats-role="trends"`) {
+		t.Fatalf("expected trends block in repo page")
+	}
+	if !strings.Contains(body, "Momentum (7d)") {
+		t.Fatalf("expected momentum label in body")
 	}
 }
 
