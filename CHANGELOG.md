@@ -7,6 +7,20 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **ROADMAP.md:** release bands to 1.x with links to per-band plans under `docs/`; priority lines A–C retained.
+- **README Database / sync notes:** document worker pool and GitHub client retries (was still describing serial sync and no backoff).
+
+### Added
+
+- **ROADMAP.md** and **SPEC.md:** product direction and normative HTTP API / sync contracts (aligned with worker pool and GitHub retries).
+- **docs/plan-v0.9.x.md**, **plan-v0.10.x.md**, **plan-v0.11.x.md**, **plan-v1.0.0.md:** scoped band plans (exit criteria + checklists).
+
+### Fixed
+
+- **CHANGELOG compare link:** `[Unreleased]` now points at `v0.8.1...HEAD` (was still `v0.8.0...HEAD`).
+
 ## [0.8.1] - 2026-07-09
 
 ### Fixed
@@ -400,7 +414,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.8.1...HEAD
 [0.8.1]: https://github.com/hrodrig/gghstats/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/hrodrig/gghstats/compare/v0.7.11...v0.8.0
 [0.7.11]: https://github.com/hrodrig/gghstats/compare/v0.7.10...v0.7.11
