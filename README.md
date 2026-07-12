@@ -54,6 +54,7 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 - [Demo](#demo)
   - [Beyond GitHub’s 14-day Traffic tab](#beyond-githubs-14-day-traffic-tab)
 - [Features](#features)
+  - [Compared to similar tools](#compared-to-similar-tools)
 - [Repository page charts](#repository-page-charts-clones--views)
 - [Quick start](#quick-start)
 - [Install](#install)
@@ -93,16 +94,25 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 
 ### Compared to similar tools
 
-| | **gghstats** | ghstats (Rust) | git-clone-stats (Python) |
-|--|--------------|----------------|---------------------------|
-| Self-hosted dashboard | Yes | Limited / different focus | Script-oriented |
-| History beyond GitHub’s 14-day window | Yes (SQLite) | Varies | Varies |
-| Single static binary | Yes (Go) | Yes (Rust) | No (Python runtime) |
-| H2H + clone momentum trends | Yes | — | — |
-| Cosign + SBOM on releases | Yes | Check upstream | Check upstream |
-| Bring-your-own frontend (API-only) | Planned 0.11 | — | — |
+Niche peers that **archive GitHub traffic beyond the 14-day window**. Not a full market survey (SaaS dashboards and one-off scripts omitted). Closest peer: **[ghstats](https://github.com/vladkens/ghstats)**.
 
-gghstats stays **single binary + SQLite**; production Compose/Helm live in **gghstats-selfhosted**.
+| | **gghstats** | [ghstats](https://github.com/vladkens/ghstats) | [git-clone-stats](https://github.com/taylorwilsdon/git-clone-stats) | [gh-tracker](https://github.com/rayketcham-lab/gh-tracker) | GitHub Traffic |
+|--|--------------|------------------------------------------------|------------------------------------------------------------------|--------------------------------------------------------------|----------------|
+| Maintenance (checked 2026-07) | Active (`v0.9.0`) | Occasional (last commit ~2026-06) | Quiet (last release ~2025-08) | Early / intermittent (last commit ~2026-04) | Active (GitHub product) |
+| History beyond 14d | Yes (SQLite) | Yes (SQLite) | Yes (SQLite / Firestore) | Yes (SQLite) | No (14d only) |
+| Self-hosted dashboard | Yes | Yes | Yes (minimal HTML/JS) | Yes (React + FastAPI) | GitHub UI only |
+| Runtime / packaging | Go single binary; `.deb`/`.rpm`/BSD | Rust single binary; Docker | Python (PyPI / Docker) | Python + Node frontend | — |
+| CLI + backup/export | Yes (`fetch`/`report`/`backup`) | Limited | Yes (`sync` / `server` + DB export) | Collector CLI + CSV/JSON export | — |
+| Multi-repo sync / filters | Yes (owner/repo rules) | Yes (owner, forks, archived) | Yes (UI + org/user) | Yes (list / auto-discover) | Per-repo |
+| Badges (README SVG) | Yes | — | Yes | — | — |
+| UI languages (i18n) | EN / ES / DE / FR / PT | — | — | — | — |
+| Repo compare / momentum | H2H + 7d/30d clone momentum | — | Charts / date ranges | KPI trend indicators | — |
+| Broader GitHub metrics | Traffic + star history focus | Traffic + stars/forks/issues/PRs | Clones / views / stars | Traffic + people + commits + releases + more | Traffic tab only |
+| JSON API | Yes | Yes | Yes | Yes (many endpoints) | REST API only |
+| Release supply chain | Cosign + SBOM | Check upstream | Check upstream | Check upstream | — |
+| Ops manifests | [gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted) (Compose / Helm / observability) | Docker-focused | Docker Compose / App Engine | systemd units | — |
+
+gghstats stays **single binary + SQLite**; leans packaging, i18n, H2H/momentum, and a companion ops repo. Pick **gh-tracker** if you want a wider GitHub analytics surface (people, commits, releases) with a React UI. Maintenance labels are a snapshot (GitHub last commit / release at check time) — re-verify upstream before you depend on a peer.
 
 ### Repository page charts (Clones & Views)
 
@@ -1029,6 +1039,8 @@ Thanks for using and contributing to `gghstats`.
 Hats off to **[ghstats](https://github.com/vladkens/ghstats)** by [vladkens](https://github.com/vladkens): a self-hosted GitHub traffic dashboard in **Rust** that also keeps historical traffic beyond GitHub’s short default window, with SQLite and a small deployment story. `gghstats` is a separate **Go** implementation and design, but that project deserves credit as important prior work in the same problem space.
 
 Thanks also to **[git-clone-stats](https://github.com/taylorwilsdon/git-clone-stats)** by [taylorwilsdon](https://github.com/taylorwilsdon): a self-hosted GitHub clone and traffic analytics stack in **Python** with SQLite (or Firestore), a minimal HTML/JS dashboard, and **shields.io-style badges** for README embeds. The badge endpoint and “copy Markdown” embed flow in `gghstats` follow a similar idea; this project is independent Go code, not a port.
+
+Also in the same niche: **[gh-tracker](https://github.com/rayketcham-lab/gh-tracker)** (Python/FastAPI + React) — broader GitHub metrics archival beyond traffic alone. See [Compared to similar tools](#compared-to-similar-tools).
 
 [Back to top](#gghstats)
 

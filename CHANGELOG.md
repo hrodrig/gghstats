@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **README comparison table:** expand vs ghstats, git-clone-stats, gh-tracker, and GitHub Traffic; more operator-facing rows (maintenance, CLI, badges, i18n, metrics breadth, ops manifests); ToC link under Features.
+
 ## [0.9.0] - 2026-07-12
 
 ### Added
