@@ -19,8 +19,9 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior: [plan-v0.10.x.md](plan-v0.10.x.md)
 |----|------|--------|
 | API1 | **API-only mode** | Env/flag disables HTML routes; sync + store + JSON + optional `/metrics` / badges / healthz still work. |
 | API2 | **Dogfood parity** | Endpoints (or fields) for data the official UI shows: repo list aggregates, traffic series, H2H inputs/scores, trends/momentum once A1 exists. Prefer additive `/api/v1/...`. |
-| API3 | **CORS / auth docs** | Configurable CORS for API-only; clear SPEC + README: token via header; warn against embedding secrets in SPAs. |
-| API4 | **SPEC update** | List new routes/fields; note API-only behavior. Feeds 1.0 freeze. |
+| API3 | **CORS / auth docs** | Configurable CORS for API-only; clear SPEC + README: token via header; warn against embedding secrets in SPAs. Startup **warn** if API-only + overly open CORS (e.g. `Access-Control-Allow-Origin: *`) — token-leak footgun. |
+| API4 | **SPEC update** | List new routes/fields; note API-only behavior (including whether `/sitemap.xml` / `/robots.txt` stay on or off). Feeds 1.0 freeze. |
+| API5 | **Dogfood contract test** | Mandatory before exit: start with API-only and verify an external client can rebuild **index**, **repo page**, and **H2H** from documented endpoints alone (checklist in SPEC or test). |
 
 ## Stretch (same band if capacity)
 
@@ -46,15 +47,16 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior: [plan-v0.10.x.md](plan-v0.10.x.md)
 ## Exit criteria
 
 1. Documented `GGHSTATS_API_ONLY` (or agreed name): HTML off, JSON on; smoke-tested.
-2. External client can rebuild **core** dashboard views from documented endpoints alone (checklist in SPEC or README).
-3. CORS + auth documented; tests for API-only routing (HTML → 404/disabled).
-4. CHANGELOG + SPEC updated. Webhooks **not** required for band exit.
+2. External client can rebuild **core** dashboard views from documented endpoints alone (checklist in SPEC or README) — **dogfood contract test** green.
+3. CORS + auth documented; tests for API-only routing (HTML → 404/disabled); startup warn when CORS is dangerously open with API-only.
+4. CHANGELOG + SPEC updated (incl. sitemap/robots under API-only). Webhooks **not** required for band exit.
 
 ## Checklist
 
 - [ ] API-only flag + server wiring + tests
 - [ ] Dogfood gap list vs official UI → endpoints/fields added
-- [ ] CORS config (sensible defaults for API-only)
-- [ ] SPEC + README (“Bring your own frontend”)
+- [ ] Dogfood contract test (index + repo + H2H via API only)
+- [ ] CORS config (sensible defaults for API-only) + open-CORS warn
+- [ ] SPEC + README (“Bring your own frontend”; sitemap/robots policy)
 - [ ] CHANGELOG
 - [ ] (Stretch) Webhooks / delta — or explicit defer note to 1.1

@@ -11,6 +11,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 - **README comparison table:** expand vs ghstats, git-clone-stats, gh-tracker, and GitHub Traffic; more operator-facing rows (maintenance, CLI, badges, i18n, metrics breadth, ops manifests); ToC link under Features.
 - **README Features:** add missing product capabilities with short “what it solves” blurbs (history >14d, sync, momentum, badges, themes, Prometheus, rate limit/whitelist, packaging).
+- **ROADMAP / band plans:** post-0.9 park of filtered leftover QW and sync notes into [plan-v0.10.x.md](docs/plan-v0.10.x.md); dogfood contract + CORS warn into [plan-v0.11.x.md](docs/plan-v0.11.x.md); Line A / “next” text updated after 0.9 ship.
 
 ## [0.9.0] - 2026-07-12
 

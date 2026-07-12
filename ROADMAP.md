@@ -28,7 +28,7 @@ Detailed band plans (scope, exit criteria, checklist):
 
 | Line | What | Effort | Why |
 |------|------|--------|-----|
-| **A** | **Trending / velocity on repo page** + optional **alerts** (clone/view drop) | M | Momentum already in H2H (`Momentum7d` / `Momentum30d`); not on the repo page. Alerts can follow **pgwd**-style sinks without bloating the core. |
+| **A** | **Trending / velocity on repo page** + optional **alerts** (clone/view drop) | M | Repo-page momentum shipped in **0.9**; alerts remain (pgwd-style sinks, opt-in). |
 | **B** | **Webhooks + delta-oriented sync**; GraphQL where it cuts REST pagination | M–L | Less polling; large accounts hit REST rate limits. Prefer **1.1+** if it risks slipping 1.0. |
 | **C** | **Multi-repo analytics** (leaderboards, org rollups) | M | Reuse H2H scoring; expose rankings / rollups. |
 | **D** | **API-only mode** + JSON dogfood for official UI reads | M | Same binary; HTML optional. External React/Svelte/etc. against documented `/api/v1`. Not an in-tree SPA. |
@@ -38,6 +38,7 @@ Detailed band plans (scope, exit criteria, checklist):
 | Item | Notes |
 |------|--------|
 | **Incremental star history** | Full stargazer re-fetch is **O(n)** pages per sync. Add a cursor / `last_seen_star_count` (or equivalent). |
+| **UpdateDeltas / other sync cost** | See [plan-v0.10.x.md](docs/plan-v0.10.x.md) (pair with SYNC; avoid cargo-cult pool bumps). |
 
 ## Release bands (path to 1.x)
 
@@ -52,19 +53,15 @@ Detailed band plans (scope, exit criteria, checklist):
 | Band | Goal | Must land | Defer |
 |------|------|-----------|--------|
 | **0.9.x** | Raw data → insights; zero-friction try-out | Trends on repo page; backup **or** demo; README comparison; selected quick wins | Webhooks (B); heavy alerts; API-only |
-| **0.10.x** | Cheaper sync; usable ops signals | Incremental stars; opt-in alerts (A2); XDG prep (docs/flag) | Full GraphQL rewrite |
-| **0.11.x** | Bring-your-own frontend (still named gghstats) | API-only mode; JSON covers official UI reads; CORS/auth in SPEC | In-tree SPA; GitHub App — webhooks optional stretch → else **1.1+** |
+| **0.10.x** | Cheaper sync; usable ops signals | Incremental stars; opt-in alerts (A2); XDG prep (docs/flag); leftover QW in plan | Full GraphQL rewrite |
+| **0.11.x** | Bring-your-own frontend (still named gghstats) | API-only mode; JSON covers official UI reads; CORS/auth + dogfood contract test in SPEC | In-tree SPA; GitHub App — webhooks optional stretch → else **1.1+** |
 | **1.0.0** | Safe to depend | Sensible default DB path; SPEC freeze (incl. API-only); packaging parity; `release-check`; Line A done | Large new features |
 
 **Risk rule:** do **not** block 1.0 on Line B. Prefer 1.0 = A + incremental stars + defaults + **API-only if 0.11 landed**; finish B in **0.11 stretch** or **1.1**.
 
-## This week (if only one track)
+## Next (after 0.9 breathe)
 
-1. **Trends on repo page + backup subcommand** — quality perception.  
-2. **Demo mode** — zero barrier for evaluators.  
-3. **README comparison table** — niche positioning.
-
-Pick **one**; ship on `develop` before starting Line B. Detail: [plan-v0.9.x.md](docs/plan-v0.9.x.md).
+**0.9.x shipped (2026-07-12).** Next band: [plan-v0.10.x.md](docs/plan-v0.10.x.md) — incremental stars, opt-in alerts, XDG prep; concrete QW leftovers parked there (not a dump of external audit lists).
 
 ## Explicit non-goals (this repo)
 
