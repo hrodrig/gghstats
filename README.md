@@ -160,6 +160,7 @@ Quick validation only. **Production Docker / Compose / Traefik / Helm:** **[gghs
 docker run --rm -d \
   -e GGHSTATS_GITHUB_TOKEN=ghp_xxx \
   -e GGHSTATS_FILTER="your-github-user/*" \
+  -e GGHSTATS_DB=/data/gghstats.db \
   -p 8080:8080 \
   -v gghstats-data:/data \
   --name gghstats \
@@ -938,7 +939,7 @@ make release                          # runs release-check then goreleaser relea
 - Update **`contrib/man/man1/gghstats.1`** — `.TH` date and `gghstats v<VERSION>` (see **[AGENTS.md](AGENTS.md)** — Man page sync). Optional: `make install-man` and `man gghstats`.
 - If shipping BSD ports: **`gmake port-freebsd-sync`** and/or **`gmake port-openbsd-sync`** after bumping **`VERSION`** (GNU make in repo root).
 - Ensure **CI** and **Security** workflows are green before pushing the release tag.
-- **Docker:** `Dockerfile` is for local `make docker-build` / `docker-scan`. **GoReleaser** uses **`Dockerfile.release`** (pre-built Linux binaries; same pattern as multi-arch release images).
+- **Docker:** `Dockerfile` is for local `make docker-build` / `docker-scan`. **GoReleaser** uses **`Dockerfile.release`** (pre-built Linux binaries; same pattern as multi-arch release images). Runtime base is **`gcr.io/distroless/static-debian13:nonroot`** (static Go binary, no shell/package manager).
 
 [Back to top](#gghstats)
 
