@@ -221,6 +221,7 @@ func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 	if cfg.RateLimiter != nil {
 		h = cfg.RateLimiter.Middleware(h, skip)
 	}
+	h = securityHeadersMiddleware(h)
 	return h
 }
 
@@ -229,9 +230,15 @@ func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 func logMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		next.ServeHTTP(w, r)
+		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(rec, r)
 		if r.URL.Path != HealthzPath {
-			slog.Info("http", "method", r.Method, "path", r.URL.Path, "dur", time.Since(start).Round(time.Millisecond))
+			slog.Info("http",
+				"method", r.Method,
+				"path", r.URL.Path,
+				"status", rec.status,
+				"dur", time.Since(start).Round(time.Millisecond),
+			)
 		}
 	})
 }

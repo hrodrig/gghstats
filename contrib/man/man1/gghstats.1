@@ -87,10 +87,17 @@ default \fB4\fR). Lower if you hit GitHub secondary rate limits on large account
 .TP
 .BR \-\-open
 Open the default browser when the server is ready (or \fBGGHSTATS_OPEN_BROWSER=1\fR).
+.TP
+.BR \-\-demo
+Serve the dashboard with sample SQLite data; no GitHub token and no sync
+(or \fBGGHSTATS_DEMO=true\fR).
 .SH ENVIRONMENT
 .TP
 .B GGHSTATS_GITHUB_TOKEN
-GitHub personal access token (required for \fBserve\fR).
+GitHub personal access token (required for \fBserve\fR unless demo mode).
+.TP
+.B GGHSTATS_DEMO
+When \fBtrue\fR, enable demo mode (sample data; no token; sync disabled).
 .TP
 .B GGHSTATS_DB
 SQLite path (default: \fB./data/gghstats.db\fR).

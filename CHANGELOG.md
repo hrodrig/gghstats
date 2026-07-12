@@ -11,6 +11,11 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 - **Repo page trends:** clone momentum (7d / 30d) on the repository detail page, reusing `internal/h2h` (`Momentum7d` / `Momentum30d`) with the same percent formatting as H2H.
 - **`gghstats backup` / `gghstats restore`:** snapshot SQLite with `VACUUM INTO` (`--output`); restore by file copy (`--input` onto `--db` / `GGHSTATS_DB`). Stop `serve` before restore if the DB is in use.
+- **Demo mode:** `gghstats serve --demo` / `GGHSTATS_DEMO=true` seeds sample repos (`demo/alpha|beta|gamma`) when the DB is empty; no GitHub token, sync, or update check.
+- **Security headers baseline:** `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` on all HTTP responses.
+- **SRI** for Chart.js 4.4.1, Luxon 3.5.0, and chartjs-adapter-luxon 1.3.1 (pinned unpkg URLs + `integrity`).
+- **Access logs:** `http` slog lines include `status`.
+- **README comparison table** vs niche peers; **`internal/collector/README.md`** documents opt-in telemetry.
 - **ROADMAP.md** and **SPEC.md:** product direction and normative HTTP API / sync contracts (aligned with worker pool and GitHub retries).
 - **docs/plan-v0.9.x.md**, **plan-v0.10.x.md**, **plan-v0.11.x.md**, **plan-v1.0.0.md:** scoped band plans (exit criteria + checklists).
 
@@ -19,6 +24,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - **ROADMAP.md / docs/plan-v0.11.x.md:** 0.11.x primary goal is **API-only mode** + JSON dogfood (Line D); webhooks moved to stretch / 1.1+. Name stays gghstats.
 - **ROADMAP.md:** release bands to 1.x with links to per-band plans under `docs/`; priority lines A–D.
 - **README Database / sync notes:** document worker pool and GitHub client retries (was still describing serial sync and no backoff).
+- **docs/plan-v0.9.x.md:** band checklist complete (trends, backup, demo, comparison, quick wins).
 
 ### Fixed
 

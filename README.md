@@ -82,6 +82,21 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 - CLI mode for fetch/report/export
 - Single binary, SQLite storage, no external DB dependency
 - Docker image on GHCR; Compose / Helm examples live in **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**
+- **Demo mode:** `gghstats serve --demo` (or `GGHSTATS_DEMO=true`) — sample data, no GitHub token
+- **Backup:** `gghstats backup --output …` / `gghstats restore --input …`
+
+### Compared to similar tools
+
+| | **gghstats** | ghstats (Rust) | git-clone-stats (Python) |
+|--|--------------|----------------|---------------------------|
+| Self-hosted dashboard | Yes | Limited / different focus | Script-oriented |
+| History beyond GitHub’s 14-day window | Yes (SQLite) | Varies | Varies |
+| Single static binary | Yes (Go) | Yes (Rust) | No (Python runtime) |
+| H2H + clone momentum trends | Yes | — | — |
+| Cosign + SBOM on releases | Yes | Check upstream | Check upstream |
+| Bring-your-own frontend (API-only) | Planned 0.11 | — | — |
+
+gghstats stays **single binary + SQLite**; production Compose/Helm live in **gghstats-selfhosted**.
 
 ### Repository page charts (Clones & Views)
 
@@ -99,6 +114,15 @@ Exact colors depend on light/dark theme (Bootstrap `--bs-primary` / `--bs-info`,
 ## Quick start
 
 The steps below are a **minimal path** to install gghstats, run the dashboard once, and **try the UI** (repository list, charts, H2H, languages). They are **not** a production or server deployment.
+
+### Demo mode (no GitHub token)
+
+```bash
+gghstats serve --demo --open
+# or: GGHSTATS_DEMO=true gghstats run --open
+```
+
+Uses a separate sample dataset (`demo/alpha`, `demo/beta`, `demo/gamma`) when the DB is empty. Sync and update-check are disabled. For real traffic, unset demo and set `GGHSTATS_GITHUB_TOKEN`.
 
 **Running gghstats on a VPS, with TLS, Traefik, Compose stacks, Helm, or observability** — use **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**. That repository owns production manifests, env layout (`GGHSTATS_HOST_DATA`), and operator docs; this repo ships the application binary and image only.
 

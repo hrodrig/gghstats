@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/hrodrig/gghstats/internal/collector"
+	"github.com/hrodrig/gghstats/internal/demo"
 	"github.com/hrodrig/gghstats/internal/github"
 	"github.com/hrodrig/gghstats/internal/i18n"
 	"github.com/hrodrig/gghstats/internal/metrics"
@@ -45,6 +46,7 @@ type serveConfig struct {
 	ReverseProxyRules string
 	EnableCollector   bool
 	EnableUpdateCheck bool
+	Demo              bool
 }
 
 func loadServeConfig() serveConfig {
@@ -63,6 +65,7 @@ func loadServeConfig() serveConfig {
 		BadgePublic:      os.Getenv("GGHSTATS_BADGE_PUBLIC") != "false",
 		BadgeCacheMaxAge: 300,
 		PublicURL:        strings.TrimSpace(os.Getenv("GGHSTATS_PUBLIC_URL")),
+		Demo:             envBool("GGHSTATS_DEMO", false),
 	}
 
 	if v := os.Getenv("GGHSTATS_BADGE_CACHE_SECONDS"); v != "" {
@@ -108,14 +111,20 @@ func parseServeFlags(cfg *serveConfig, args []string) error {
 	fs.StringVar(&cfg.Port, "port", cfg.Port, "HTTP listen port (overrides `GGHSTATS_PORT`; default 8080)")
 	fs.IntVar(&cfg.SyncWorkers, "sync-workers", cfg.SyncWorkers, "Concurrent repos per sync cycle (overrides `GGHSTATS_SYNC_WORKERS`; default 4)")
 	fs.BoolVar(&cfg.OpenBrowser, "open", cfg.OpenBrowser, "Open the default browser when the server is ready")
+	fs.BoolVar(&cfg.Demo, "demo", cfg.Demo, "Run with sample data; no GitHub token (overrides `GGHSTATS_DEMO`)")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return errServeHelp
 		}
 		return err
 	}
+	if cfg.Demo {
+		cfg.SyncOnStartup = false
+		cfg.EnableUpdateCheck = false
+		return nil
+	}
 	if cfg.GithubToken == "" {
-		return fmt.Errorf("GGHSTATS_GITHUB_TOKEN is required")
+		return fmt.Errorf("GGHSTATS_GITHUB_TOKEN is required (or use --demo / GGHSTATS_DEMO=true)")
 	}
 	return nil
 }
@@ -198,8 +207,11 @@ func runServe(args []string) error {
 	}
 	defer db.Close()
 
-	gh := github.NewClient(cfg.GithubToken)
-	applyOptionalGitHubBaseURL(gh)
+	if cfg.Demo {
+		if err := demo.SeedIfEmpty(db); err != nil {
+			return fmt.Errorf("demo seed: %w", err)
+		}
+	}
 
 	var metricsReg *prometheus.Registry
 	var domainMetrics *metrics.Domain
@@ -210,7 +222,6 @@ func runServe(args []string) error {
 			Filter:         cfg.Filter,
 			PerRepoEnabled: os.Getenv("GGHSTATS_METRICS_PER_REPO") == "true",
 		})
-		gh.SetMetrics(domainMetrics)
 	}
 
 	rateLimiter := setupRateLimiter()
@@ -220,21 +231,30 @@ func runServe(args []string) error {
 
 	whitelist := server.NewWhitelist(server.ParseWhitelistEnv(), cfg.APIToken)
 
-	syncOpts := sync.Options{
-		IncludePrivate: cfg.IncludePrivate,
-		Filter:         cfg.Filter,
-		SyncStars:      true,
-		Workers:        cfg.SyncWorkers,
-	}
-	coord := sync.NewCoordinator(gh, db, syncOpts)
-	if domainMetrics != nil {
-		coord.SetMetrics(domainMetrics)
-	}
-
-	// Start scheduler in background
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go startScheduler(ctx, coord, cfg.SyncInterval, cfg.SyncOnStartup)
+
+	var coord *sync.Coordinator
+	if cfg.Demo {
+		slog.Info("demo mode: GitHub sync and update check disabled")
+	} else {
+		gh := github.NewClient(cfg.GithubToken)
+		applyOptionalGitHubBaseURL(gh)
+		if domainMetrics != nil {
+			gh.SetMetrics(domainMetrics)
+		}
+		syncOpts := sync.Options{
+			IncludePrivate: cfg.IncludePrivate,
+			Filter:         cfg.Filter,
+			SyncStars:      true,
+			Workers:        cfg.SyncWorkers,
+		}
+		coord = sync.NewCoordinator(gh, db, syncOpts)
+		if domainMetrics != nil {
+			coord.SetMetrics(domainMetrics)
+		}
+		go startScheduler(ctx, coord, cfg.SyncInterval, cfg.SyncOnStartup)
+	}
 
 	cssAbs, cssQuery := resolveCSSPath()
 

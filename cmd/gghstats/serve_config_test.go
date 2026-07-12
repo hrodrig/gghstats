@@ -124,3 +124,33 @@ func TestLoadServeConfigUpdateCheckOptOut(t *testing.T) {
 		t.Errorf("EnableUpdateCheck want false after GGHSTATS_ENABLE_UPDATE_CHECK=false")
 	}
 }
+
+func TestParseServeFlagsDemoSkipsToken(t *testing.T) {
+	t.Setenv("GGHSTATS_GITHUB_TOKEN", "")
+	t.Setenv("GGHSTATS_DEMO", "")
+	cfg := loadServeConfig()
+	if err := parseServeFlags(&cfg, []string{"--demo"}); err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.Demo {
+		t.Fatal("Demo want true")
+	}
+	if cfg.SyncOnStartup {
+		t.Fatal("SyncOnStartup want false in demo")
+	}
+	if cfg.EnableUpdateCheck {
+		t.Fatal("EnableUpdateCheck want false in demo")
+	}
+}
+
+func TestParseServeFlagsDemoEnv(t *testing.T) {
+	t.Setenv("GGHSTATS_GITHUB_TOKEN", "")
+	t.Setenv("GGHSTATS_DEMO", "true")
+	cfg := loadServeConfig()
+	if err := parseServeFlags(&cfg, nil); err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.Demo {
+		t.Fatal("Demo want true from env")
+	}
+}

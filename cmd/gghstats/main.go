@@ -37,9 +37,11 @@ Backup / restore:
 Server (gghstats serve or gghstats run):
   --port PORT              Listen port (overrides GGHSTATS_PORT; default 8080)
   --open                   Open the default browser when the server is ready
+  --demo                   Sample data UI; no GitHub token (or GGHSTATS_DEMO=true)
 
 Server env vars (serve):
-  GGHSTATS_GITHUB_TOKEN        GitHub personal access token (required)
+  GGHSTATS_GITHUB_TOKEN        GitHub personal access token (required unless demo)
+  GGHSTATS_DEMO                true = demo mode (sample data; no token / no sync)
   GGHSTATS_DB                  SQLite path (default: ./data/gghstats.db)
   GGHSTATS_HOST                Bind address (default: 127.0.0.1; use 0.0.0.0 in Docker)
   GGHSTATS_PORT                Listen port (default: 8080)

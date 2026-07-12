@@ -44,8 +44,8 @@ Do not start Line B until one track has landed.
 
 - [x] A1 trends on repo page
 - [x] Backup and/or restore subcommand
-- [ ] Demo mode
-- [ ] README comparison table
-- [ ] Quick wins batch (headers / SRI / index / log status — as needed)
+- [x] Demo mode
+- [x] README comparison table
+- [x] Quick wins batch (headers / SRI / log status / collector README; `(repo, date)` already covered by SQLite PRIMARY KEY)
 - [x] CHANGELOG `[Unreleased]` updated
-- [ ] SPEC touched only if API/JSON fields change
+- [x] SPEC touched only if API/JSON fields change (N/A)
