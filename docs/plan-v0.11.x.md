@@ -1,44 +1,60 @@
-# Plan — v0.11.x (optional)
+# Plan — v0.11.x
 
-**Band goal:** cut polling cost with **webhooks + delta-oriented sync**, without abandoning the PAT model.
+**Band goal:** ship an **API-only mode** so operators can run gghstats as JSON backend for their own UI (React, Svelte, …), exposing **what the official UI already needs** — not a generic CRUD platform. Name stays **gghstats**.
 
-Parent: [ROADMAP.md](../ROADMAP.md) · Prior: [plan-v0.10.x.md](plan-v0.10.x.md)
+Parent: [ROADMAP.md](../ROADMAP.md) · Prior: [plan-v0.10.x.md](plan-v0.10.x.md) · Contracts: [SPEC.md](../SPEC.md)
 
-## Decision gate
+## Product framing
 
-| If… | Then… |
-|-----|--------|
-| Webhook + delta design fits in a focused cycle | Ship as **0.11.x** before 1.0 |
-| Scope balloons (GitHub App, multi-tenant, GraphQL rewrite) | **Skip this band**; land 1.0; finish Line B as **1.1+** |
+| Do | Do not |
+|----|--------|
+| Keep the **gghstats** name and default HTML dashboard | Rename the project or drop the in-tree UI |
+| `GGHSTATS_API_ONLY` / equivalent: serve JSON (+ health/metrics/badges as configured), skip HTML templates | Replace the UI with an in-repo React/Svelte SPA |
+| Expand JSON only to **dogfood** official UI reads (index, repo detail, H2H, trends) | Large public REST / OpenAPI of every table |
+| Document CORS + `x-api-token` for browser clients | Put the API token in public frontend bundles without a BFF/proxy warning |
 
-Do **not** block **1.0.0** on this plan.
-
-## In scope
+## In scope (must)
 
 | ID | Item | Notes |
 |----|------|--------|
-| B1 | **GitHub webhooks** | Receive events that invalidate or refresh specific repos; secure secret validation. |
-| B2 | **Delta sync** | Prefer updating changed repos/metrics vs full filter sweep every tick. |
-| B3 | **GraphQL (selective)** | Only where it clearly reduces REST pagination cost; not a wholesale API rewrite. |
-| B4 | **Scheduler coexistence** | Keep interval sync as fallback; webhooks reduce, not replace, reliability path. |
+| API1 | **API-only mode** | Env/flag disables HTML routes; sync + store + JSON + optional `/metrics` / badges / healthz still work. |
+| API2 | **Dogfood parity** | Endpoints (or fields) for data the official UI shows: repo list aggregates, traffic series, H2H inputs/scores, trends/momentum once A1 exists. Prefer additive `/api/v1/...`. |
+| API3 | **CORS / auth docs** | Configurable CORS for API-only; clear SPEC + README: token via header; warn against embedding secrets in SPAs. |
+| API4 | **SPEC update** | List new routes/fields; note API-only behavior. Feeds 1.0 freeze. |
 
-## Out of scope (this band)
+## Stretch (same band if capacity)
 
-- GitHub App / OAuth (non-goal unless major rethink).
-- Replacing SQLite.
-- Freezing API for 1.0 (parallel track: keep additive-only).
+| ID | Item | Notes |
+|----|------|--------|
+| B1–B4 | **Webhooks + delta sync** | Former primary of this band. Only if API1–API4 done early and scope stays tight. Else → **1.1+**. |
+
+## Out of scope
+
+- In-tree SPA rewrite.
+- GitHub App / OAuth.
+- Postgres / multi-writer.
+- Blocking **1.0.0** on webhooks.
+- “Any imaginable frontend feature” beyond official UI data.
+
+## Decision gate (webhooks only)
+
+| If… | Then… |
+|-----|--------|
+| API-only + dogfood shipped; webhook design still small | Optional stretch in 0.11.x |
+| Webhook scope balloons | Defer Line B to **1.1+**; still ship 0.11 on API-only |
 
 ## Exit criteria
 
-1. Documented webhook setup (`GGHSTATS_*` secrets, reverse-proxy notes).
-2. Measurable reduction in GitHub API calls for typical “few repos changed” days vs full poll.
-3. Fallback scheduled sync still works when webhooks are disabled or unreachable.
-4. Tests for signature validation and delta path; CHANGELOG + SPEC for any new endpoints.
+1. Documented `GGHSTATS_API_ONLY` (or agreed name): HTML off, JSON on; smoke-tested.
+2. External client can rebuild **core** dashboard views from documented endpoints alone (checklist in SPEC or README).
+3. CORS + auth documented; tests for API-only routing (HTML → 404/disabled).
+4. CHANGELOG + SPEC updated. Webhooks **not** required for band exit.
 
 ## Checklist
 
-- [ ] Go / no-go decision recorded in CHANGELOG or ADR note
-- [ ] Webhook receiver + auth
-- [ ] Delta sync path + metrics
-- [ ] Optional GraphQL for one hot path (stars or repo list) — only if justified
-- [ ] Docs + `make test` / lint
+- [ ] API-only flag + server wiring + tests
+- [ ] Dogfood gap list vs official UI → endpoints/fields added
+- [ ] CORS config (sensible defaults for API-only)
+- [ ] SPEC + README (“Bring your own frontend”)
+- [ ] CHANGELOG
+- [ ] (Stretch) Webhooks / delta — or explicit defer note to 1.1

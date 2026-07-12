@@ -9,7 +9,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- **ROADMAP.md:** release bands to 1.x with links to per-band plans under `docs/`; priority lines A–C retained.
+- **ROADMAP.md / docs/plan-v0.11.x.md:** 0.11.x primary goal is **API-only mode** + JSON dogfood (Line D); webhooks moved to stretch / 1.1+. Name stays gghstats.
+- **ROADMAP.md:** release bands to 1.x with links to per-band plans under `docs/`; priority lines A–D.
 - **README Database / sync notes:** document worker pool and GitHub client retries (was still describing serial sync and no backoff).
 
 ### Added

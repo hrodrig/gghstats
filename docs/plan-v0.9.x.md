@@ -17,9 +17,10 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Contracts: [SPEC.md](../SPEC.md)
 ## Out of scope (this band)
 
 - Line **B** (webhooks / GraphQL / delta sync).
+- Line **D** (API-only / dogfood JSON) — **0.11.x**.
 - Line **A2** heavy multi-channel alerts (belongs in 0.10.x).
 - Default DB path freeze (1.0).
-- Postgres, SPA, GitHub App.
+- Postgres, in-tree SPA, GitHub App.
 
 ## Exit criteria
 
