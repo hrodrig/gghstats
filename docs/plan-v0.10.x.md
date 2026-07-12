@@ -10,8 +10,9 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.
 |----|------|--------|
 | SYNC | **Incremental star history** | Cursor / `last_seen_star_count` (or equivalent); avoid full O(n) stargazer pagination every sync. |
 | A2 | **Opt-in alerts** | Threshold or WoW/MoM drop on clones/views; webhook and/or Slack/Loki-style sink; **off by default**. Pattern inspiration: **pgwd**. |
-| PATH | **XDG / default path prep** | Document and soft-land toward `~/.config/gghstats/` (or platform equivalent); keep `GGHSTATS_DB` override. No hard break yet. |
-| QW | Remaining quick wins | e.g. document `internal/collector`, `:develop` image, service worker only if low risk. |
+| PATH | **XDG / default path prep** | Document and soft-land toward `~/.config/gghstats/` (or platform equivalent); keep `GGHSTATS_DB` override. No hard break yet. Cover **`gghstats.env.example`**, **`contrib/launchd/`**, and **BSD port** paths — not only the binary default. Optional: `gghstats --print-defaults` (or equivalent) for inspection. |
+| QW | Remaining quick wins | Prefer concrete leftovers (post-0.9 audit filter): `getPaginatedCtx` cleanup (dead `slicePtr` / double marshal); access-log **Warn/Error** by status (status field already logged); docs that **demo = collector/telemetry off**; optional `:develop` GHCR tag / collector `describe` only if cheap. **Do not** bump `SetMaxOpenConns` without evidence; **do not** add redundant `(repo, date)` INDEX (already PRIMARY KEY). |
+| SYNC+ | **UpdateDeltas efficiency** | Full-table LAG on referrers/paths each sync — consider incremental / less frequent with star-sync work (not a blind pool bump). |
 | C? | **Optional thin leaderboard** | Only if A2/SYNC done early; reuse H2H scoring — not a full org BI product. |
 
 ## Out of scope (this band)
@@ -31,6 +32,14 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.
 
 - [ ] Incremental star sync + tests
 - [ ] Alert sink(s) + env flags + docs
-- [ ] XDG / default path prep docs (and soft behavior if any)
+- [ ] XDG / default path prep docs (env.example, launchd, BSD notes; soft behavior if any)
+- [ ] QW leftovers: `getPaginatedCtx` cleanup and/or access-log level by status (as capacity allows)
+- [ ] Demo/docs note: collector/telemetry off in demo (if not already obvious)
 - [ ] CHANGELOG + SPEC updates if new routes/metrics
 - [ ] `make test` / lint green
+
+## Parked (do not promote without pain)
+
+- Raising SQLite `MaxOpenConns` / `MaxIdleConns` without measured contention
+- Extra SQL INDEX on `(repo, date)` where PRIMARY KEY already exists
+- Spec-nits only (explicit HEAD handlers, Accept-negotiation doc spam)
