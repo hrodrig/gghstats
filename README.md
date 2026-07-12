@@ -80,17 +80,24 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 
 ## Features
 
-- Collects views, clones, referrers, popular paths, and star history
-- Auto-discovers repositories (or filters by org/repo rules)
-- Web dashboard with Chart.js graphs
-- **Web UI languages (i18n):** English (default), Spanish, German, French, and Brazilian Portuguese — sidebar **EN | ES | DE | FR | PT**, cookie `gghstats_locale`, env defaults (see [Web UI languages](#web-ui-languages-i18n))
+- **History beyond GitHub’s 14-day Traffic tab** — keep daily clones/views (and more) in SQLite for months/years instead of losing the window every two weeks
+- **Collects** views, clones, referrers, popular paths, and star history from the GitHub API
+- **Auto-discovers** repositories (or filter by org/repo rules) so you do not hand-list every repo
+- **Scheduled + on-demand sync** — background interval plus Sync in the UI/API so the dashboard stays fresh without manual fetches
+- **Web dashboard** with Chart.js graphs (stacked unique/count on the repo page)
+- **Clone momentum (7d / 30d)** on each repo page — see velocity vs the previous window of the same length (same formula as H2H)
 - **Head to Head (H2H)** at `/h2h` — compare two repos with weighted share scores (0–100, sum to 100); open *How the H2H score is calculated* on that page for the formula
-- JSON API for external integrations
-- CLI mode for fetch/report/export
-- Single binary, SQLite storage, no external DB dependency
-- Docker image on GHCR; Compose / Helm examples live in **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**
-- **Demo mode:** `gghstats serve --demo` (or `GGHSTATS_DEMO=true`) — sample data, no GitHub token
-- **Backup:** `gghstats backup --output …` / `gghstats restore --input …`
+- **SVG badges** — embed clones/views/stars in READMEs (`/api/v1/badge/…`); copy Markdown from the repo page
+- **Web UI languages (i18n):** English (default), Spanish, German, French, and Brazilian Portuguese — sidebar **EN | ES | DE | FR | PT**, cookie `gghstats_locale`, env defaults (see [Web UI languages](#web-ui-languages-i18n))
+- **Light/dark theme** in the sidebar, plus optional **custom CSS** (`GGHSTATS_CUSTOM_CSS` / [contrib/themes](contrib/themes/)) when neo-brutalist is too loud
+- **JSON API** for scripts and external UIs (`/api/v1/…` — see [HTTP API](#http-api-json) and [SPEC.md](SPEC.md))
+- **CLI** for one-shot `fetch` / `report` / `export` without running the full dashboard
+- **Prometheus metrics** at `GET /metrics` — scrape sync health and HTTP traffic from Grafana/Alloy
+- **Per-IP rate limit + optional IP whitelist** — blunt abuse on public demos without a reverse-proxy rewrite
+- **Single binary + SQLite** — no external database; packages for Homebrew, `.deb`/`.rpm`, FreeBSD/OpenBSD (see [Install](#install))
+- **Docker** on GHCR; production Compose / Helm / observability in **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**
+- **Demo mode:** `gghstats serve --demo` (or `GGHSTATS_DEMO=true`) — try the UI with sample data, no GitHub token
+- **Backup / restore:** `gghstats backup --output …` / `gghstats restore --input …` — snapshot SQLite before upgrades or moves
 
 ### Compared to similar tools
 
