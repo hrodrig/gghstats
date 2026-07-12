@@ -7,16 +7,18 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Repo page trends:** clone momentum (7d / 30d) on the repository detail page, reusing `internal/h2h` (`Momentum7d` / `Momentum30d`) with the same percent formatting as H2H.
+- **`gghstats backup` / `gghstats restore`:** snapshot SQLite with `VACUUM INTO` (`--output`); restore by file copy (`--input` onto `--db` / `GGHSTATS_DB`). Stop `serve` before restore if the DB is in use.
+- **ROADMAP.md** and **SPEC.md:** product direction and normative HTTP API / sync contracts (aligned with worker pool and GitHub retries).
+- **docs/plan-v0.9.x.md**, **plan-v0.10.x.md**, **plan-v0.11.x.md**, **plan-v1.0.0.md:** scoped band plans (exit criteria + checklists).
+
 ### Changed
 
 - **ROADMAP.md / docs/plan-v0.11.x.md:** 0.11.x primary goal is **API-only mode** + JSON dogfood (Line D); webhooks moved to stretch / 1.1+. Name stays gghstats.
 - **ROADMAP.md:** release bands to 1.x with links to per-band plans under `docs/`; priority lines A–D.
 - **README Database / sync notes:** document worker pool and GitHub client retries (was still describing serial sync and no backoff).
-
-### Added
-
-- **ROADMAP.md** and **SPEC.md:** product direction and normative HTTP API / sync contracts (aligned with worker pool and GitHub retries).
-- **docs/plan-v0.9.x.md**, **plan-v0.10.x.md**, **plan-v0.11.x.md**, **plan-v1.0.0.md:** scoped band plans (exit criteria + checklists).
 
 ### Fixed
 

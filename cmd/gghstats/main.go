@@ -20,12 +20,19 @@ Commands:
   fetch    Fetch traffic data from GitHub API and store locally
   report   Display traffic summary in the terminal
   export   Export traffic data to CSV
+  backup   Snapshot the SQLite database (VACUUM INTO)
+  restore  Replace the SQLite database from a backup file
   version  Print version information
 
 CLI flags (fetch/report/export):
   --repo   owner/repo      Repository (or GGHSTATS_REPO env var)
   --token  TOKEN           GitHub token (or GGHSTATS_GITHUB_TOKEN env var)
   --db     PATH            SQLite database path (default: ./data/gghstats.db)
+
+Backup / restore:
+  --db     PATH            SQLite database path (or GGHSTATS_DB)
+  --output PATH            backup: destination file (required)
+  --input  PATH            restore: backup file to copy from (required)
 
 Server (gghstats serve or gghstats run):
   --port PORT              Listen port (overrides GGHSTATS_PORT; default 8080)
@@ -88,6 +95,18 @@ func runCLI(args []string) int {
 		return 0
 	case "export":
 		if err := runExport(args[2:]); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			return 1
+		}
+		return 0
+	case "backup":
+		if err := runBackup(args[2:]); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			return 1
+		}
+		return 0
+	case "restore":
+		if err := runRestore(args[2:]); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			return 1
 		}

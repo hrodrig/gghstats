@@ -1,10 +1,22 @@
 package h2h
 
 import (
+	"fmt"
+	"math"
 	"time"
 
 	"github.com/hrodrig/gghstats/internal/store"
 )
+
+// FormatMomentumPct formats a momentum ratio as a signed percent string
+// (e.g. +42%, -10%, 0%), matching H2H display rounding.
+func FormatMomentumPct(m float64) string {
+	pct := int(math.Round(m * 100))
+	if pct > 0 {
+		return fmt.Sprintf("+%d%%", pct)
+	}
+	return fmt.Sprintf("%d%%", pct)
+}
 
 // RepoMetrics holds comparison inputs for one repository (from SQLite, post-sync).
 type RepoMetrics struct {

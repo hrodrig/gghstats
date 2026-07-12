@@ -69,6 +69,24 @@ func TestLoadRepoMetrics_missingRepo(t *testing.T) {
 	}
 }
 
+func TestFormatMomentumPct(t *testing.T) {
+	cases := []struct {
+		in   float64
+		want string
+	}{
+		{0.42, "+42%"},
+		{-0.1, "-10%"},
+		{0, "0%"},
+		{0.004, "0%"},
+		{0.006, "+1%"},
+	}
+	for _, tc := range cases {
+		if got := FormatMomentumPct(tc.in); got != tc.want {
+			t.Errorf("FormatMomentumPct(%v) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
 func TestSumDayCountRows_andUtcWindow(t *testing.T) {
 	rows := []store.DayRow{
 		{Date: "2026-05-01", Count: 3},

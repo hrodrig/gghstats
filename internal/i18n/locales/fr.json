@@ -155,7 +155,10 @@
     "referrers": "Principaux référents",
     "paths": "Principaux chemins",
     "no_referrers": "Pas encore de données référents.",
-    "no_paths": "Pas encore de données de chemins."
+    "no_paths": "Pas encore de données de chemins.",
+    "trends_blurb": "Momentum des clones vs la fenêtre précédente de même durée (même formule que H2H).",
+    "momentum_7d": "Momentum (7j)",
+    "momentum_30d": "Momentum (30j)"
   },
   "not_found": {
     "title": "Introuvable",

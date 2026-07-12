@@ -42,10 +42,10 @@ Do not start Line B until one track has landed.
 
 ## Checklist
 
-- [ ] A1 trends on repo page
-- [ ] Backup and/or restore subcommand
+- [x] A1 trends on repo page
+- [x] Backup and/or restore subcommand
 - [ ] Demo mode
 - [ ] README comparison table
 - [ ] Quick wins batch (headers / SRI / index / log status — as needed)
-- [ ] CHANGELOG `[Unreleased]` updated
+- [x] CHANGELOG `[Unreleased]` updated
 - [ ] SPEC touched only if API/JSON fields change

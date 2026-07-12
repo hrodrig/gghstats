@@ -49,10 +49,18 @@ Print a traffic summary in the terminal.
 .B export
 Export traffic data to CSV.
 .TP
+.B backup
+Write a consistent SQLite snapshot with \fBVACUUM INTO\fR
+(\fB\-\-output\fR required).
+.TP
+.B restore
+Replace the database file from a backup
+(\fB\-\-input\fR required). Stop \fBserve\fR first if the DB is in use.
+.TP
 .B version
 Print build version information.
 .SH CLI FLAGS
-(fetch, report, export)
+(fetch, report, export, backup, restore)
 .TP
 .BR \-\-repo ", " owner/repo
 Repository (or \fBGGHSTATS_REPO\fR).
@@ -62,6 +70,12 @@ GitHub token (or \fBGGHSTATS_GITHUB_TOKEN\fR).
 .TP
 .BR \-\-db ", " PATH
 SQLite database path (default: \fB./data/gghstats.db\fR).
+.TP
+.BR \-\-output ", " PATH
+(\fBbackup\fR) Destination snapshot file.
+.TP
+.BR \-\-input ", " PATH
+(\fBrestore\fR) Backup file to copy onto \fB\-\-db\fR.
 .SH SERVE FLAGS
 .TP
 .BR \-\-port ", " PORT
