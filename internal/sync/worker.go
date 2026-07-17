@@ -51,6 +51,9 @@ func runWorkers(ctx context.Context, repos []github.Repo, opts workerOptions) {
 					return
 				}
 				if err := opts.Work(ctx, repo); err != nil {
+					if counter, ok := opts.Metrics.(*repoFailCounter); ok {
+						counter.noteFail(repo.FullName)
+					}
 					if opts.Metrics != nil {
 						opts.Metrics.ObserveSyncError("worker")
 						opts.Metrics.ObserveSyncRepo("error")

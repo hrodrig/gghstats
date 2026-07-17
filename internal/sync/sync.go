@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sort"
 	"strings"
 	"time"
 
@@ -23,33 +24,69 @@ type Options struct {
 // Run performs a full sync cycle: discover repos, fetch metrics, store.
 // When opts.Workers >= 2, repos are processed concurrently by a worker
 // pool. Errors from individual repos are logged and counted but do not
-// abort the cycle.
-func Run(gh *github.Client, db *store.Store, opts Options, rec ErrRecorder) error {
+// abort the cycle. The returned RunResult always describes the cycle
+// (even when err != nil from resolve failure).
+func Run(gh *github.Client, db *store.Store, opts Options, rec ErrRecorder) (RunResult, error) {
+	result := RunResult{RateLimitRemaining: -1}
+	if gh != nil {
+		result.RateLimitRemaining = gh.LastRateLimitRemaining()
+	}
+
 	repos, err := resolveRepos(gh, opts)
 	if err != nil {
-		return fmt.Errorf("resolve repos: %w", err)
+		result.Unreachable = isUnreachableErr(err)
+		result.Success = false
+		return result, fmt.Errorf("resolve repos: %w", err)
 	}
 
 	if len(repos) == 0 {
 		slog.Warn("no repos to sync")
-		return nil
+		result.Success = true
+		return result, nil
 	}
 
 	today := time.Now().UTC().Format("2006-01-02")
 	slog.Info("sync started", "repos", len(repos), "date", today, "workers", workerCount(opts.Workers))
 
+	counter := newRepoFailCounter(rec)
 	runWorkers(context.Background(), repos, workerOptions{
 		Workers: workerCount(opts.Workers),
-		Metrics: rec,
-		Work:    func(ctx context.Context, r github.Repo) error { return syncRepo(gh, db, r, today, opts.SyncStars, rec) },
+		Metrics: counter,
+		Work: func(ctx context.Context, r github.Repo) error {
+			return syncRepo(gh, db, r, today, opts.SyncStars, counter)
+		},
 	})
+
+	result.ReposAttempted = len(repos)
+	result.ReposFailed, result.FailedRepos = counter.snapshot()
+	if gh != nil {
+		result.RateLimitRemaining = gh.LastRateLimitRemaining()
+	}
 
 	if err := db.UpdateDeltas(); err != nil {
 		slog.Error("update deltas failed", "error", err)
 	}
 
-	slog.Info("sync completed", "repos", len(repos))
-	return nil
+	slog.Info("sync completed", "repos", len(repos), "failed", result.ReposFailed)
+	result.Success = true
+	return result, nil
+}
+
+func isUnreachableErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	for _, needle := range []string{
+		"connection refused", "no such host", "i/o timeout", "timeout",
+		"network is unreachable", "tls handshake", "dial tcp", "temporary failure",
+		"connection reset", "eof",
+	} {
+		if strings.Contains(msg, needle) {
+			return true
+		}
+	}
+	return false
 }
 
 // workerCount normalizes the user-supplied worker count to a safe minimum.
@@ -182,7 +219,26 @@ func syncRepoSnapshots(gh *github.Client, db *store.Store, name, today string, r
 }
 
 func syncRepoStars(gh *github.Client, db *store.Store, repo github.Repo, name, today string, syncStars bool, rec ErrRecorder) {
-	if syncStars {
+	if !syncStars {
+		db.UpsertStar(name, today, repo.StargazersCount)
+		return
+	}
+
+	cursor, err := db.GetStarSyncCursor(name)
+	if err != nil {
+		recordSyncErr(rec, "stargazers")
+		slog.Warn("stargazers cursor read failed", "repo", name, "error", err)
+		return
+	}
+
+	current := repo.StargazersCount
+	if cursor.Synced && current == cursor.LastSeenStarCount {
+		slog.Info("stargazers skipped", "repo", name, "reason", "count_unchanged", "count", current)
+		return
+	}
+
+	// Count dropped (unstars) or first sync: full pagination rebuild.
+	if !cursor.Synced || current < cursor.LastSeenStarCount {
 		stars, err := gh.Stargazers(name)
 		if err != nil {
 			recordSyncErr(rec, "stargazers")
@@ -190,9 +246,33 @@ func syncRepoStars(gh *github.Client, db *store.Store, repo github.Repo, name, t
 			return
 		}
 		storeStarHistory(db, name, stars)
+		if err := db.SetStarSyncCursor(name, current, newestStarredAt(stars)); err != nil {
+			slog.Warn("stargazers cursor write failed", "repo", name, "error", err)
+		}
+		slog.Info("stargazers synced", "repo", name, "mode", "full", "stars", len(stars), "count", current)
 		return
 	}
-	db.UpsertStar(name, today, repo.StargazersCount)
+
+	delta := current - cursor.LastSeenStarCount
+	stars, err := gh.StargazersRecent(name, delta, cursor.LastStarredAt)
+	if err != nil {
+		recordSyncErr(rec, "stargazers")
+		slog.Warn("stargazers failed", "repo", name, "error", err)
+		return
+	}
+	if len(stars) == 0 && delta > 0 {
+		slog.Warn("stargazers incremental empty", "repo", name, "delta", delta)
+		return
+	}
+	storeStarHistoryIncremental(db, name, stars, cursor.LastSeenStarCount)
+	newest := newestStarredAt(stars)
+	if newest.IsZero() {
+		newest = cursor.LastStarredAt
+	}
+	if err := db.SetStarSyncCursor(name, current, newest); err != nil {
+		slog.Warn("stargazers cursor write failed", "repo", name, "error", err)
+	}
+	slog.Info("stargazers synced", "repo", name, "mode", "incremental", "new", len(stars), "count", current)
 }
 
 // recordSyncErr is a nil-safe wrapper that increments the per-kind error
@@ -205,16 +285,46 @@ func recordSyncErr(rec ErrRecorder, kind string) {
 }
 
 // storeStarHistory converts individual star events into daily cumulative counts.
+// GitHub returns newest-first; we sort ascending so totals grow with time.
 func storeStarHistory(db *store.Store, repo string, stars []github.Star) {
 	if len(stars) == 0 {
 		return
 	}
+	sorted := append([]github.Star(nil), stars...)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].StarredAt.Before(sorted[j].StarredAt)
+	})
 	cumulative := 0
-	for _, s := range stars {
+	for _, s := range sorted {
 		cumulative++
-		date := s.StarredAt.Format("2006-01-02")
+		date := s.StarredAt.UTC().Format("2006-01-02")
 		db.UpsertStar(repo, date, cumulative)
 	}
+}
+
+// storeStarHistoryIncremental appends newest stars onto an existing cumulative base.
+func storeStarHistoryIncremental(db *store.Store, repo string, newStars []github.Star, baseCount int) {
+	if len(newStars) == 0 {
+		return
+	}
+	sorted := append([]github.Star(nil), newStars...)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].StarredAt.Before(sorted[j].StarredAt)
+	})
+	for i, s := range sorted {
+		date := s.StarredAt.UTC().Format("2006-01-02")
+		db.UpsertStar(repo, date, baseCount+i+1)
+	}
+}
+
+func newestStarredAt(stars []github.Star) time.Time {
+	var newest time.Time
+	for _, s := range stars {
+		if s.StarredAt.After(newest) {
+			newest = s.StarredAt
+		}
+	}
+	return newest
 }
 
 // --- Filter logic ---

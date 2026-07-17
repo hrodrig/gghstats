@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hrodrig/gghstats/internal/alert"
 	"github.com/hrodrig/gghstats/internal/collector"
 	"github.com/hrodrig/gghstats/internal/demo"
 	"github.com/hrodrig/gghstats/internal/github"
@@ -56,13 +57,13 @@ func loadServeConfig() serveConfig {
 		Host:             envOr("GGHSTATS_HOST", "127.0.0.1"),
 		Port:             envOr("GGHSTATS_PORT", "8080"),
 		Filter:           envOr("GGHSTATS_FILTER", "*"),
-		IncludePrivate:   os.Getenv("GGHSTATS_INCLUDE_PRIVATE") == "true",
+		IncludePrivate:   envBool("GGHSTATS_INCLUDE_PRIVATE", false),
 		APIToken:         os.Getenv("GGHSTATS_API_TOKEN"),
 		SyncInterval:     1 * time.Hour,
 		SyncOnStartup:    envBool("GGHSTATS_SYNC_ON_STARTUP", true),
 		SyncWorkers:      4,
 		OpenBrowser:      envBool("GGHSTATS_OPEN_BROWSER", false),
-		BadgePublic:      os.Getenv("GGHSTATS_BADGE_PUBLIC") != "false",
+		BadgePublic:      envBool("GGHSTATS_BADGE_PUBLIC", true),
 		BadgeCacheMaxAge: 300,
 		PublicURL:        strings.TrimSpace(os.Getenv("GGHSTATS_PUBLIC_URL")),
 		Demo:             envBool("GGHSTATS_DEMO", false),
@@ -88,8 +89,8 @@ func loadServeConfig() serveConfig {
 
 	cfg.HeadHTML = os.Getenv("GGHSTATS_HEAD_HTML")
 	cfg.ReverseProxyRules = os.Getenv("GGHSTATS_REVERSE_PROXY_RULES")
-	cfg.EnableCollector = os.Getenv("GGHSTATS_ENABLE_COLLECTOR") == "true"
-	cfg.EnableUpdateCheck = os.Getenv("GGHSTATS_ENABLE_UPDATE_CHECK") != "false"
+	cfg.EnableCollector = envBool("GGHSTATS_ENABLE_COLLECTOR", false)
+	cfg.EnableUpdateCheck = envBool("GGHSTATS_ENABLE_UPDATE_CHECK", true)
 
 	return cfg
 }
@@ -97,7 +98,7 @@ func loadServeConfig() serveConfig {
 // errServeHelp is returned by parseServeFlags when -h/--help is requested.
 // runServe treats it as a successful no-op so the help banner prints once
 // and the process exits without starting the HTTP server, scheduler, or
-// collector (otherwise the test/CLI would block in serveHTTP's signal wait).
+// collector (otherwise the test/CLI would block in serveHTTP until ctx cancel).
 var errServeHelp = errors.New("serve help requested")
 
 func parseServeFlags(cfg *serveConfig, args []string) error {
@@ -137,7 +138,7 @@ func logServerStartup(cfg serveConfig) {
 		lvl = v
 	}
 	listenAddr := cfg.Host + ":" + cfg.Port
-	metricsEnabled := os.Getenv("GGHSTATS_METRICS") != "false"
+	metricsEnabled := envBool("GGHSTATS_METRICS", true)
 	slog.Info(fmt.Sprintf("gghstats v%s starting on %s (db=%s, filter=%s, sync=%s, log=%s, metrics=%s)",
 		version.Version,
 		listenAddr,
@@ -174,11 +175,26 @@ func startCollector(cfg serveConfig) {
 	}
 }
 
+// loadAlertSenders validates GGHSTATS_ALERTS_* (SPEC §8.5 fail-closed) and builds senders.
+// Returns nil senders when alerts are disabled.
+func loadAlertSenders() ([]alert.Sender, error) {
+	enabled, sinks, err := alert.ConfigFromEnv(os.Getenv)
+	if err != nil {
+		return nil, fmt.Errorf("alert config: %w", err)
+	}
+	if !enabled {
+		return nil, nil
+	}
+	senders := alert.BuildSenders(sinks, nil)
+	slog.Info(fmt.Sprintf("alerts enabled: %d sink(s) configured", len(senders)))
+	return senders, nil
+}
+
 func collectFeatures(cfg serveConfig) collector.ServeFeatures {
 	return collector.ServeFeatures{
 		BadgePublic:      cfg.BadgePublic,
-		MetricsEnabled:   os.Getenv("GGHSTATS_METRICS") != "false",
-		MetricsPerRepo:   os.Getenv("GGHSTATS_METRICS_PER_REPO") == "true",
+		MetricsEnabled:   envBool("GGHSTATS_METRICS", true),
+		MetricsPerRepo:   envBool("GGHSTATS_METRICS_PER_REPO", false),
 		SyncOnStartup:    cfg.SyncOnStartup,
 		HasAPIToken:      cfg.APIToken != "",
 		HasPublicURL:     cfg.PublicURL != "",
@@ -201,6 +217,15 @@ func runServe(args []string) error {
 
 	logServerStartup(cfg)
 
+	alertSenders, err := loadAlertSenders()
+	if err != nil {
+		return err
+	}
+	alertRules, err := alert.RulesFromEnv(os.Getenv)
+	if err != nil {
+		return fmt.Errorf("alert rules: %w", err)
+	}
+
 	db, err := store.Open(cfg.DB)
 	if err != nil {
 		return fmt.Errorf("open database: %w", err)
@@ -215,12 +240,12 @@ func runServe(args []string) error {
 
 	var metricsReg *prometheus.Registry
 	var domainMetrics *metrics.Domain
-	if os.Getenv("GGHSTATS_METRICS") != "false" {
+	if envBool("GGHSTATS_METRICS", true) {
 		metricsReg, domainMetrics = server.NewMetricsRegistry(server.MetricsRegistryConfig{
 			Store:          db,
 			DBPath:         cfg.DB,
 			Filter:         cfg.Filter,
-			PerRepoEnabled: os.Getenv("GGHSTATS_METRICS_PER_REPO") == "true",
+			PerRepoEnabled: envBool("GGHSTATS_METRICS_PER_REPO", false),
 		})
 	}
 
@@ -231,7 +256,9 @@ func runServe(args []string) error {
 
 	whitelist := server.NewWhitelist(server.ParseWhitelistEnv(), cfg.APIToken)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	var coord *sync.Coordinator
@@ -253,6 +280,28 @@ func runServe(args []string) error {
 		if domainMetrics != nil {
 			coord.SetMetrics(domainMetrics)
 		}
+		if len(alertSenders) > 0 && len(alertRules) > 0 {
+			senders := alertSenders
+			rules := alertRules
+			publicURL := cfg.PublicURL
+			coord.SetAfterSync(func(result sync.RunResult) {
+				snap := alert.SyncSnapshot{
+					Success:            result.Success,
+					ReposAttempted:     result.ReposAttempted,
+					ReposFailed:        result.ReposFailed,
+					FailedRepos:        result.FailedRepos,
+					Unreachable:        result.Unreachable,
+					RateLimitRemaining: result.RateLimitRemaining,
+				}
+				alert.RunAllRules(ctx, alert.EvalConfig{
+					DB:        db,
+					Rules:     rules,
+					Senders:   senders,
+					PublicURL: publicURL,
+				}, snap)
+			})
+			slog.Info(fmt.Sprintf("alerts: %d rule(s) will evaluate after sync", len(rules)))
+		}
 		go startScheduler(ctx, coord, cfg.SyncInterval, cfg.SyncOnStartup)
 	}
 
@@ -266,7 +315,7 @@ func runServe(args []string) error {
 		BadgePublic:       cfg.BadgePublic,
 		BadgeCacheMaxAge:  cfg.BadgeCacheMaxAge,
 		PublicURL:         cfg.PublicURL,
-		DisableMetrics:    os.Getenv("GGHSTATS_METRICS") == "false",
+		DisableMetrics:    !envBool("GGHSTATS_METRICS", true),
 		MetricsRegistry:   metricsReg,
 		DomainMetrics:     domainMetrics,
 		CustomCSSAbsPath:  cssAbs,
@@ -287,13 +336,13 @@ func runServe(args []string) error {
 		Handler: handler,
 	}
 
-	return serveHTTP(srv, cfg, cancel)
+	return serveHTTP(ctx, srv, cfg, cancel)
 }
 
-func serveHTTP(srv *http.Server, cfg serveConfig, cancel context.CancelFunc) error {
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
-
+// serveHTTP listens until ctx is cancelled or ListenAndServe fails.
+// cancel stops the sync scheduler; callers must still defer their own cancel.
+func serveHTTP(ctx context.Context, srv *http.Server, cfg serveConfig, cancel context.CancelFunc) error {
+	errCh := make(chan error, 1)
 	go func() {
 		logURL := serveDashboardURL(cfg.Host, cfg.Port)
 		if cfg.Host == "0.0.0.0" || cfg.Host == "::" || cfg.Host == "[::]" {
@@ -307,19 +356,30 @@ func serveHTTP(srv *http.Server, cfg serveConfig, cancel context.CancelFunc) err
 				openBrowser(logURL)
 			}()
 		}
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		err := srv.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
 			slog.Error("server error", "error", err)
-			os.Exit(1)
+			errCh <- err
+			return
 		}
+		errCh <- nil
 	}()
 
-	<-done
-	slog.Info("shutting down...")
-	cancel()
-
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer shutdownCancel()
-	return srv.Shutdown(shutdownCtx)
+	select {
+	case err := <-errCh:
+		cancel()
+		return err
+	case <-ctx.Done():
+		slog.Info("shutting down...")
+		cancel()
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer shutdownCancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			<-errCh
+			return err
+		}
+		return <-errCh
+	}
 }
 
 func startScheduler(ctx context.Context, coord *sync.Coordinator, interval time.Duration, syncOnStartup bool) {

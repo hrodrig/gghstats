@@ -25,6 +25,8 @@ Run **`gghstats serve`** under systemd on Linux. Configuration is an **environme
    sudo chown -R gghstats:gghstats /var/lib/gghstats
    ```
 
+   The binary default when `GGHSTATS_DB` is unset remains **`./data/gghstats.db`** (cwd-relative) until **v1.0** (XDG / platform user-config). Always set an absolute path in the env file for systemd. See root **README** → **Data directory (SQLite paths)**.
+
 ## Files
 
 | Unit | Function |

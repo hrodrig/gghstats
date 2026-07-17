@@ -30,7 +30,8 @@ type Coordinator struct {
 	db  *store.Store
 	opt Options
 
-	metrics *metrics.Domain
+	metrics   *metrics.Domain
+	afterSync func(result RunResult)
 
 	running        bool
 	scope          string
@@ -44,6 +45,14 @@ type Coordinator struct {
 // SetMetrics attaches optional Prometheus domain metrics.
 func (c *Coordinator) SetMetrics(m *metrics.Domain) {
 	c.metrics = m
+}
+
+// SetAfterSync registers a callback invoked after each sync finishes.
+// Used for post-sync alert evaluation. Must not block forever.
+func (c *Coordinator) SetAfterSync(fn func(result RunResult)) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.afterSync = fn
 }
 
 // NewCoordinator wires a GitHub client and store for serialized sync runs.
@@ -102,8 +111,11 @@ func (c *Coordinator) runBlocking(opt Options, scope, repo string) error {
 	c.markRunningLocked(scope, repo)
 	c.mu.Unlock()
 
-	err := Run(c.gh, c.db, opt, c.metrics)
-	c.finishRun(err)
+	result, err := Run(c.gh, c.db, opt, c.metrics)
+	if err != nil {
+		result.Success = false
+	}
+	c.finishRun(result, err)
 	return err
 }
 
@@ -117,8 +129,11 @@ func (c *Coordinator) startBackground(opt Options, scope, repo string) error {
 	c.mu.Unlock()
 
 	go func() {
-		err := Run(c.gh, c.db, opt, c.metrics)
-		c.finishRun(err)
+		result, err := Run(c.gh, c.db, opt, c.metrics)
+		if err != nil {
+			result.Success = false
+		}
+		c.finishRun(result, err)
 	}()
 	return nil
 }
@@ -133,10 +148,11 @@ func (c *Coordinator) markRunningLocked(scope, repo string) {
 	c.lastError = ""
 }
 
-func (c *Coordinator) finishRun(err error) {
+func (c *Coordinator) finishRun(result RunResult, err error) {
 	c.mu.Lock()
 	started := c.syncStartedAt
 	dom := c.metrics
+	after := c.afterSync
 	c.running = false
 	c.scope = ""
 	c.repo = ""
@@ -148,5 +164,8 @@ func (c *Coordinator) finishRun(err error) {
 
 	if dom != nil && !started.IsZero() {
 		dom.ObserveSync(time.Since(started), err == nil)
+	}
+	if after != nil {
+		after(result)
 	}
 }

@@ -213,6 +213,64 @@ func TestStargazers(t *testing.T) {
 	}
 }
 
+func TestStargazersRecentStopsAfterMaxNew(t *testing.T) {
+	t1 := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+	t2 := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
+	t3 := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	pages := 0
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pages++
+		switch pages {
+		case 1:
+			next := "http://" + r.Host + "/repos/o/r/stargazers?per_page=100&page=2"
+			w.Header().Set("Link", `<`+next+`>; rel="next"`)
+			json.NewEncoder(w).Encode([]Star{{StarredAt: t1}, {StarredAt: t2}})
+		case 2:
+			json.NewEncoder(w).Encode([]Star{{StarredAt: t3}})
+		default:
+			t.Fatalf("unexpected page %d", pages)
+		}
+	}))
+	defer srv.Close()
+
+	c := NewClient("tok")
+	c.BaseURL = srv.URL
+
+	got, err := c.StargazersRecent("o/r", 1, time.Time{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || !got[0].StarredAt.Equal(t1) {
+		t.Fatalf("got %+v", got)
+	}
+	if pages != 1 {
+		t.Fatalf("pages = %d, want 1 (early stop)", pages)
+	}
+}
+
+func TestStargazersRecentStopsAtTime(t *testing.T) {
+	newer := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+	older := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	stop := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode([]Star{{StarredAt: newer}, {StarredAt: older}})
+	}))
+	defer srv.Close()
+
+	c := NewClient("tok")
+	c.BaseURL = srv.URL
+
+	got, err := c.StargazersRecent("o/r", 0, stop)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || !got[0].StarredAt.Equal(newer) {
+		t.Fatalf("got %+v", got)
+	}
+}
+
 func TestRepo(t *testing.T) {
 	want := Repo{
 		FullName:        "you/book",

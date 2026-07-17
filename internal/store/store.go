@@ -62,6 +62,8 @@ func (s *Store) migrate() error {
 		migrateV1,
 		migrateV2,
 		migrateV3,
+		migrateV4,
+		migrateV5,
 	}
 
 	var current int
@@ -165,6 +167,31 @@ func migrateV3(db *sql.DB) error {
 	return err
 }
 
+// migrateV4 adds star-history sync cursor columns for incremental stargazer fetches.
+// last_seen_star_count = -1 means star history has never been fully synced for this repo.
+func migrateV4(db *sql.DB) error {
+	stmts := []string{
+		`ALTER TABLE repos ADD COLUMN last_seen_star_count INTEGER NOT NULL DEFAULT -1`,
+		`ALTER TABLE repos ADD COLUMN last_starred_at TEXT NOT NULL DEFAULT ''`,
+	}
+	for _, stmt := range stmts {
+		if _, err := db.Exec(stmt); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// migrateV5 adds alert debounce state for once / once_per_utc_day (SPEC §8).
+func migrateV5(db *sql.DB) error {
+	_, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS alert_debounce (
+			rule_key TEXT NOT NULL PRIMARY KEY,
+			stamp    TEXT NOT NULL
+		)`)
+	return err
+}
+
 // --- Upsert methods ---
 
 // UpsertView inserts or replaces a single day of view data.
@@ -253,6 +280,50 @@ func (s *Store) UpsertStar(repo, date string, total int) error {
 		 VALUES (?, ?, ?)
 		 ON CONFLICT (repo, date) DO UPDATE SET total=MAX(stars.total, excluded.total)`,
 		repo, date, total,
+	)
+	return err
+}
+
+// StarSyncCursor is the persisted checkpoint for incremental stargazer sync.
+// Synced is false when last_seen_star_count is -1 (never completed a star-history sync).
+type StarSyncCursor struct {
+	LastSeenStarCount int
+	LastStarredAt     time.Time // zero if unknown
+	Synced            bool
+}
+
+// GetStarSyncCursor reads the star-history cursor for a repo.
+func (s *Store) GetStarSyncCursor(repo string) (StarSyncCursor, error) {
+	var count int
+	var lastAt string
+	err := s.db.QueryRow(
+		`SELECT last_seen_star_count, last_starred_at FROM repos WHERE name=?`,
+		repo,
+	).Scan(&count, &lastAt)
+	if err == sql.ErrNoRows {
+		return StarSyncCursor{LastSeenStarCount: -1}, nil
+	}
+	if err != nil {
+		return StarSyncCursor{}, err
+	}
+	cur := StarSyncCursor{LastSeenStarCount: count, Synced: count >= 0}
+	if lastAt != "" {
+		if t, parseErr := time.Parse(time.RFC3339, lastAt); parseErr == nil {
+			cur.LastStarredAt = t
+		}
+	}
+	return cur, nil
+}
+
+// SetStarSyncCursor stores the star-history checkpoint after a successful sync.
+func (s *Store) SetStarSyncCursor(repo string, count int, lastStarredAt time.Time) error {
+	lastAt := ""
+	if !lastStarredAt.IsZero() {
+		lastAt = lastStarredAt.UTC().Format(time.RFC3339)
+	}
+	_, err := s.db.Exec(
+		`UPDATE repos SET last_seen_star_count=?, last_starred_at=? WHERE name=?`,
+		count, lastAt, repo,
 	)
 	return err
 }
@@ -822,4 +893,70 @@ func boolToInt(b bool) int {
 		return 1
 	}
 	return 0
+}
+
+// AlertDebounceGet returns the stamp for a rule key (empty if unset).
+func (s *Store) AlertDebounceGet(ruleKey string) (string, error) {
+	var stamp string
+	err := s.db.QueryRow(`SELECT stamp FROM alert_debounce WHERE rule_key=?`, ruleKey).Scan(&stamp)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return stamp, err
+}
+
+// AlertDebounceSet upserts the debounce stamp for a rule key.
+func (s *Store) AlertDebounceSet(ruleKey, stamp string) error {
+	_, err := s.db.Exec(
+		`INSERT INTO alert_debounce (rule_key, stamp) VALUES (?, ?)
+		 ON CONFLICT(rule_key) DO UPDATE SET stamp=excluded.stamp`,
+		ruleKey, stamp,
+	)
+	return err
+}
+
+// SumClonesAll returns SUM(count) across all clones rows (fleet lifetime).
+func (s *Store) SumClonesAll() (int, error) {
+	var n sql.NullInt64
+	err := s.db.QueryRow(`SELECT SUM(count) FROM clones`).Scan(&n)
+	if err != nil {
+		return 0, err
+	}
+	if !n.Valid {
+		return 0, nil
+	}
+	return int(n.Int64), nil
+}
+
+// SumViewsAll returns SUM(count) across all views rows (fleet lifetime).
+func (s *Store) SumViewsAll() (int, error) {
+	var n sql.NullInt64
+	err := s.db.QueryRow(`SELECT SUM(count) FROM views`).Scan(&n)
+	if err != nil {
+		return 0, err
+	}
+	if !n.Valid {
+		return 0, nil
+	}
+	return int(n.Int64), nil
+}
+
+// DayCount returns count for one repo/date from clones or views (0 if missing).
+func (s *Store) DayCount(table, repo, date string) (int, error) {
+	if table != "clones" && table != "views" {
+		return 0, fmt.Errorf("unsupported table %q", table)
+	}
+	var n sql.NullInt64
+	q := fmt.Sprintf(`SELECT count FROM %s WHERE repo=? AND date=?`, table)
+	err := s.db.QueryRow(q, repo, date).Scan(&n)
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	if !n.Valid {
+		return 0, nil
+	}
+	return int(n.Int64), nil
 }

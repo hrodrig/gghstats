@@ -7,11 +7,41 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-07-17
+
+### Added
+
+- **Incremental star history sync:** persist `last_seen_star_count` / `last_starred_at` on `repos`; skip stargazer pagination when the count is unchanged; fetch only new stars when it grows; full rebuild if the count drops. Documents why in SPEC §4.7 and README sync notes.
+- **docs/plan-v0.10.x:** band checklist only (what to implement); alert **product rules** in **SPEC §8** (target behavior).
+- **SPEC §8:** traffic + **ops/sync-health** alerts (failure counts, levels warn/crit); sinks **slack / webhook / loki**; milestones/SMTP as 0.10.1+.
+- **Alert sinks (`internal/alert`):** Slack Incoming Webhook, generic webhook (discord/teams/generic), Loki push — pgwd-style HTTP retry + Sender fan-out; `GGHSTATS_ALERTS_ENABLED` / `GGHSTATS_ALERT_SINKS` validated at serve startup (fail closed).
+- **`gghstats alert test`:** synthetic smoke-test to configured sinks (`--kind traffic|ops`, `--sink` filter); exit **4** on delivery failure (SPEC §8.8). Does not require `ALERTS_ENABLED`.
+- **Traffic alert rules:** parse `GGHSTATS_ALERT_RULES`; evaluate after successful sync (`Coordinator.SetAfterSync`); absolute/floor/WoW/lifetime + debounce (`once_per_utc_day` / `once`) via SQLite `alert_debounce`.
+- **Ops alert rules:** `repo_fetch_failed`, `sync_failed` (consecutive), `rate_limit`, `github_unreachable` with warn/crit levels; sync `RunResult` feeds post-sync evaluation. Star milestones still A2+.
+- **SPEC §8.8:** `gghstats alert test` smoke-test contract (before real rules; family: pgwd `-force-notification`, groot/kzero `notify test`).
+
 ### Changed
 
+- **gocyclo:** split `metricValue` / `CanonicalText` helpers; share sync star-history HTTP fixtures so `make security` stays under `-over 15`.
+- **getPaginatedCtx:** drop redundant `*[]Star` type assert; always unmarshal into `dest`.
+- **HTTP access log:** `http` slog level by status (Info below 400, Warn 4xx, Error 5xx).
+- **docs/plan-v0.10.x:** mark QW leftovers done.
+- **README:** Data directory soft-land (recommended absolute paths per platform; binary default still `./data/gghstats.db` until v1.0 XDG — short XDG Base Directory note); Opt-in alerts operator section + env table rows; Features bullets for alerts and demo (collector/update-check off).
+- **contrib:** path notes in `gghstats.env.example`, systemd + launchd docs, man `GGHSTATS_DB`.
+- **docs/plan-v0.10.x:** mark A2 + PATH docs done.
+- **serveHTTP:** wait on `context` (`signal.NotifyContext` in `runServe`) instead of raw `signal.Notify`; ListenAndServe failures return an error instead of `os.Exit(1)` from a goroutine.
+- **Serve env booleans:** `loadServeConfig` / metrics flags use `envBool` (`1`/`true`/`yes`/`on` and `0`/`false`/`no`/`off`), including `GGHSTATS_INCLUDE_PRIVATE`, collector, badge public, and metrics toggles.
+- **`gghstats --help`:** document missing serve env vars (`SYNC_WORKERS`, `INCLUDE_PRIVATE`, badge cache, collector/update-check, whitelist, rate limit, locales).
+- **README env table:** add `GGHSTATS_SYNC_WORKERS` and `GGHSTATS_DEMO`.
+- **SPEC §5:** document `fetch`, `report`, and `export` alongside backup/restore.
 - **README comparison table:** expand vs ghstats, git-clone-stats, gh-tracker, and GitHub Traffic; more operator-facing rows (maintenance, CLI, badges, i18n, metrics breadth, ops manifests); ToC link under Features.
 - **README Features:** add missing product capabilities with short “what it solves” blurbs (history >14d, sync, momentum, badges, themes, Prometheus, rate limit/whitelist, packaging).
 - **ROADMAP / band plans:** post-0.9 park of filtered leftover QW and sync notes into [plan-v0.10.x.md](docs/plan-v0.10.x.md); dogfood contract + CORS warn into [plan-v0.11.x.md](docs/plan-v0.11.x.md); Line A / “next” text updated after 0.9 ship.
+- **storeStarHistory:** sort GitHub’s newest-first stargazer list ascending before writing daily cumulative totals.
+
+### Fixed
+
+- **CHANGELOG:** add missing `[0.7.10]` and `[0.7.6]` sections so footer compare links are not orphaned.
 
 ## [0.9.0] - 2026-07-12
 
@@ -114,6 +144,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 - **Reverse proxy CSP sanitisation:** backend `Content-Security-Policy` headers are stripped from proxied responses, preventing the upstream analytics backend from controlling the dashboard's CSP.
 
+## [0.7.10] - 2026-06-25
+
+### Fixed
+
+- **Whitelist + sync:** release tag for whitelist/sync interaction fix (see `v0.7.10`).
+
 ## [0.7.9] - 2026-06-16
 
 ### Added
@@ -150,6 +186,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - **Docs:** clarify `/metrics` is public by default and should be protected at the network edge.
 - **Docs:** add middleware chain order to rate limiting section.
 - Bump **`modernc.org/sqlite`** from 1.51.0 to 1.52.0 (SQLite 3.53.2; Dependabot #8).
+
+## [0.7.6] - 2026-06-14
+
+### Added
+
+- **IP whitelist** initial release (`GGHSTATS_WHITELIST` / `GGHSTATS_WHITELIST_PATHS`); refined in later 0.7.x notes.
 
 ## [0.7.5] - 2026-06-14
 
@@ -434,7 +476,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/hrodrig/gghstats/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/hrodrig/gghstats/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/hrodrig/gghstats/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/hrodrig/gghstats/compare/v0.7.11...v0.8.0

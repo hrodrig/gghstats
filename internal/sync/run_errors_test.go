@@ -62,7 +62,7 @@ func TestRunClassifiesViewsFailure(t *testing.T) {
 	gh.BaseURL = srv.URL
 	rec := &fakeRec{kinds: map[string]int{}, repos: map[string]int{}}
 
-	if err := Run(gh, db, Options{Repos: []string{repoPath}}, rec); err != nil {
+	if _, err := Run(gh, db, Options{Repos: []string{repoPath}}, rec); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 	if rec.kinds["views"] != 1 {
@@ -94,7 +94,7 @@ func TestRunRepoMetaFailureClassified(t *testing.T) {
 	gh.BaseURL = srv.URL
 	rec := &fakeRec{kinds: map[string]int{}, repos: map[string]int{}}
 
-	_ = Run(gh, db, Options{}, rec)
+	_, _ = Run(gh, db, Options{}, rec)
 	if rec.kinds["worker"] < 1 {
 		t.Fatalf("worker kind count = %d, want >= 1 (got %v)", rec.kinds["worker"], rec.kinds)
 	}

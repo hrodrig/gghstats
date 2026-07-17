@@ -125,6 +125,34 @@ func TestLoadServeConfigUpdateCheckOptOut(t *testing.T) {
 	}
 }
 
+func TestLoadServeConfigIncludePrivateTruthyAliases(t *testing.T) {
+	for _, v := range []string{"1", "yes", "on"} {
+		t.Run(v, func(t *testing.T) {
+			t.Setenv("GGHSTATS_INCLUDE_PRIVATE", v)
+			cfg := loadServeConfig()
+			if !cfg.IncludePrivate {
+				t.Errorf("IncludePrivate want true for %q", v)
+			}
+		})
+	}
+}
+
+func TestLoadServeConfigCollectorOptInAlias(t *testing.T) {
+	t.Setenv("GGHSTATS_ENABLE_COLLECTOR", "1")
+	cfg := loadServeConfig()
+	if !cfg.EnableCollector {
+		t.Error("EnableCollector want true for GGHSTATS_ENABLE_COLLECTOR=1")
+	}
+}
+
+func TestLoadServeConfigBadgePublicFalseAlias(t *testing.T) {
+	t.Setenv("GGHSTATS_BADGE_PUBLIC", "0")
+	cfg := loadServeConfig()
+	if cfg.BadgePublic {
+		t.Error("BadgePublic want false for GGHSTATS_BADGE_PUBLIC=0")
+	}
+}
+
 func TestParseServeFlagsDemoSkipsToken(t *testing.T) {
 	t.Setenv("GGHSTATS_GITHUB_TOKEN", "")
 	t.Setenv("GGHSTATS_DEMO", "")
