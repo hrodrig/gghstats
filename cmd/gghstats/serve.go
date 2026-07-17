@@ -97,7 +97,7 @@ func loadServeConfig() serveConfig {
 // errServeHelp is returned by parseServeFlags when -h/--help is requested.
 // runServe treats it as a successful no-op so the help banner prints once
 // and the process exits without starting the HTTP server, scheduler, or
-// collector (otherwise the test/CLI would block in serveHTTP's signal wait).
+// collector (otherwise the test/CLI would block in serveHTTP until ctx cancel).
 var errServeHelp = errors.New("serve help requested")
 
 func parseServeFlags(cfg *serveConfig, args []string) error {
@@ -231,7 +231,9 @@ func runServe(args []string) error {
 
 	whitelist := server.NewWhitelist(server.ParseWhitelistEnv(), cfg.APIToken)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	var coord *sync.Coordinator
@@ -266,7 +268,7 @@ func runServe(args []string) error {
 		BadgePublic:       cfg.BadgePublic,
 		BadgeCacheMaxAge:  cfg.BadgeCacheMaxAge,
 		PublicURL:         cfg.PublicURL,
-		DisableMetrics:    os.Getenv("GGHSTATS_METRICS") == "false",
+		DisableMetrics:    !envBool("GGHSTATS_METRICS", true),
 		MetricsRegistry:   metricsReg,
 		DomainMetrics:     domainMetrics,
 		CustomCSSAbsPath:  cssAbs,
@@ -287,13 +289,13 @@ func runServe(args []string) error {
 		Handler: handler,
 	}
 
-	return serveHTTP(srv, cfg, cancel)
+	return serveHTTP(ctx, srv, cfg, cancel)
 }
 
-func serveHTTP(srv *http.Server, cfg serveConfig, cancel context.CancelFunc) error {
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
-
+// serveHTTP listens until ctx is cancelled or ListenAndServe fails.
+// cancel stops the sync scheduler; callers must still defer their own cancel.
+func serveHTTP(ctx context.Context, srv *http.Server, cfg serveConfig, cancel context.CancelFunc) error {
+	errCh := make(chan error, 1)
 	go func() {
 		logURL := serveDashboardURL(cfg.Host, cfg.Port)
 		if cfg.Host == "0.0.0.0" || cfg.Host == "::" || cfg.Host == "[::]" {
@@ -307,19 +309,30 @@ func serveHTTP(srv *http.Server, cfg serveConfig, cancel context.CancelFunc) err
 				openBrowser(logURL)
 			}()
 		}
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		err := srv.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
 			slog.Error("server error", "error", err)
-			os.Exit(1)
+			errCh <- err
+			return
 		}
+		errCh <- nil
 	}()
 
-	<-done
-	slog.Info("shutting down...")
-	cancel()
-
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer shutdownCancel()
-	return srv.Shutdown(shutdownCtx)
+	select {
+	case err := <-errCh:
+		cancel()
+		return err
+	case <-ctx.Done():
+		slog.Info("shutting down...")
+		cancel()
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer shutdownCancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			<-errCh
+			return err
+		}
+		return <-errCh
+	}
 }
 
 func startScheduler(ctx context.Context, coord *sync.Coordinator, interval time.Duration, syncOnStartup bool) {

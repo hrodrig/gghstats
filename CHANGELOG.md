@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **serveHTTP:** wait on `context` (`signal.NotifyContext` in `runServe`) instead of raw `signal.Notify`; ListenAndServe failures return an error instead of `os.Exit(1)` from a goroutine.
 - **Serve env booleans:** `loadServeConfig` / metrics flags use `envBool` (`1`/`true`/`yes`/`on` and `0`/`false`/`no`/`off`), including `GGHSTATS_INCLUDE_PRIVATE`, collector, badge public, and metrics toggles.
 - **`gghstats --help`:** document missing serve env vars (`SYNC_WORKERS`, `INCLUDE_PRIVATE`, badge cache, collector/update-check, whitelist, rate limit, locales).
 - **README env table:** add `GGHSTATS_SYNC_WORKERS` and `GGHSTATS_DEMO`.
