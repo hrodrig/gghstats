@@ -240,9 +240,6 @@ func (c *Client) getPaginatedWithAccept(path, accept string, dest interface{}) e
 
 // getPaginatedCtx is the canonical paginated helper: respects retry policy.
 func (c *Client) getPaginatedCtx(ctx context.Context, path, accept string, dest interface{}) error {
-	slicePtr, ok := dest.(*[]Star)
-	_ = slicePtr
-	// Use generic approach: accumulate raw JSON arrays
 	var allRaw []json.RawMessage
 	currentPath := path
 
@@ -276,10 +273,6 @@ func (c *Client) getPaginatedCtx(ctx context.Context, path, accept string, dest 
 	combined, err := json.Marshal(allRaw)
 	if err != nil {
 		return err
-	}
-
-	if ok {
-		return json.Unmarshal(combined, slicePtr)
 	}
 	return json.Unmarshal(combined, dest)
 }

@@ -20,6 +20,9 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **getPaginatedCtx:** drop redundant `*[]Star` type assert; always unmarshal into `dest`.
+- **HTTP access log:** `http` slog level by status (Info below 400, Warn 4xx, Error 5xx).
+- **docs/plan-v0.10.x:** mark QW leftovers done.
 - **README:** Data directory soft-land (recommended absolute paths per platform; binary default still `./data/gghstats.db` until v1.0 XDG — short XDG Base Directory note); Opt-in alerts operator section + env table rows; Features bullets for alerts and demo (collector/update-check off).
 - **contrib:** path notes in `gghstats.env.example`, systemd + launchd docs, man `GGHSTATS_DB`.
 - **docs/plan-v0.10.x:** mark A2 + PATH docs done.

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -35,5 +36,24 @@ func TestLogMiddlewareRecordsStatus(t *testing.T) {
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusTeapot {
 		t.Fatalf("status = %d", w.Code)
+	}
+}
+
+func TestHttpAccessLogLevel(t *testing.T) {
+	cases := []struct {
+		status int
+		want   slog.Level
+	}{
+		{200, slog.LevelInfo},
+		{301, slog.LevelInfo},
+		{404, slog.LevelWarn},
+		{418, slog.LevelWarn},
+		{500, slog.LevelError},
+		{503, slog.LevelError},
+	}
+	for _, tc := range cases {
+		if got := httpAccessLogLevel(tc.status); got != tc.want {
+			t.Errorf("httpAccessLogLevel(%d) = %v, want %v", tc.status, got, tc.want)
+		}
 	}
 }

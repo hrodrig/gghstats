@@ -233,14 +233,27 @@ func logMiddleware(next http.Handler) http.Handler {
 		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(rec, r)
 		if r.URL.Path != HealthzPath {
-			slog.Info("http",
+			attrs := []any{
 				"method", r.Method,
 				"path", r.URL.Path,
 				"status", rec.status,
 				"dur", time.Since(start).Round(time.Millisecond),
-			)
+			}
+			slog.Log(r.Context(), httpAccessLogLevel(rec.status), "http", attrs...)
 		}
 	})
+}
+
+// httpAccessLogLevel maps HTTP status to slog level (4xx warn, 5xx error).
+func httpAccessLogLevel(status int) slog.Level {
+	switch {
+	case status >= 500:
+		return slog.LevelError
+	case status >= 400:
+		return slog.LevelWarn
+	default:
+		return slog.LevelInfo
+	}
 }
 
 func apiMiddleware(token string, next http.HandlerFunc) http.HandlerFunc {
