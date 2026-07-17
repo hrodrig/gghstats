@@ -117,3 +117,12 @@ func (p Payload) OneLine() string {
 	}
 	return fmt.Sprintf("gghstats/%s alert: %s %s = %s", ver, target, p.Metric, p.Value)
 }
+
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if strings.TrimSpace(v) != "" {
+			return v
+		}
+	}
+	return ""
+}

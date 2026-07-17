@@ -39,8 +39,8 @@ func TestVersionedMigrations(t *testing.T) {
 	if err := s.DB().QueryRow("PRAGMA user_version").Scan(&ver); err != nil {
 		t.Fatal(err)
 	}
-	if ver != 4 {
-		t.Errorf("user_version = %d, want 4", ver)
+	if ver != 5 {
+		t.Errorf("user_version = %d, want 5", ver)
 	}
 
 	// repos table should exist

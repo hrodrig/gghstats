@@ -221,7 +221,10 @@ func runServe(args []string) error {
 	if err != nil {
 		return err
 	}
-	_ = alertSenders // wired for post-sync rules in a follow-up; sinks validated at startup
+	alertRules, err := alert.RulesFromEnv(os.Getenv)
+	if err != nil {
+		return fmt.Errorf("alert rules: %w", err)
+	}
 
 	db, err := store.Open(cfg.DB)
 	if err != nil {
@@ -276,6 +279,23 @@ func runServe(args []string) error {
 		coord = sync.NewCoordinator(gh, db, syncOpts)
 		if domainMetrics != nil {
 			coord.SetMetrics(domainMetrics)
+		}
+		if len(alertSenders) > 0 && len(alertRules) > 0 {
+			senders := alertSenders
+			rules := alertRules
+			publicURL := cfg.PublicURL
+			coord.SetAfterSync(func(success bool) {
+				if !success {
+					return
+				}
+				alert.RunTrafficRules(ctx, alert.EvalConfig{
+					DB:        db,
+					Rules:     rules,
+					Senders:   senders,
+					PublicURL: publicURL,
+				})
+			})
+			slog.Info(fmt.Sprintf("alerts: %d rule(s) will evaluate after successful sync", len(rules)))
 		}
 		go startScheduler(ctx, coord, cfg.SyncInterval, cfg.SyncOnStartup)
 	}

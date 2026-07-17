@@ -63,6 +63,7 @@ func (s *Store) migrate() error {
 		migrateV2,
 		migrateV3,
 		migrateV4,
+		migrateV5,
 	}
 
 	var current int
@@ -179,6 +180,16 @@ func migrateV4(db *sql.DB) error {
 		}
 	}
 	return nil
+}
+
+// migrateV5 adds alert debounce state for once / once_per_utc_day (SPEC §8).
+func migrateV5(db *sql.DB) error {
+	_, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS alert_debounce (
+			rule_key TEXT NOT NULL PRIMARY KEY,
+			stamp    TEXT NOT NULL
+		)`)
+	return err
 }
 
 // --- Upsert methods ---
@@ -882,4 +893,70 @@ func boolToInt(b bool) int {
 		return 1
 	}
 	return 0
+}
+
+// AlertDebounceGet returns the stamp for a rule key (empty if unset).
+func (s *Store) AlertDebounceGet(ruleKey string) (string, error) {
+	var stamp string
+	err := s.db.QueryRow(`SELECT stamp FROM alert_debounce WHERE rule_key=?`, ruleKey).Scan(&stamp)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return stamp, err
+}
+
+// AlertDebounceSet upserts the debounce stamp for a rule key.
+func (s *Store) AlertDebounceSet(ruleKey, stamp string) error {
+	_, err := s.db.Exec(
+		`INSERT INTO alert_debounce (rule_key, stamp) VALUES (?, ?)
+		 ON CONFLICT(rule_key) DO UPDATE SET stamp=excluded.stamp`,
+		ruleKey, stamp,
+	)
+	return err
+}
+
+// SumClonesAll returns SUM(count) across all clones rows (fleet lifetime).
+func (s *Store) SumClonesAll() (int, error) {
+	var n sql.NullInt64
+	err := s.db.QueryRow(`SELECT SUM(count) FROM clones`).Scan(&n)
+	if err != nil {
+		return 0, err
+	}
+	if !n.Valid {
+		return 0, nil
+	}
+	return int(n.Int64), nil
+}
+
+// SumViewsAll returns SUM(count) across all views rows (fleet lifetime).
+func (s *Store) SumViewsAll() (int, error) {
+	var n sql.NullInt64
+	err := s.db.QueryRow(`SELECT SUM(count) FROM views`).Scan(&n)
+	if err != nil {
+		return 0, err
+	}
+	if !n.Valid {
+		return 0, nil
+	}
+	return int(n.Int64), nil
+}
+
+// DayCount returns count for one repo/date from clones or views (0 if missing).
+func (s *Store) DayCount(table, repo, date string) (int, error) {
+	if table != "clones" && table != "views" {
+		return 0, fmt.Errorf("unsupported table %q", table)
+	}
+	var n sql.NullInt64
+	q := fmt.Sprintf(`SELECT count FROM %s WHERE repo=? AND date=?`, table)
+	err := s.db.QueryRow(q, repo, date).Scan(&n)
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	if !n.Valid {
+		return 0, nil
+	}
+	return int(n.Int64), nil
 }

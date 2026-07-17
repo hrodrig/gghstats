@@ -56,7 +56,7 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.
 - [x] Incremental star sync + tests + SPEC §4.7
 - [x] **A2 sinks first** — Slack + webhook + **Loki** + tests + env/docs ([SPEC §8.5](../SPEC.md)) — delivery only; rules next
 - [x] **`gghstats alert test`** — smoke-test sinks without serve/sync ([SPEC §8.8](../SPEC.md))
-- [ ] A2 traffic rules after sync + fan-out ([SPEC §8.2](../SPEC.md) / [§8.4](../SPEC.md) / [§8.6](../SPEC.md))
+- [x] A2 traffic rules after sync + fan-out ([SPEC §8.2](../SPEC.md) / [§8.4](../SPEC.md) / [§8.6](../SPEC.md))
 - [ ] A2 ops rules — counts / levels / rate-limit ([SPEC §8.7](../SPEC.md))
 - [ ] XDG / default path prep docs
 - [ ] QW leftovers (as capacity allows)

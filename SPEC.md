@@ -173,7 +173,7 @@ See **Non-goals** in [ROADMAP.md](ROADMAP.md). Multi-writer SQLite, GitHub Apps,
 
 ## 8. Alerts (target behavior — 0.10.x)
 
-**Status:** Sinks + **`gghstats alert test`** are implemented; **rule evaluation** is not yet. This section remains the **normative product design** for opt-in alerts (A2 / A2+): **traffic** rules (§8.1–§8.4), **ops / sync-health** rules (§8.7), shared **sinks** (§8.5), and smoke-test (§8.8). Band checklist: [docs/plan-v0.10.x.md](docs/plan-v0.10.x.md).
+**Status:** Sinks, **`gghstats alert test`**, and **traffic rule evaluation** (after successful sync) are implemented. **Ops rules** (§8.7) and **milestones** (§8.3) are not yet. Band checklist: [docs/plan-v0.10.x.md](docs/plan-v0.10.x.md).
 
 Operator-facing copies (README, `contrib/gghstats.env.example`, man page) must stay aligned with this section when the feature ships.
 

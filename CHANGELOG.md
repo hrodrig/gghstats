@@ -14,6 +14,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - **SPEC §8:** traffic + **ops/sync-health** alerts (failure counts, levels warn/crit); sinks **slack / webhook / loki**; milestones/SMTP as 0.10.1+.
 - **Alert sinks (`internal/alert`):** Slack Incoming Webhook, generic webhook (discord/teams/generic), Loki push — pgwd-style HTTP retry + Sender fan-out; `GGHSTATS_ALERTS_ENABLED` / `GGHSTATS_ALERT_SINKS` validated at serve startup (fail closed). Rule evaluation still TODO.
 - **`gghstats alert test`:** synthetic smoke-test to configured sinks (`--kind traffic|ops`, `--sink` filter); exit **4** on delivery failure (SPEC §8.8). Does not require `ALERTS_ENABLED`.
+- **Traffic alert rules:** parse `GGHSTATS_ALERT_RULES`; evaluate after successful sync (`Coordinator.SetAfterSync`); absolute/floor/WoW/lifetime + debounce (`once_per_utc_day` / `once`) via SQLite `alert_debounce`. Ops rules and star milestones still skipped.
 - **SPEC §8.8:** `gghstats alert test` smoke-test contract (before real rules; family: pgwd `-force-notification`, groot/kzero `notify test`).
 
 ### Changed

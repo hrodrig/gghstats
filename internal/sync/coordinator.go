@@ -30,7 +30,8 @@ type Coordinator struct {
 	db  *store.Store
 	opt Options
 
-	metrics *metrics.Domain
+	metrics   *metrics.Domain
+	afterSync func(success bool)
 
 	running        bool
 	scope          string
@@ -44,6 +45,14 @@ type Coordinator struct {
 // SetMetrics attaches optional Prometheus domain metrics.
 func (c *Coordinator) SetMetrics(m *metrics.Domain) {
 	c.metrics = m
+}
+
+// SetAfterSync registers a callback invoked after each sync finishes (success or failure).
+// Used for post-sync alert evaluation. Must not block forever.
+func (c *Coordinator) SetAfterSync(fn func(success bool)) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.afterSync = fn
 }
 
 // NewCoordinator wires a GitHub client and store for serialized sync runs.
@@ -137,6 +146,7 @@ func (c *Coordinator) finishRun(err error) {
 	c.mu.Lock()
 	started := c.syncStartedAt
 	dom := c.metrics
+	after := c.afterSync
 	c.running = false
 	c.scope = ""
 	c.repo = ""
@@ -148,5 +158,8 @@ func (c *Coordinator) finishRun(err error) {
 
 	if dom != nil && !started.IsZero() {
 		dom.ObserveSync(time.Since(started), err == nil)
+	}
+	if after != nil {
+		after(err == nil)
 	}
 }
