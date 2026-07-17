@@ -12,6 +12,9 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - **Incremental star history sync:** persist `last_seen_star_count` / `last_starred_at` on `repos`; skip stargazer pagination when the count is unchanged; fetch only new stars when it grows; full rebuild if the count drops. Documents why in SPEC §4.7 and README sync notes.
 - **docs/plan-v0.10.x:** band checklist only (what to implement); alert **product rules** in **SPEC §8** (target behavior).
 - **SPEC §8:** traffic + **ops/sync-health** alerts (failure counts, levels warn/crit); sinks **slack / webhook / loki**; milestones/SMTP as 0.10.1+.
+- **Alert sinks (`internal/alert`):** Slack Incoming Webhook, generic webhook (discord/teams/generic), Loki push — pgwd-style HTTP retry + Sender fan-out; `GGHSTATS_ALERTS_ENABLED` / `GGHSTATS_ALERT_SINKS` validated at serve startup (fail closed). Rule evaluation still TODO.
+- **`gghstats alert test`:** synthetic smoke-test to configured sinks (`--kind traffic|ops`, `--sink` filter); exit **4** on delivery failure (SPEC §8.8). Does not require `ALERTS_ENABLED`.
+- **SPEC §8.8:** `gghstats alert test` smoke-test contract (before real rules; family: pgwd `-force-notification`, groot/kzero `notify test`).
 
 ### Changed
 

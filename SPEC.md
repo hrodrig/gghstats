@@ -173,7 +173,7 @@ See **Non-goals** in [ROADMAP.md](ROADMAP.md). Multi-writer SQLite, GitHub Apps,
 
 ## 8. Alerts (target behavior — 0.10.x)
 
-**Status:** **Not implemented** in the binary yet. This section is the **normative product design** for opt-in alerts (A2 / A2+): **traffic** rules (§8.1–§8.4) and **ops / sync-health** rules (§8.7), delivered through shared **sinks** (§8.5). Implementers and reviewers treat it as the contract to build against. Band checklist and sequencing: [docs/plan-v0.10.x.md](docs/plan-v0.10.x.md).
+**Status:** Sinks + **`gghstats alert test`** are implemented; **rule evaluation** is not yet. This section remains the **normative product design** for opt-in alerts (A2 / A2+): **traffic** rules (§8.1–§8.4), **ops / sync-health** rules (§8.7), shared **sinks** (§8.5), and smoke-test (§8.8). Band checklist: [docs/plan-v0.10.x.md](docs/plan-v0.10.x.md).
 
 Operator-facing copies (README, `contrib/gghstats.env.example`, man page) must stay aligned with this section when the feature ships.
 
@@ -303,8 +303,9 @@ GGHSTATS_ALERT_SINKS='[
 **Implementation order (A2):**
 
 1. **Sinks** — parse `GGHSTATS_ALERT_SINKS`; resolve `*_env` → `os.Getenv`; send a fixed test payload (`slack` / `webhook` / `loki`); fail closed if enabled but no valid sink.
-2. **Rules** — parse `GGHSTATS_ALERT_RULES`; evaluate after sync (traffic + ops); call the same sink layer.
-3. **Docs** — glossary + plain-language examples + env.example.
+2. **`gghstats alert test`** — smoke-test delivery to configured sinks **without** waiting for a real rule (§8.8). Required before shipping rule evaluation so operators can prove Slack/Loki wiring.
+3. **Rules** — parse `GGHSTATS_ALERT_RULES`; evaluate after sync (traffic + ops); call the same sink layer.
+4. **Docs** — glossary + plain-language examples + env.example.
 
 **Rules** = *when* to fire (`GGHSTATS_ALERT_RULES`).  
 **Sinks** = *where* the message is sent (`GGHSTATS_ALERT_SINKS`).  
@@ -747,4 +748,45 @@ GGHSTATS_ALERT_RULES='[
 ]'
 ```
 
-**MVP sequencing:** sinks first (including Loki); traffic rules next; **ops rules** in the same A2 band once sinks work — do not ship ops-only without delivery. Prometheus remains complementary, not a substitute for operators who only want Slack/Loki push.
+**MVP sequencing:** sinks first (including Loki); **`gghstats alert test`** next (§8.8); traffic rules then ops rules — do not ship rule evaluation without a way for operators to prove delivery. Prometheus remains complementary, not a substitute for operators who only want Slack/Loki push.
+
+### 8.8 `gghstats alert test` — sink smoke test
+
+Operators must be able to **validate notifications before real traffic/ops rules fire** (same need as **pgwd** `-force-notification` and **groot** / **kzero** `notify test`).
+
+**CLI (normative):**
+
+```text
+gghstats alert test [--kind traffic|ops] [--sink TYPE] ...
+```
+
+| Aspect | Contract |
+|--------|----------|
+| **Purpose** | POST one **synthetic** payload to configured sinks. Prove URLs, secrets, Loki labels, and message shape. |
+| **Does not** | Start `serve`, run sync, open SQLite for rule evaluation, or require GitHub. |
+| **Config source** | Same env as serve: `GGHSTATS_ALERT_SINKS` (+ secret env vars). Optional: require `GGHSTATS_ALERTS_ENABLED=true`, **or** allow test when sinks are non-empty even if enabled is false (document one rule — prefer: **sinks non-empty is enough** for test; `ENABLED` gates post-sync evaluation only). |
+| **Default payload** | Synthetic traffic-shaped message (`kind=traffic`, metric/repo placeholders, `rule: delivery check`) including **gghstats version**. |
+| **`--kind ops`** | Synthetic ops payload (`event=alert_test`, `level=info`, detail = delivery check). |
+| **`--sink TYPE`** | Optional filter: only that sink type (`slack` / `webhook` / `loki`). Default = **fan-out all** resolved sinks. |
+| **Stdout success** | e.g. `alert test: sent kind "traffic" to N sink(s)`. |
+| **Exit codes** | **0** all targeted sinks succeeded; **1** config/parse error or no sinks; **non-zero** (recommend **4**, aligned with groot/kzero) if any targeted sink failed delivery. |
+| **Fail closed** | No sinks / empty URL after `*_env` resolve → exit **1**, do not pretend success. |
+
+**Not** a long-running serve flag (unlike pgwd’s `-force-notification` on each check cycle). gghstats `serve` is a daemon; smoke-test is a **one-shot CLI** so operators validate before cron/Compose/Helm turn on rules.
+
+**Plain language:**
+
+> Operator: *Send a test alert to my Slack and Loki so I know webhooks work before I enable clone rules.*
+
+→ `gghstats alert test` (or `… --kind ops`) with `GGHSTATS_ALERT_SINKS` set.
+
+**Related family (same maintainer):**
+
+| Tool | Smoke-test shape |
+|------|------------------|
+| **pgwd** | `-force-notification` / `PGWD_FORCE_NOTIFICATION` during a check run |
+| **groot** | `groot notify test [--event …]` |
+| **kzero** | `kzero notify test [--event …]` |
+| **gghstats** | `gghstats alert test [--kind …]` |
+
+Payload must still follow §8.6 (version line, English, no emoji spam). Mark synthetic clearly, e.g. `rule: delivery check` or `event: alert_test`.

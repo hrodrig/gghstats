@@ -57,10 +57,22 @@ Write a consistent SQLite snapshot with \fBVACUUM INTO\fR
 Replace the database file from a backup
 (\fB\-\-input\fR required). Stop \fBserve\fR first if the DB is in use.
 .TP
+.B alert test
+Send a synthetic alert to configured sinks
+(\fBGGHSTATS_ALERT_SINKS\fR) without starting \fBserve\fR or syncing.
+Optional \fB\-\-kind traffic|ops\fR and \fB\-\-sink slack|webhook|loki\fR.
+Exit \fB4\fR if delivery fails. See SPEC §8.8.
+.TP
 .B version
 Print build version information.
 .SH CLI FLAGS
-(fetch, report, export, backup, restore)
+(fetch, report, export, backup, restore, alert test)
+.TP
+.BR \-\-kind ", " traffic|ops
+(\fBalert test\fR) Synthetic payload kind (default \fBtraffic\fR).
+.TP
+.BR \-\-sink ", " TYPE
+(\fBalert test\fR) Only send to this sink type (\fBslack\fR, \fBwebhook\fR, or \fBloki\fR).
 .TP
 .BR \-\-repo ", " owner/repo
 Repository (or \fBGGHSTATS_REPO\fR).
@@ -152,6 +164,17 @@ Time window for rate limiting as a Go duration (default: \fB1m\fR).
 .B GGHSTATS_RATE_LIMIT_BURST
 Maximum burst of requests before smoothing (default: \fB20\fR).
 Exempt paths: \fB/metrics\fR, \fB/api/v1/healthz\fR, \fB/api/v1/badge/*\fR (README embeds).
+.TP
+.B GGHSTATS_ALERTS_ENABLED
+When \fBtrue\fR, evaluate alert rules after sync (default \fBfalse\fR).
+Requires at least one valid entry in \fBGGHSTATS_ALERT_SINKS\fR.
+.TP
+.B GGHSTATS_ALERT_SINKS
+JSON array of sinks (\fBslack\fR, \fBwebhook\fR, \fBloki\fR). Secrets via
+\fB*_env\fR fields. Used by \fBserve\fR and by \fBgghstats alert test\fR.
+.TP
+.B GGHSTATS_ALERT_RULES
+JSON array of traffic/ops rules (evaluated after sync when alerts are enabled).
 .TP
 .B GGHSTATS_WHITELIST
 Comma-separated IPs/CIDRs allowed to access the server (empty = all allowed).

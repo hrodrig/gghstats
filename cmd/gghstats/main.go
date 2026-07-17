@@ -22,6 +22,7 @@ Commands:
   export   Export traffic data to CSV
   backup   Snapshot the SQLite database (VACUUM INTO)
   restore  Replace the SQLite database from a backup file
+  alert    Alert helpers (alert test = smoke-test sinks)
   version  Print version information
 
 CLI flags (fetch/report/export):
@@ -33,6 +34,10 @@ Backup / restore:
   --db     PATH            SQLite database path (or GGHSTATS_DB)
   --output PATH            backup: destination file (required)
   --input  PATH            restore: backup file to copy from (required)
+
+Alert smoke-test:
+  gghstats alert test [--kind traffic|ops] [--sink slack|webhook|loki]
+                       Uses GGHSTATS_ALERT_SINKS (ENABLED not required). Exit 4 on delivery failure.
 
 Server (gghstats serve or gghstats run):
   --port PORT              Listen port (overrides GGHSTATS_PORT; default 8080)
@@ -71,6 +76,9 @@ Server env vars (serve):
   GGHSTATS_RATE_LIMIT_REQUESTS Requests per window (default: 120)
   GGHSTATS_RATE_LIMIT_PERIOD   Rate-limit window duration (default: 1m)
   GGHSTATS_RATE_LIMIT_BURST    Burst size (default: 20)
+  GGHSTATS_ALERTS_ENABLED      Opt-in alerts (default false); require sinks when true
+  GGHSTATS_ALERT_SINKS         JSON array of sinks: slack | webhook | loki (secrets via *_env)
+  GGHSTATS_ALERT_RULES         JSON array of rules (evaluated after sync; empty until rules ship)
 
   Booleans accept 1/true/yes/on and 0/false/no/off. Full detail: man gghstats, README, contrib/gghstats.env.example.
 
@@ -90,6 +98,7 @@ var cliCommands = map[string]cliCmd{
 	"export":  runExport,
 	"backup":  runBackup,
 	"restore": runRestore,
+	"alert":   runAlert,
 }
 
 // runCLI runs the CLI and returns a process exit code (0 = success).
@@ -121,7 +130,7 @@ func runCLI(args []string) int {
 	}
 	if err := run(args[2:]); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		return 1
+		return exitCodeOf(err)
 	}
 	return 0
 }

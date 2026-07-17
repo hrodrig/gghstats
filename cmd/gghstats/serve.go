@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hrodrig/gghstats/internal/alert"
 	"github.com/hrodrig/gghstats/internal/collector"
 	"github.com/hrodrig/gghstats/internal/demo"
 	"github.com/hrodrig/gghstats/internal/github"
@@ -174,6 +175,21 @@ func startCollector(cfg serveConfig) {
 	}
 }
 
+// loadAlertSenders validates GGHSTATS_ALERTS_* (SPEC §8.5 fail-closed) and builds senders.
+// Returns nil senders when alerts are disabled.
+func loadAlertSenders() ([]alert.Sender, error) {
+	enabled, sinks, err := alert.ConfigFromEnv(os.Getenv)
+	if err != nil {
+		return nil, fmt.Errorf("alert config: %w", err)
+	}
+	if !enabled {
+		return nil, nil
+	}
+	senders := alert.BuildSenders(sinks, nil)
+	slog.Info(fmt.Sprintf("alerts enabled: %d sink(s) configured", len(senders)))
+	return senders, nil
+}
+
 func collectFeatures(cfg serveConfig) collector.ServeFeatures {
 	return collector.ServeFeatures{
 		BadgePublic:      cfg.BadgePublic,
@@ -200,6 +216,12 @@ func runServe(args []string) error {
 	}
 
 	logServerStartup(cfg)
+
+	alertSenders, err := loadAlertSenders()
+	if err != nil {
+		return err
+	}
+	_ = alertSenders // wired for post-sync rules in a follow-up; sinks validated at startup
 
 	db, err := store.Open(cfg.DB)
 	if err != nil {

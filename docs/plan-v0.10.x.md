@@ -29,12 +29,13 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.
 ## Implementation order (A2)
 
 1. Sinks (`GGHSTATS_ALERT_SINKS`) — Slack + generic webhook + **Loki** deliver in tests → [SPEC §8.5](../SPEC.md)
-2. Traffic rules (`GGHSTATS_ALERT_RULES`) — evaluate after sync, fan-out → [SPEC §8.2](../SPEC.md) / [§8.4](../SPEC.md)
-3. Ops / sync-health rules — failure **counts**, **levels** (`warn`/`crit`), rate-limit floors → [SPEC §8.7](../SPEC.md)
-4. Operator docs (README, env.example, man) aligned with SPEC §8
-5. Later: A2+ milestones / SMTP
+2. **`gghstats alert test`** — operator smoke-test before real rules → [SPEC §8.8](../SPEC.md)
+3. Traffic rules (`GGHSTATS_ALERT_RULES`) — evaluate after sync, fan-out → [SPEC §8.2](../SPEC.md) / [§8.4](../SPEC.md)
+4. Ops / sync-health rules — failure **counts**, **levels** (`warn`/`crit`), rate-limit floors → [SPEC §8.7](../SPEC.md)
+5. Operator docs (README, env.example, man) aligned with SPEC §8
+6. Later: A2+ milestones / SMTP
 
-**Hard rule:** do not ship rule evaluation without a working sink ([SPEC §8.5](../SPEC.md)).
+**Hard rule:** do not ship rule evaluation without a working sink ([SPEC §8.5](../SPEC.md)) and a way to smoke-test delivery ([SPEC §8.8](../SPEC.md)).
 
 ## Out of scope (this band)
 
@@ -53,7 +54,8 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.
 ## Checklist
 
 - [x] Incremental star sync + tests + SPEC §4.7
-- [ ] **A2 sinks first** — Slack + webhook + **Loki** + tests + env/docs ([SPEC §8.5](../SPEC.md))
+- [x] **A2 sinks first** — Slack + webhook + **Loki** + tests + env/docs ([SPEC §8.5](../SPEC.md)) — delivery only; rules next
+- [x] **`gghstats alert test`** — smoke-test sinks without serve/sync ([SPEC §8.8](../SPEC.md))
 - [ ] A2 traffic rules after sync + fan-out ([SPEC §8.2](../SPEC.md) / [§8.4](../SPEC.md) / [§8.6](../SPEC.md))
 - [ ] A2 ops rules — counts / levels / rate-limit ([SPEC §8.7](../SPEC.md))
 - [ ] XDG / default path prep docs
