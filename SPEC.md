@@ -168,3 +168,583 @@ Prometheus metric names introduced in release notes are treated as operator-faci
 ## 7. Out of scope
 
 See **Non-goals** in [ROADMAP.md](ROADMAP.md). Multi-writer SQLite, GitHub Apps, and production cluster manifests are not part of this spec.
+
+---
+
+## 8. Alerts (target behavior — 0.10.x)
+
+**Status:** **Not implemented** in the binary yet. This section is the **normative product design** for opt-in alerts (A2 / A2+): **traffic** rules (§8.1–§8.4) and **ops / sync-health** rules (§8.7), delivered through shared **sinks** (§8.5). Implementers and reviewers treat it as the contract to build against. Band checklist and sequencing: [docs/plan-v0.10.x.md](docs/plan-v0.10.x.md).
+
+Operator-facing copies (README, `contrib/gghstats.env.example`, man page) must stay aligned with this section when the feature ships.
+
+### 8.1 Metrics and windows
+
+Vocabulary operators must see so they know **what is being measured**, not only that “a threshold fired.”
+
+### Base metrics (from SQLite / GitHub Traffic)
+
+| Metric id | What it is | Source in gghstats |
+|-------------------|------------|--------------------|
+| **`clones`** | How many times the repo was **cloned** (git clone / GitHub Traffic → Clones). Distinct from unique cloners unless using uniques. | Daily rows in `clones` (`count` / `uniques`) |
+| **`views`** | How many times repo content was **viewed** on GitHub (Traffic → Views). | Daily rows in `views` (`count` / `uniques`) |
+| **`stars`** | Cumulative **stargazer** count (GitHub star button). | `repos.stars` and/or `stars` history totals |
+| **`uniques` (optional)** | Distinct cloners or viewers in the window (GitHub unique series). Env/docs must say **count vs uniques** explicitly. | `clones.uniques` / `views.uniques` |
+
+Comparison windows for **drops** (A2) must be named in config/docs:
+
+| Window | Meaning |
+|--------|---------|
+| **7d / 30d sum** | Sum of daily `count` (or `uniques`) over the last N UTC days ending at last sync “today”. |
+| **WoW** | Week-over-week: last 7d sum vs the previous 7d sum. |
+| **MoM** | Month-over-month: last 30d vs previous 30d **or** calendar month — implementers pick one rule and document it in README/env. |
+
+### 8.2 Rule kinds — drops and absolute thresholds (0.10.0)
+
+**Drop** = traffic got **worse**. **Absolute high/floor (day or N-day)** = crossed a fixed bar (e.g. “today clones ≥ 225”). Both use the same sinks; both need plain-language docs.
+
+| Concept | Operator meaning | Example |
+|---------|------------------|---------|
+| **Absolute high** | Window value is **at or above** a fixed number. | Today `hrodrig/pgwd` **clones ≥ 225** |
+| **Absolute floor / zero** | Window value is **below** a bar, or **exactly 0** (no traffic). Missing day row → **0**. | Today `hrodrig/groot` **clones == 0** |
+| **Relative drop %** | Current window is X% **below** the comparison window. | `clones` WoW drop ≥ **30%** |
+| **Scope** | One `owner/name`, each synced repo, or **aggregate** all synced repos (sum). | Only `hrodrig/pgwd`, or **fleet total** |
+| **Aggregate (fleet)** | Sum metric across **all repos in the DB** (document whether `GGHSTATS_FILTER` narrows). No single `repo` field. | All clones ever stored **≥ 30000** |
+
+Alert payload / log line must include: **metric**, **window**, **before/after or current vs threshold**, **repo**, **configured rule**. Never opaque “alert fired.”
+
+**Non-goals for A2 traffic rules:** undocumented sink channels, arbitrary custom SQL. Growth **milestones** (fire-once star ladders) stay A2+. **Ops / sync-health** rules are separate (§8.7) — same sinks, different trigger.
+
+### 8.3 Growth milestones (A2+ / 0.10.1+)
+
+A **growth milestone** means: an upward **goal** the operator set was **crossed**.
+
+| Concept | Operator meaning | Example |
+|---------|------------------|---------|
+| **Absolute milestone** | Metric reaches or exceeds a fixed total. | `stars` ≥ **100**, then **500**, then **1000** |
+| **Fire-once** | Each `(repo, metric, threshold)` notifies **at most once** until a documented reset. | Avoid re-spam on every sync after crossing |
+| **Metric choice** | Prefer totals already in DB; each option named (`stars` cumulative vs `clones` 30d sum — never ambiguous). | Document which series each env var uses |
+
+Milestone payload must include: **metric**, **threshold**, **current value**, **repo**.
+
+### 8.4 Plain-language examples → config
+
+Docs (README / env.example) must show **human sentence → what gghstats checks**. Env key names are part of the target contract; rename only with CHANGELOG + this section.
+
+| What you mean | Rule type | Check (after sync) | Draft config sketch |
+|---------------|-----------|--------------------|---------------------|
+| “Alert me if **today** `hrodrig/pgwd` has **more than 225 clones**.” | Absolute **high** (day) | `clones.count` for UTC today on repo `hrodrig/pgwd` **≥ 225** | `repo=hrodrig/pgwd`, `metric=clones`, `window=1d`, `op=gte`, `value=225` |
+| “Alert me if **today** `hrodrig/groot` has had **no clones**.” | Absolute **floor** / zero (day) | `clones.count` for UTC today on `hrodrig/groot` is **0** or **missing** (treat missing day row as 0) | `repo=hrodrig/groot`, `metric=clones`, `window=1d`, `op=eq`, `value=0` |
+| “Alert me when **all clones** (every synced repo, all days) **exceed 30000**.” | Absolute **high** (fleet **lifetime**) | `SUM(clones.count)` over **all repos** and **all dates** in SQLite **≥ 30000** | `scope=all_repos`, `metric=clones`, `window=lifetime`, `op=gte`, `value=30000` |
+| “Alert me if **today** `hrodrig/pgwd` has **fewer than 10 views**.” | Absolute **floor** (day) | `views.count` for UTC today **&lt; 10** | `repo=…`, `metric=views`, `window=1d`, `op=lt`, `value=10` |
+| “Alert me if **this week’s clones** on `pgwd` fell **30%+** vs last week.” | Relative **drop** (WoW) | sum(`clones`, last 7d) ≤ sum(previous 7d) × (1 − 0.30) | `metric=clones`, `window=wow`, `op=drop_pct`, `value=30` |
+| “Alert me if **7-day views** across synced repos drop **below 50**.” | Absolute **floor** (7d) | sum(`views`, 7d) **&lt; 50** (per repo or aggregate — document scope) | `metric=views`, `window=7d`, `op=lt`, `value=50`, `scope=each_repo` |
+| “Alert me when `pgwd` reaches **100**, then **500** stars.” | Growth **milestone** (A2+) | `repos.stars` crosses 100 (once), later 500 (once) | `repo=hrodrig/pgwd`, `metric=stars`, `milestones=100,500`, `fire=once` |
+
+**Worked example (high clones today):**
+
+> Operator: *Alert me if today pgwd has more than 225 clones.*
+
+Interpretation:
+
+1. **Repo:** `hrodrig/pgwd` (full `owner/name` as stored after sync).
+2. **Metric:** `clones` → GitHub Traffic **Clones** `count` for that calendar day (UTC), not uniques unless the rule says so.
+3. **Window:** `1d` / “today” = the UTC date of the last successful sync’s “today” row (same day key used when writing `clones`).
+4. **Operator:** greater-or-equal **225**.
+5. **When evaluated:** after each sync that upserts that day’s clone row (not continuous push from GitHub).
+6. **Notify once per day per rule** (recommended default for absolute highs) so hourly sync does not spam Slack every hour after 225 is already true — document debounce (`once_per_utc_day` vs every sync).
+
+Pseudo-env (illustrative only) — **several rules in one JSON array**:
+
+```bash
+GGHSTATS_ALERTS_ENABLED=true
+# Plain language:
+#   - "Alert me if today hrodrig/pgwd has more than 225 clones."
+#   - "Alert me if today hrodrig/groot has had no clones."
+#   - "Alert me when all clones (every synced repo, all days) exceed 30000."
+#   - "Alert me if today hrodrig/pgwd has fewer than 10 views."
+#   - "Alert me if this week's clones on pgwd fell 30%+ vs last week."
+#   - "Alert me when pgwd reaches 100, then 500 stars."   (A2+ milestone shape)
+GGHSTATS_ALERT_RULES='[
+  {"repo":"hrodrig/pgwd","metric":"clones","window":"1d","op":"gte","value":225,"debounce":"once_per_utc_day"},
+  {"repo":"hrodrig/groot","metric":"clones","window":"1d","op":"eq","value":0,"debounce":"once_per_utc_day"},
+  {"scope":"all_repos","metric":"clones","window":"lifetime","op":"gte","value":30000,"debounce":"once","fire":"once"},
+  {"repo":"hrodrig/pgwd","metric":"views","window":"1d","op":"lt","value":10,"debounce":"once_per_utc_day"},
+  {"repo":"hrodrig/pgwd","metric":"clones","window":"wow","op":"drop_pct","value":30,"debounce":"once_per_utc_day"},
+  {"repo":"hrodrig/pgwd","metric":"stars","milestones":[100,500],"fire":"once"}
+]'
+# Where notifications go (sinks) — secrets via env refs, not literals in JSON:
+# (set these in the process environment / .env — never commit real URLs)
+GGHSTATS_SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+GGHSTATS_DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+GGHSTATS_N8N_WEBHOOK_URL=https://n8n.example.com/webhook/gghstats
+GGHSTATS_N8N_TOKEN=secret-token
+
+GGHSTATS_ALERT_SINKS='[
+  {"type":"slack","webhook_url_env":"GGHSTATS_SLACK_WEBHOOK_URL"},
+  {"type":"webhook","url_env":"GGHSTATS_DISCORD_WEBHOOK_URL","body":"discord"},
+  {"type":"webhook","url_env":"GGHSTATS_N8N_WEBHOOK_URL","headers_env":{"Authorization":"GGHSTATS_N8N_TOKEN"}}
+]'
+```
+
+### 8.5 Sinks (delivery)
+
+**Hard rule:** an alert that cannot be **delivered** is not a product feature. Do **not** ship rule evaluation, debounce tables, or “alerts enabled” UX until **at least one sink type** can send a real message in tests (httptest mock) and is documented for operators.
+
+**Secrets policy (normative for A2):**
+
+| Do | Don't |
+|----|--------|
+| Put webhook URLs / tokens in **environment variables** (or secret files loaded into the env) | Hardcode secrets inside `GGHSTATS_ALERT_SINKS` JSON checked into git |
+| Reference them from sink JSON with `*_env` fields (`webhook_url_env`, `url_env`, `headers_env`) | Commit real Slack/Discord URLs in `contrib/*.example` |
+| Allow optional inline URL **only** for local throwaway tests (document as insecure) | Log full webhook URLs at info level |
+
+`gghstats.env.example` shows **placeholder** env names + empty values; operators fill real secrets outside the repo (same pattern as `GGHSTATS_GITHUB_TOKEN`).
+
+**Implementation order (A2):**
+
+1. **Sinks** — parse `GGHSTATS_ALERT_SINKS`; resolve `*_env` → `os.Getenv`; send a fixed test payload (`slack` / `webhook` / `loki`); fail closed if enabled but no valid sink.
+2. **Rules** — parse `GGHSTATS_ALERT_RULES`; evaluate after sync (traffic + ops); call the same sink layer.
+3. **Docs** — glossary + plain-language examples + env.example.
+
+**Rules** = *when* to fire (`GGHSTATS_ALERT_RULES`).  
+**Sinks** = *where* the message is sent (`GGHSTATS_ALERT_SINKS`).  
+**Default: fan-out** — when a rule fires, gghstats sends to **every** entry in `GGHSTATS_ALERT_SINKS` (Slack + Discord + n8n at once is fine). One sink failing should not block the others (log error per sink; document best-effort).  
+Optional later: per-rule `sinks: ["slack", …]` to narrow; MVP = all sinks.
+
+If `GGHSTATS_ALERTS_ENABLED=true` but sinks are empty/invalid → log error, **do not** pretend alerts work (no silent “evaluated but nowhere to send”).
+
+| `type` | What it is | Config fields |
+|----------------|------------|------------------------|
+| **`slack`** | Slack Incoming Webhook | `webhook_url_env` (preferred) or `webhook_url` (dev-only) |
+| **`webhook`** | Generic HTTP POST (JSON body) | `url_env` / `url`; optional `headers_env` map (header → env var **name**); optional `body` preset (`discord` / `teams` / `generic`) |
+| **`loki`** | Grafana Loki push API (log stream) | `url_env` / `url` (Push API base or full `/loki/api/v1/push`); optional `headers_env` (e.g. basic auth / tenant); optional `labels` map (static label set, always include `job=gghstats`) |
+
+#### Notifier examples (operator copy-paste shape)
+
+**Several destinations at once (fan-out):**
+
+```bash
+GGHSTATS_ALERTS_ENABLED=true
+GGHSTATS_SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+GGHSTATS_DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/.../...
+GGHSTATS_N8N_WEBHOOK_URL=https://n8n.example.com/webhook/gghstats
+
+# One firing rule → Slack AND Discord AND n8n
+GGHSTATS_ALERT_SINKS='[
+  {"type":"slack","webhook_url_env":"GGHSTATS_SLACK_WEBHOOK_URL"},
+  {"type":"webhook","url_env":"GGHSTATS_DISCORD_WEBHOOK_URL","body":"discord"},
+  {"type":"webhook","url_env":"GGHSTATS_N8N_WEBHOOK_URL"}
+]'
+```
+
+**Slack only:**
+
+```bash
+GGHSTATS_ALERTS_ENABLED=true
+GGHSTATS_SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T.../B.../...
+GGHSTATS_ALERT_SINKS='[{"type":"slack","webhook_url_env":"GGHSTATS_SLACK_WEBHOOK_URL"}]'
+```
+
+**Discord (generic webhook + Discord URL):**
+
+```bash
+GGHSTATS_DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/.../...
+GGHSTATS_ALERT_SINKS='[{"type":"webhook","url_env":"GGHSTATS_DISCORD_WEBHOOK_URL","body":"discord"}]'
+```
+
+**Teams (generic webhook):**
+
+```bash
+GGHSTATS_TEAMS_WEBHOOK_URL=https://....logic.azure.com/workflows/...
+GGHSTATS_ALERT_SINKS='[{"type":"webhook","url_env":"GGHSTATS_TEAMS_WEBHOOK_URL","body":"teams"}]'
+```
+
+**n8n / custom + bearer from env:**
+
+```bash
+GGHSTATS_N8N_WEBHOOK_URL=https://n8n.example.com/webhook/gghstats
+GGHSTATS_N8N_TOKEN=...
+GGHSTATS_ALERT_SINKS='[{
+  "type":"webhook",
+  "url_env":"GGHSTATS_N8N_WEBHOOK_URL",
+  "headers_env":{"Authorization":"GGHSTATS_N8N_TOKEN"}
+}]'
+# Runtime sends: Authorization: <value of GGHSTATS_N8N_TOKEN>  (prefix "Bearer " only if the env value includes it, or document auto-Bearer)
+```
+
+**SMTP (0.10.1+ sketch — not 0.10.0):**
+
+```bash
+GGHSTATS_SMTP_HOST=smtp.example.com
+GGHSTATS_SMTP_PORT=587
+GGHSTATS_SMTP_USER=alerts@example.com
+GGHSTATS_SMTP_PASSWORD=...
+GGHSTATS_SMTP_TO=you@example.com
+GGHSTATS_ALERT_SINKS='[{
+  "type":"smtp",
+  "host_env":"GGHSTATS_SMTP_HOST",
+  "port_env":"GGHSTATS_SMTP_PORT",
+  "user_env":"GGHSTATS_SMTP_USER",
+  "password_env":"GGHSTATS_SMTP_PASSWORD",
+  "to_env":"GGHSTATS_SMTP_TO"
+}]'
+```
+
+**Loki (first-class sink — same band as Slack/webhook):**
+
+```bash
+GGHSTATS_LOKI_URL=https://loki.example.com/loki/api/v1/push
+# Optional tenant / basic auth via headers_env
+GGHSTATS_LOKI_TENANT=gghstats
+GGHSTATS_ALERT_SINKS='[{
+  "type":"loki",
+  "url_env":"GGHSTATS_LOKI_URL",
+  "headers_env":{"X-Scope-OrgID":"GGHSTATS_LOKI_TENANT"},
+  "labels":{"job":"gghstats","source":"alert"}
+}]'
+```
+
+Push body: Loki streams API — one stream with configured labels + line = canonical alert text (and/or structured JSON line). Inspired by **[pgwd](https://github.com/hrodrig/pgwd)** Slack+Loki delivery. Full Grafana/Loki **stack** still lives in **gghstats-selfhosted**; the binary only **pushes** alert lines when this sink is configured.
+
+**How other chat products fit:**
+
+| Product | In gghstats? | How |
+|---------|--------------|-----|
+| **Slack** | Yes (`type=slack`) | Native Incoming Webhook shape. |
+| **Loki** | Yes (`type=loki`) | Push API; labels + log line. Operator queries in Grafana. |
+| **Discord** | Via **`webhook`** | Discord Incoming Webhook URL; may need a thin JSON body map (`content` / embeds) — document one working example; no separate `type=discord` required for MVP. |
+| **Microsoft Teams** | Via **`webhook`** | Incoming Webhook / Workflows URL; payload often Adaptive Card JSON — document one example; no `type=teams` in MVP unless Slack-like convenience is needed later. |
+| **WhatsApp** | **No** (out of scope) | Needs Meta Cloud API / Twilio / BSP — credentials, templates, opt-in. Operator bridges: `webhook` → n8n/Make → WhatsApp. |
+
+Off until `GGHSTATS_ALERTS_ENABLED=true` **and** at least one sink is valid.
+
+**Not in 0.10.0 MVP:** email/SMTP, PagerDuty, **WhatsApp**, Discord/Teams *native* types (use generic `webhook`).  
+**In 0.10.0 MVP sinks:** `slack`, `webhook`, **`loki`**.  
+**0.10.1+ candidate:** `type=smtp` / email (see A2+sink) — only after Slack/webhook/Loki delivery is proven.
+
+Plain language → sink:
+
+| What you mean | Sink |
+|---------------|------|
+| “Send it to my Slack channel.” | `type=slack` + Incoming Webhook URL |
+| “Send it to Discord / Teams / n8n.” | `type=webhook` + that product’s webhook URL |
+| “Push it to Loki / Grafana logs.” | `type=loki` + Push API URL |
+| “Email me.” | **Not in 0.10.0** — candidate `type=smtp` in **0.10.1+** |
+| “WhatsApp me.” | Not in-app — webhook → external automation |
+
+### 8.6 Notification message style
+
+**Principles:** plain text first (works everywhere); one alert = one short message; always include **gghstats version** (`version.Version`), **what / where / value / threshold / window**; no emoji spam; English (project language). Optional `GGHSTATS_PUBLIC_URL` link to the repo dashboard when set.
+
+**Canonical text body** (Slack `text`, Discord `content`, SMTP body, webhook `text` field):
+
+```text
+gghstats alert
+version: 0.10.0
+repo:    hrodrig/pgwd
+metric:  clones
+window:  1d (UTC)
+value:   241
+rule:    gte 225
+when:    2026-07-17T04:00:00Z
+dash:    https://gghstats.example.com/repo/hrodrig/pgwd
+```
+
+Zero / floor example:
+
+```text
+gghstats alert
+version: 0.10.0
+repo:    hrodrig/groot
+metric:  clones
+window:  1d (UTC)
+value:   0
+rule:    eq 0
+when:    2026-07-17T04:00:00Z
+```
+
+Fleet example:
+
+```text
+gghstats alert
+version: 0.10.0
+scope:   all_repos
+metric:  clones
+window:  lifetime
+value:   30112
+rule:    gte 30000
+when:    2026-07-17T04:00:00Z
+```
+
+WoW drop:
+
+```text
+gghstats alert
+version: 0.10.0
+repo:    hrodrig/pgwd
+metric:  clones
+window:  wow
+value:   -34%
+rule:    drop_pct >= 30
+detail:  this_week=120 last_week=182
+when:    2026-07-17T04:00:00Z
+```
+
+Milestone (A2+):
+
+```text
+gghstats alert
+version: 0.10.0
+repo:    hrodrig/pgwd
+metric:  stars
+window:  milestone
+value:   100
+rule:    crossed 100 (next 500)
+when:    2026-07-17T04:00:00Z
+```
+
+Ops / sync-health (§8.7):
+
+```text
+gghstats alert
+version:  0.10.0
+kind:     ops
+level:    warn
+event:    repo_fetch_failed
+count:    4
+threshold: 3
+window:   this_sync
+detail:   4/42 repos failed (network/5xx after retries)
+when:     2026-07-17T04:00:00Z
+```
+
+```text
+gghstats alert
+version:  0.10.0
+kind:     ops
+level:    crit
+event:    sync_failed
+count:    2
+threshold: 2
+window:   consecutive_runs
+detail:   last 2 scheduled syncs ended in error (github unreachable)
+when:     2026-07-17T05:00:00Z
+```
+
+**Version field:** always the running binary version (`internal/version` / `gghstats version`) so operators know which release produced the alert.
+
+**Slack** (`type=slack`): POST Incoming Webhook JSON:
+
+```json
+{
+  "text": "gghstats alert\nversion: 0.10.0\nrepo: hrodrig/pgwd\nmetric: clones\nwindow: 1d (UTC)\nvalue: 241\nrule: gte 225\nwhen: 2026-07-17T04:00:00Z"
+}
+```
+
+Optional later: Block Kit — **not** required for MVP.
+
+**Discord** (`type=webhook`, `body=discord`):
+
+```json
+{
+  "content": "gghstats alert\nversion: 0.10.0\nrepo: hrodrig/pgwd\nmetric: clones\nwindow: 1d (UTC)\nvalue: 241\nrule: gte 225\nwhen: 2026-07-17T04:00:00Z"
+}
+```
+
+**Generic webhook** (`body=generic` or default) — machine-friendly + same text:
+
+```json
+{
+  "source": "gghstats",
+  "version": "0.10.0",
+  "text": "gghstats alert\nversion: 0.10.0\nrepo: hrodrig/pgwd\nmetric: clones\nwindow: 1d (UTC)\nvalue: 241\nrule: gte 225\nwhen: 2026-07-17T04:00:00Z",
+  "alert": {
+    "repo": "hrodrig/pgwd",
+    "scope": null,
+    "metric": "clones",
+    "window": "1d",
+    "op": "gte",
+    "threshold": 225,
+    "value": 241,
+    "fired_at": "2026-07-17T04:00:00Z",
+    "dashboard_url": "https://gghstats.example.com/repo/hrodrig/pgwd"
+  }
+}
+```
+
+**Teams** (`body=teams`): wrap the same facts in a minimal Adaptive Card / MessageCard — document one template at implement time; facts must match the text body above.
+
+Do **not** send HTML email-style blobs to Slack/Discord. Keep messages copy-pasteable into tickets.
+
+Payloads the operator should see (shape, not final JSON) — short one-liners also OK as Slack fallback title; prefer the multi-line form above for clarity:
+
+```text
+gghstats/0.10.0 alert: hrodrig/pgwd clones today = 241 (threshold >= 225, window=1d UTC)
+gghstats/0.10.0 alert: hrodrig/groot clones today = 0 (threshold == 0, window=1d UTC)
+gghstats/0.10.0 alert: all_repos clones lifetime = 30112 (threshold >= 30000)
+gghstats/0.10.0 alert: hrodrig/pgwd views today = 3 (threshold < 10, window=1d UTC)
+gghstats/0.10.0 alert: hrodrig/pgwd clones WoW drop = 34% (threshold >= 30%)
+gghstats/0.10.0 alert: hrodrig/pgwd stars = 100 (milestone crossed; next 500)
+gghstats/0.10.0 ops warn: repo_fetch_failed count=4 (threshold >= 3, this_sync)
+gghstats/0.10.0 ops crit: sync_failed consecutive=2 (threshold >= 2)
+gghstats/0.10.0 ops warn: rate_limit remaining=87 (threshold < 100)
+gghstats/0.10.0 ops crit: github_unreachable (this_sync)
+```
+
+**Worked example (zero clones today):**
+
+> Operator: *Alert me if today groot has had no clones.*
+
+Interpretation:
+
+1. **Repo:** `hrodrig/groot`.
+2. **Metric:** `clones` `count` for UTC today.
+3. **Zero means:** row exists with `count=0`, **or** no `clones` row for that repo/date yet → treat as **0** (document this; do not skip the rule as “no data”).
+4. **Operator:** equal to **0** (same as `lt` 1 for non-negative counts).
+5. **Debounce:** `once_per_utc_day` so a quiet repo does not alert on every hourly sync after midnight UTC.
+6. **Same env var:** object in `GGHSTATS_ALERT_RULES` (see array above) — not a separate variable per rule.
+
+**Worked example (fleet lifetime clones ≥ 30000):**
+
+> Operator: *Alert me when all clones exceed 30000.*
+
+Interpretation:
+
+1. **Scope:** `all_repos` — sum over every repo present in SQLite after sync (same set the dashboard would show under current filter, if filter applies — document whether `GGHSTATS_FILTER` narrows the sum).
+2. **Metric:** `clones` `count` summed across **all dates** (`window=lifetime`), not “today only.”
+3. **Not:** “each repo &gt; 30000” (that would be `scope=each_repo`). **Not:** sum of today’s clones only (`window=1d` + `scope=all_repos`).
+4. **Operator:** **≥ 30000**.
+5. **Fire-once** recommended (`debounce=once` / `fire=once`): after the fleet crosses 30k, do not re-alert every sync; optional reset documented later.
+6. **Payload:** no single repo — say `all_repos` / `fleet` and the **total**.
+
+### 8.7 Ops and sync-health alerts
+
+**Purpose:** notify when gghstats **cannot reliably fetch** metrics — not when traffic numbers cross a bar. Same sinks as traffic rules (§8.5). Distinct `kind=ops` in payloads so operators and Loki labels can filter.
+
+Prometheus gauges (`gghstats_last_sync_*`, `gghstats_github_rate_limit_*`) remain the primary **dashboard** path; this section is **push** alerts for operators without a full Grafana stack, or in addition to it.
+
+#### Events (what can fire)
+
+| `event` | Meaning | Count / quantity |
+|---------|---------|------------------|
+| **`sync_failed`** | An entire sync run ended in error (or aborted before useful work). | Consecutive failed runs (`window=consecutive_runs`) or failures in a time window. |
+| **`repo_fetch_failed`** | One or more repos failed their traffic/star fetch **after retries** in a single run. | Failed repo count in **this sync** (e.g. `count ≥ 3`). |
+| **`github_unreachable`** | Transport / DNS / dial failures dominate (no usable GitHub HTTP). | Failures in this sync or consecutive runs — document which. |
+| **`rate_limit`** | Core REST remaining below a floor, **or** sustained 429 after retries exhausted. | Remaining ≤ `value`, and/or consecutive rate-limit outcomes ≥ `value`. |
+
+Partial success is normal on large accounts: **do not** alert on every single-repo blip. Rules must use **thresholds** (counts / consecutive / remaining).
+
+#### Levels (severity)
+
+| `level` | When to use | Typical mapping |
+|---------|-------------|-----------------|
+| **`info`** | Notable but expected noise (optional; default off). | e.g. 1 repo failed once |
+| **`warn`** | Degraded but sync mostly worked. | e.g. `repo_fetch_failed` count ≥ N; rate limit remaining low |
+| **`crit`** | Operator action likely needed. | e.g. whole `sync_failed` × consecutive ≥ 2; GitHub unreachable |
+
+Rules **must** set `level` (or inherit a documented default per `event`). Sinks that support severity (Slack optional prefix, Loki label `level=…`) carry it through. Message body always includes `level:` and `event:`.
+
+#### Quantities (normative knobs)
+
+Every ops rule names:
+
+| Field | Role |
+|-------|------|
+| **`event`** | One of the events above. |
+| **`op` + `value`** | Threshold on the **count** (or remaining for rate limit), e.g. `gte` / `3`. |
+| **`window`** | `this_sync` \| `consecutive_runs` \| optional duration later. |
+| **`level`** | `info` \| `warn` \| `crit`. |
+| **`debounce`** | Avoid spam (e.g. `once_per_utc_day` for warn; crit may allow every consecutive failure until recover). |
+
+**Recommended starter thresholds** (copy into env.example comments; operators may tighten):
+
+| Starter | Why that number |
+|---------|-----------------|
+| **≥ 3** repo failures / sync → warn | Ignores one-off 5xx on a single repo; still catches “something’s wrong with a chunk of the fleet.” |
+| **2** consecutive full sync failures → crit | One miss can be deploy/restart; two means the loop is broken. |
+| Remaining **&lt; 100** → warn | Early signal before hard 429 storms; not “already at zero.” |
+| Unreachable **≥ 1** this sync → crit | No GitHub = no product data; do not wait for a second run. |
+
+#### Plain-language examples → config
+
+Docs (README / env.example) must show **human sentence → what gghstats checks**, same style as §8.4.
+
+| What you mean | Event / level | Check (after sync or on sync error) | Draft config sketch |
+|---------------|---------------|-------------------------------------|---------------------|
+| “Warn me if **this sync** left **3 or more** repos without fresh traffic (after retries) — one flaky repo is OK.” | `repo_fetch_failed` / **warn** | Failed-repo count in **this sync** **≥ 3** | `kind=ops`, `event=repo_fetch_failed`, `window=this_sync`, `op=gte`, `value=3`, `level=warn`, `debounce=once_per_utc_day` |
+| “Page me if **two scheduled syncs in a row** die completely — I got no metrics at all.” | `sync_failed` / **crit** | Consecutive full-run failures **≥ 2** | `kind=ops`, `event=sync_failed`, `window=consecutive_runs`, `op=gte`, `value=2`, `level=crit` |
+| “Warn me when GitHub REST remaining drops **below 100** after a sync — we are about to burn the quota.” | `rate_limit` / **warn** | `X-RateLimit-Remaining` **&lt; 100** (core REST) | `kind=ops`, `event=rate_limit`, `op=lt`, `value=100`, `level=warn`, `debounce=once_per_utc_day` |
+| “Crit if **this sync** cannot reach GitHub at all (DNS/dial/TLS) — not a single API call succeeded.” | `github_unreachable` / **crit** | Unreachable outcome **≥ 1** in this sync | `kind=ops`, `event=github_unreachable`, `window=this_sync`, `op=gte`, `value=1`, `level=crit` |
+| “Warn if **half or more** of the fleet failed fetch in one run (large account).” | `repo_fetch_failed` / **warn** | Ratio form = later stretch; MVP uses a fixed high `value` | Prefer fixed `value` in MVP |
+| “Info only: note when **exactly one** repo fails (Loki), do not ping Slack.” | `repo_fetch_failed` / **info** | Failed count **≥ 1** | `level=info`; MVP may skip or use Loki-only sinks |
+
+**Worked example (several repos failed this sync):**
+
+> Operator: *Warn me if this sync left 3 or more repos without fresh traffic — one flaky repo is OK.*
+
+Interpretation:
+
+1. **Kind:** `ops` (not a clones/views threshold).
+2. **Event:** `repo_fetch_failed` — per-repo step failed **after** GitHub client retries (§4.5).
+3. **Window:** `this_sync` — only the run that just finished.
+4. **Quantity:** failed repo count **≥ 3** (example: 4 of 42 failed → fire; 1 of 42 → silent).
+5. **Level:** `warn` — sync mostly succeeded; check logs / rate limit / token scopes.
+6. **Debounce:** `once_per_utc_day` so hourly sync does not re-warn while the same repos stay broken.
+7. **Payload:** include `count`, `threshold`, optional capped sample of failed `owner/name`.
+
+**Worked example (two dead syncs in a row):**
+
+> Operator: *Page me if two scheduled syncs in a row die completely — I got no metrics at all.*
+
+Interpretation:
+
+1. **Event:** `sync_failed` — whole run returned error / aborted before useful upserts (exact definition at implement time).
+2. **Window:** `consecutive_runs` — increments on failure; resets to 0 on successful sync.
+3. **Quantity:** consecutive failures **≥ 2**.
+4. **Level:** `crit`.
+5. **Debounce:** prefer **fire until recover** for crit (each further consecutive failure may notify); document the choice.
+6. **Not the same as:** “3 repos failed but the run finished OK” → that is `repo_fetch_failed`, not `sync_failed`.
+
+**Worked example (quota almost gone):**
+
+> Operator: *Warn me when GitHub REST remaining drops below 100 after a sync.*
+
+Interpretation:
+
+1. **Event:** `rate_limit`.
+2. **Value source:** last observed `X-RateLimit-Remaining` for core REST (same series as `gghstats_github_rate_limit_remaining`).
+3. **Operator:** **&lt; 100** (`op=lt`, `value=100`).
+4. **Level:** `warn`.
+5. **When:** end of sync (or when the gauge updates); not a continuous poller.
+6. **Debounce:** `once_per_utc_day`.
+
+**Worked example (GitHub unreachable):**
+
+> Operator: *Crit if this sync cannot reach GitHub at all.*
+
+Interpretation:
+
+1. **Event:** `github_unreachable` — dial/DNS/TLS/connection errors dominate; no successful GitHub HTTP in the run.
+2. **Quantity:** **≥ 1** (`value=1`).
+3. **Level:** `crit`.
+4. **Distinct from:** live API **429** → `rate_limit`; some repos **5xx** with others OK → `repo_fetch_failed`.
+
+Pseudo-env (ops + traffic in the **same** `GGHSTATS_ALERT_RULES` array):
+
+```bash
+GGHSTATS_ALERTS_ENABLED=true
+# Plain language (ops):
+#   - "Warn me if this sync left 3+ repos without fresh traffic — one flaky repo is OK."
+#   - "Page me if two scheduled syncs in a row die completely."
+#   - "Warn me when GitHub REST remaining drops below 100 after a sync."
+#   - "Crit if this sync cannot reach GitHub at all."
+GGHSTATS_ALERT_RULES='[
+  {"kind":"traffic","repo":"hrodrig/pgwd","metric":"clones","window":"1d","op":"gte","value":225,"debounce":"once_per_utc_day"},
+  {"kind":"ops","event":"repo_fetch_failed","window":"this_sync","op":"gte","value":3,"level":"warn","debounce":"once_per_utc_day"},
+  {"kind":"ops","event":"sync_failed","window":"consecutive_runs","op":"gte","value":2,"level":"crit"},
+  {"kind":"ops","event":"rate_limit","op":"lt","value":100,"level":"warn","debounce":"once_per_utc_day"},
+  {"kind":"ops","event":"github_unreachable","window":"this_sync","op":"gte","value":1,"level":"crit"}
+]'
+```
+
+**MVP sequencing:** sinks first (including Loki); traffic rules next; **ops rules** in the same A2 band once sinks work — do not ship ops-only without delivery. Prometheus remains complementary, not a substitute for operators who only want Slack/Loki push.

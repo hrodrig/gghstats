@@ -28,7 +28,7 @@ Detailed band plans (scope, exit criteria, checklist):
 
 | Line | What | Effort | Why |
 |------|------|--------|-----|
-| **A** | **Trending / velocity on repo page** + optional **alerts** (clone/view drop) | M | Repo-page momentum shipped in **0.9**; alerts remain (pgwd-style sinks, opt-in). |
+| **A** | **Trending / velocity on repo page** + optional **alerts** (clone/view drop + ops) | M | Repo-page momentum shipped in **0.9**; alerts remain (opt-in Slack/webhook/**Loki** sinks — [SPEC §8](SPEC.md), incl. ops failure counts/levels). Growth milestones → **0.10.1+** after A2 sinks ([plan-v0.10.x.md](docs/plan-v0.10.x.md) A2+). |
 | **B** | **Webhooks + delta-oriented sync**; GraphQL where it cuts REST pagination | M–L | Less polling; large accounts hit REST rate limits. Prefer **1.1+** if it risks slipping 1.0. |
 | **C** | **Multi-repo analytics** (leaderboards, org rollups) | M | Reuse H2H scoring; expose rankings / rollups. |
 | **D** | **API-only mode** + JSON dogfood for official UI reads | M | Same binary; HTML optional. External React/Svelte/etc. against documented `/api/v1`. Not an in-tree SPA. |

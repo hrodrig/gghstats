@@ -1,45 +1,75 @@
 # Plan — v0.10.x
 
-**Band goal:** cheaper sync for star-heavy repos, and **opt-in** operator signals when traffic drops.
+**Band goal:** cheaper sync for star-heavy repos, and **opt-in** operator signals (traffic + ops) when rules fire.
 
 Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.md)
+
+**Doc roles:**
+
+| Doc | Role |
+|-----|------|
+| **This plan** | **What we will implement** in the 0.10.x band — scope, order, exit criteria, checklist |
+| **[SPEC.md](../SPEC.md) §8** | **What the product must do** for alerts — traffic + ops rules, sinks (incl. Loki), message format, secrets |
+
+---
 
 ## In scope
 
 | ID | Item | Notes |
 |----|------|--------|
-| SYNC | **Incremental star history** | **Implemented:** `repos.last_seen_star_count` + `last_starred_at`; skip when count unchanged; `StargazersRecent` for delta; full rebuild on drop / first sync. See SPEC §4.7. |
-| A2 | **Opt-in alerts** | Threshold or WoW/MoM drop on clones/views; webhook and/or Slack/Loki-style sink; **off by default**. Pattern inspiration: **pgwd**. |
-| PATH | **XDG / default path prep** | Document and soft-land toward `~/.config/gghstats/` (or platform equivalent); keep `GGHSTATS_DB` override. No hard break yet. Cover **`gghstats.env.example`**, **`contrib/launchd/`**, and **BSD port** paths — not only the binary default. Optional: `gghstats --print-defaults` (or equivalent) for inspection. |
-| QW | Remaining quick wins | Prefer concrete leftovers (post-0.9 audit filter): `getPaginatedCtx` cleanup (dead `slicePtr` / double marshal); access-log **Warn/Error** by status (status field already logged); docs that **demo = collector/telemetry off**; optional `:develop` GHCR tag / collector `describe` only if cheap. **Do not** bump `SetMaxOpenConns` without evidence; **do not** add redundant `(repo, date)` INDEX (already PRIMARY KEY). |
-| SYNC+ | **UpdateDeltas efficiency** | Full-table LAG on referrers/paths each sync — consider incremental / less frequent with star-sync work (not a blind pool bump). |
-| C? | **Optional thin leaderboard** | Only if A2/SYNC done early; reuse H2H scoring — not a full org BI product. |
+| SYNC | **Incremental star history** | **Implemented.** See [SPEC §4.7](../SPEC.md). |
+| A2 | **Opt-in alerts** | **To implement.** Sinks first (`slack` + `webhook` + **`loki`**), then traffic rules, then ops/sync-health rules. Contract: [SPEC §8](../SPEC.md). Off by default. |
+| A2+ | **Growth milestones** | Stretch **0.10.1+** after A2 delivery. [SPEC §8.3](../SPEC.md). |
+| A2+sink | **Email / SMTP sink** | Optional **0.10.1+** / **0.10.2**. Not required for 0.10.0. [SPEC §8.5](../SPEC.md). |
+| PATH | **XDG / default path prep** | Docs + soft-land; `GGHSTATS_DB` override. env.example, launchd, BSD paths. |
+| QW | Remaining quick wins | `getPaginatedCtx` cleanup; access-log level by status; demo = collector off (docs). No blind pool/INDEX bumps. |
+| SYNC+ | **UpdateDeltas efficiency** | Incremental / less frequent with star-sync work — not cargo-cult pool bumps. |
+| C? | **Optional thin leaderboard** | Only if A2/SYNC done early; reuse H2H — not full org BI. |
+
+## Implementation order (A2)
+
+1. Sinks (`GGHSTATS_ALERT_SINKS`) — Slack + generic webhook + **Loki** deliver in tests → [SPEC §8.5](../SPEC.md)
+2. Traffic rules (`GGHSTATS_ALERT_RULES`) — evaluate after sync, fan-out → [SPEC §8.2](../SPEC.md) / [§8.4](../SPEC.md)
+3. Ops / sync-health rules — failure **counts**, **levels** (`warn`/`crit`), rate-limit floors → [SPEC §8.7](../SPEC.md)
+4. Operator docs (README, env.example, man) aligned with SPEC §8
+5. Later: A2+ milestones / SMTP
+
+**Hard rule:** do not ship rule evaluation without a working sink ([SPEC §8.5](../SPEC.md)).
 
 ## Out of scope (this band)
 
-- Full webhook-driven architecture (→ 0.11.x or 1.1).
-- GraphQL total rewrite.
-- SPEC API freeze (→ 1.0).
-- Multi-writer SQLite / Postgres.
+- Full webhook-driven GitHub sync architecture (→ 0.11.x or 1.1) — distinct from **alert** webhooks/sinks
+- GraphQL total rewrite
+- SPEC API freeze (→ 1.0)
+- Multi-writer SQLite / Postgres
+- WhatsApp / native Discord|Teams types / SMTP-in-0.10.0 (see SPEC §8)
 
 ## Exit criteria
 
-1. Star history sync is incremental when star sync is enabled (measurable: no full re-page of all stargazers on every cycle for large repos).
-2. Alerts documented, opt-in, covered by tests for threshold logic.
+1. Star history sync is incremental when star sync is enabled ([SPEC §4.7](../SPEC.md)).
+2. **A2:** at least one sink delivers in tests (Slack **or** webhook **or** Loki); traffic + ops rules call sinks; behavior matches [SPEC §8](../SPEC.md). Growth milestones **not** required for **0.10.0**.
 3. Default-path prep documented (README / launchd / env example); migration notes if behavior changes.
 
 ## Checklist
 
-- [x] Incremental star sync + tests
-- [ ] Alert sink(s) + env flags + docs
-- [ ] XDG / default path prep docs (env.example, launchd, BSD notes; soft behavior if any)
-- [ ] QW leftovers: `getPaginatedCtx` cleanup and/or access-log level by status (as capacity allows)
-- [ ] Demo/docs note: collector/telemetry off in demo (if not already obvious)
-- [x] CHANGELOG + SPEC updates if new routes/metrics (SPEC §4.7 + CHANGELOG Unreleased)
-- [x] `make test` / lint green
+- [x] Incremental star sync + tests + SPEC §4.7
+- [ ] **A2 sinks first** — Slack + webhook + **Loki** + tests + env/docs ([SPEC §8.5](../SPEC.md))
+- [ ] A2 traffic rules after sync + fan-out ([SPEC §8.2](../SPEC.md) / [§8.4](../SPEC.md) / [§8.6](../SPEC.md))
+- [ ] A2 ops rules — counts / levels / rate-limit ([SPEC §8.7](../SPEC.md))
+- [ ] XDG / default path prep docs
+- [ ] QW leftovers (as capacity allows)
+- [ ] Demo/docs note: collector off in demo (if needed)
+- [x] CHANGELOG notes for shipped SYNC work
+- [x] `make test` / lint green (current tree)
+- [ ] *(0.10.1+)* Growth milestones (A2+)
+- [ ] *(0.10.1+ / 0.10.2)* Email/SMTP sink (A2+sink)
 
 ## Parked (do not promote without pain)
 
 - Raising SQLite `MaxOpenConns` / `MaxIdleConns` without measured contention
 - Extra SQL INDEX on `(repo, date)` where PRIMARY KEY already exists
 - Spec-nits only (explicit HEAD handlers, Accept-negotiation doc spam)
+- Growth milestones before A2 sinks + basic rules
+- Alert rules without a working sink
+- WhatsApp / email-in-0.10.0 as first-class sinks
+- Alerting on every single-repo blip (ops rules need count thresholds)

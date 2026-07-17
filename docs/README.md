@@ -5,13 +5,14 @@ Working notes and assets that support the product docs at the repository root.
 | Document | Role |
 |----------|------|
 | [ROADMAP.md](../ROADMAP.md) | Product direction and release bands |
-| [SPEC.md](../SPEC.md) | Normative HTTP API / sync / CLI contracts |
+| [SPEC.md](../SPEC.md) | Normative product behavior (API, sync, CLI, alerts, …) — **what** and **how** |
 | [CHANGELOG.md](../CHANGELOG.md) | Release notes (Keep a Changelog) |
 | [README.md](../README.md) | Operator-facing install and usage |
+| `docs/plan-v*.md` | Band plans — **what we will implement** this band (scope, order, exit, checklist) |
 
 ## Release-band plans
 
-Scoped exit criteria and checklists for each SemVer band:
+Scoped implementation checklists per SemVer band (behavior details live in SPEC):
 
 | Band | Plan |
 |------|------|

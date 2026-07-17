@@ -10,6 +10,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 - **Incremental star history sync:** persist `last_seen_star_count` / `last_starred_at` on `repos`; skip stargazer pagination when the count is unchanged; fetch only new stars when it grows; full rebuild if the count drops. Documents why in SPEC §4.7 and README sync notes.
+- **docs/plan-v0.10.x:** band checklist only (what to implement); alert **product rules** in **SPEC §8** (target behavior).
+- **SPEC §8:** traffic + **ops/sync-health** alerts (failure counts, levels warn/crit); sinks **slack / webhook / loki**; milestones/SMTP as 0.10.1+.
 
 ### Changed
 
