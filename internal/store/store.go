@@ -62,6 +62,7 @@ func (s *Store) migrate() error {
 		migrateV1,
 		migrateV2,
 		migrateV3,
+		migrateV4,
 	}
 
 	var current int
@@ -165,6 +166,21 @@ func migrateV3(db *sql.DB) error {
 	return err
 }
 
+// migrateV4 adds star-history sync cursor columns for incremental stargazer fetches.
+// last_seen_star_count = -1 means star history has never been fully synced for this repo.
+func migrateV4(db *sql.DB) error {
+	stmts := []string{
+		`ALTER TABLE repos ADD COLUMN last_seen_star_count INTEGER NOT NULL DEFAULT -1`,
+		`ALTER TABLE repos ADD COLUMN last_starred_at TEXT NOT NULL DEFAULT ''`,
+	}
+	for _, stmt := range stmts {
+		if _, err := db.Exec(stmt); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // --- Upsert methods ---
 
 // UpsertView inserts or replaces a single day of view data.
@@ -253,6 +269,50 @@ func (s *Store) UpsertStar(repo, date string, total int) error {
 		 VALUES (?, ?, ?)
 		 ON CONFLICT (repo, date) DO UPDATE SET total=MAX(stars.total, excluded.total)`,
 		repo, date, total,
+	)
+	return err
+}
+
+// StarSyncCursor is the persisted checkpoint for incremental stargazer sync.
+// Synced is false when last_seen_star_count is -1 (never completed a star-history sync).
+type StarSyncCursor struct {
+	LastSeenStarCount int
+	LastStarredAt     time.Time // zero if unknown
+	Synced            bool
+}
+
+// GetStarSyncCursor reads the star-history cursor for a repo.
+func (s *Store) GetStarSyncCursor(repo string) (StarSyncCursor, error) {
+	var count int
+	var lastAt string
+	err := s.db.QueryRow(
+		`SELECT last_seen_star_count, last_starred_at FROM repos WHERE name=?`,
+		repo,
+	).Scan(&count, &lastAt)
+	if err == sql.ErrNoRows {
+		return StarSyncCursor{LastSeenStarCount: -1}, nil
+	}
+	if err != nil {
+		return StarSyncCursor{}, err
+	}
+	cur := StarSyncCursor{LastSeenStarCount: count, Synced: count >= 0}
+	if lastAt != "" {
+		if t, parseErr := time.Parse(time.RFC3339, lastAt); parseErr == nil {
+			cur.LastStarredAt = t
+		}
+	}
+	return cur, nil
+}
+
+// SetStarSyncCursor stores the star-history checkpoint after a successful sync.
+func (s *Store) SetStarSyncCursor(repo string, count int, lastStarredAt time.Time) error {
+	lastAt := ""
+	if !lastStarredAt.IsZero() {
+		lastAt = lastStarredAt.UTC().Format(time.RFC3339)
+	}
+	_, err := s.db.Exec(
+		`UPDATE repos SET last_seen_star_count=?, last_starred_at=? WHERE name=?`,
+		count, lastAt, repo,
 	)
 	return err
 }

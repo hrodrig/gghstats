@@ -114,6 +114,7 @@ func (c *Client) PopularPaths(repo string) ([]PopularPath, error) {
 
 // Stargazers fetches the full list of stargazers with timestamps.
 // Requires the special Accept header for starred_at field.
+// GitHub returns pages newest-first; callers that build cumulative totals should sort by StarredAt ascending.
 func (c *Client) Stargazers(repo string) ([]Star, error) {
 	var all []Star
 	path := fmt.Sprintf("/repos/%s/stargazers?per_page=100", repo)
@@ -121,6 +122,58 @@ func (c *Client) Stargazers(repo string) ([]Star, error) {
 		return nil, fmt.Errorf("stargazers: %w", err)
 	}
 	return all, nil
+}
+
+// StargazersRecent fetches newest stargazer pages until maxNew stars are collected
+// or a star at-or-before stopAt is seen (when stopAt is non-zero).
+// maxNew <= 0 means "no limit by count" (still may stop on stopAt).
+// Result order matches GitHub: newest first.
+func (c *Client) StargazersRecent(repo string, maxNew int, stopAt time.Time) ([]Star, error) {
+	path := fmt.Sprintf("/repos/%s/stargazers?per_page=100", repo)
+	accept := "application/vnd.github.v3.star+json"
+	ctx := context.Background()
+
+	var out []Star
+	currentPath := path
+	for currentPath != "" {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		resp, err := c.doGetWithRetry(ctx, currentPath, accept)
+		if err != nil {
+			return nil, fmt.Errorf("stargazers: %w", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			return nil, fmt.Errorf("stargazers: HTTP %d: %s", resp.StatusCode, string(body))
+		}
+		var page []Star
+		if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
+			resp.Body.Close()
+			return nil, fmt.Errorf("stargazers: %w", err)
+		}
+		link := resp.Header.Get("Link")
+		resp.Body.Close()
+
+		stop := false
+		for _, s := range page {
+			if !stopAt.IsZero() && !s.StarredAt.After(stopAt) {
+				stop = true
+				break
+			}
+			out = append(out, s)
+			if maxNew > 0 && len(out) >= maxNew {
+				stop = true
+				break
+			}
+		}
+		if stop {
+			break
+		}
+		currentPath = nextPagePath(link)
+	}
+	return out, nil
 }
 
 // --- HTTP helpers ---

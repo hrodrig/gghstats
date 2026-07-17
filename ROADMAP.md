@@ -37,7 +37,7 @@ Detailed band plans (scope, exit criteria, checklist):
 
 | Item | Notes |
 |------|--------|
-| **Incremental star history** | Full stargazer re-fetch is **O(n)** pages per sync. Add a cursor / `last_seen_star_count` (or equivalent). |
+| **Incremental star history** | Full stargazer re-fetch is **O(n)** pages per sync. Add a cursor / `last_seen_star_count` (or equivalent). **Shipped in 0.10 work:** skip when count unchanged; incremental pages on growth; full rebuild on drop (SPEC §4.7). |
 | **UpdateDeltas / other sync cost** | See [plan-v0.10.x.md](docs/plan-v0.10.x.md) (pair with SYNC; avoid cargo-cult pool bumps). |
 
 ## Release bands (path to 1.x)

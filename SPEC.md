@@ -118,6 +118,28 @@ Also: `gghstats_sync_repos_processed_total{status}` with `success` | `error`.
 - No snapshot transaction across the full repo list.
 - SQLite still has **one writer** at a time; the pool parallelizes GitHub I/O and serializes DB writes through the connection pool.
 
+### 4.7 Incremental star history (when star sync is enabled)
+
+**Why:** `GET /repos/{owner}/{repo}/stargazers` with `Accept: application/vnd.github.v3.star+json` is **O(n / 100)** pages per sync. Re-fetching every stargazer on every cycle burns PAT quota on large repos without improving the dashboard. Incremental sync keeps history fresh while only paging **new** stars.
+
+**Cursor (SQLite `repos`):**
+
+| Column | Meaning |
+|--------|---------|
+| `last_seen_star_count` | Last successful star-history sync’s `stargazers_count` (`-1` = never synced) |
+| `last_starred_at` | Newest `starred_at` observed (RFC3339); empty until first success |
+
+**Algorithm (per repo, when `SyncStars` is on):**
+
+1. Read metadata `stargazers_count` (already fetched).
+2. If cursor synced and count **unchanged** → **skip** stargazer HTTP entirely.
+3. If never synced or count **decreased** (unstars) → **full** pagination; sort by `starred_at` ascending; rewrite daily cumulative totals; update cursor.
+4. If count **increased** by `D` → fetch newest pages until `D` new stars (or past `last_starred_at`); append cumulatives from `last_seen_star_count + 1`; update cursor.
+
+GitHub returns stargazer pages **newest-first**; gghstats always sorts ascending before writing cumulative day totals.
+
+**Operator signal:** logs include `stargazers skipped` (`count_unchanged`) or `stargazers synced` with `mode=full|incremental`.
+
 ---
 
 ## 5. CLI data ops (non-HTTP)

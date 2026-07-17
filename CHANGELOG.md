@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Incremental star history sync:** persist `last_seen_star_count` / `last_starred_at` on `repos`; skip stargazer pagination when the count is unchanged; fetch only new stars when it grows; full rebuild if the count drops. Documents why in SPEC §4.7 and README sync notes.
+
 ### Changed
 
 - **serveHTTP:** wait on `context` (`signal.NotifyContext` in `runServe`) instead of raw `signal.Notify`; ListenAndServe failures return an error instead of `os.Exit(1)` from a goroutine.
@@ -17,6 +21,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - **README comparison table:** expand vs ghstats, git-clone-stats, gh-tracker, and GitHub Traffic; more operator-facing rows (maintenance, CLI, badges, i18n, metrics breadth, ops manifests); ToC link under Features.
 - **README Features:** add missing product capabilities with short “what it solves” blurbs (history >14d, sync, momentum, badges, themes, Prometheus, rate limit/whitelist, packaging).
 - **ROADMAP / band plans:** post-0.9 park of filtered leftover QW and sync notes into [plan-v0.10.x.md](docs/plan-v0.10.x.md); dogfood contract + CORS warn into [plan-v0.11.x.md](docs/plan-v0.11.x.md); Line A / “next” text updated after 0.9 ship.
+- **storeStarHistory:** sort GitHub’s newest-first stargazer list ascending before writing daily cumulative totals.
 
 ### Fixed
 

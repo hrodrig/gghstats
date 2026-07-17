@@ -39,8 +39,8 @@ func TestVersionedMigrations(t *testing.T) {
 	if err := s.DB().QueryRow("PRAGMA user_version").Scan(&ver); err != nil {
 		t.Fatal(err)
 	}
-	if ver != 3 {
-		t.Errorf("user_version = %d, want 3", ver)
+	if ver != 4 {
+		t.Errorf("user_version = %d, want 4", ver)
 	}
 
 	// repos table should exist
@@ -55,6 +55,10 @@ func TestVersionedMigrations(t *testing.T) {
 	}
 	if col != "parent_full_name" {
 		t.Errorf("repos.parent_full_name column missing, got %q", col)
+	}
+
+	if err := s.DB().QueryRow(`SELECT name FROM pragma_table_info('repos') WHERE name = 'last_seen_star_count'`).Scan(&col); err != nil {
+		t.Fatalf("last_seen_star_count column: %v", err)
 	}
 
 	// stars table should exist
@@ -534,6 +538,35 @@ func TestUpsertAndQueryStars(t *testing.T) {
 	}
 	if rows[2].Total != 20 {
 		t.Errorf("last star total = %d, want 20 (MAX kept)", rows[2].Total)
+	}
+}
+
+func TestStarSyncCursor(t *testing.T) {
+	s := tempDB(t)
+	if err := s.UpsertRepo("o/r", "", 3, 0, 0, 0, 0, false, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	cur, err := s.GetStarSyncCursor("o/r")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cur.Synced || cur.LastSeenStarCount != -1 {
+		t.Fatalf("default cursor: %+v", cur)
+	}
+
+	at := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
+	if err := s.SetStarSyncCursor("o/r", 3, at); err != nil {
+		t.Fatal(err)
+	}
+	cur, err = s.GetStarSyncCursor("o/r")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cur.Synced || cur.LastSeenStarCount != 3 {
+		t.Fatalf("after set: %+v", cur)
+	}
+	if !cur.LastStarredAt.Equal(at) {
+		t.Fatalf("LastStarredAt = %v, want %v", cur.LastStarredAt, at)
 	}
 }
 

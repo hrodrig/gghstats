@@ -1016,9 +1016,10 @@ Clarification — not a separate DB write lock.
 
 - **Authentication:** a **personal access token** via `GGHSTATS_GITHUB_TOKEN` (`Authorization: Bearer …` on REST calls). There is **no** GitHub App or OAuth flow in-tree.
 - **Scheduler:** `GGHSTATS_SYNC_INTERVAL` (default **`1h`**) starts the next cycle only when the previous one finished; if a run is still in progress, the tick is **skipped** (`ErrInProgress`). Set **`GGHSTATS_SYNC_ON_STARTUP=false`** to skip the blocking full sync at process start (UI uses existing DB; trigger sync via the dashboard or `POST /api/v1/sync`).
-- **Per repo**, a typical sync issues several requests (metadata, open PRs, views, clones, referrers, paths; optional full stargazer history when star sync is enabled). Failures on individual endpoints are logged and the repo loop **continues** (`slog.Warn`, no abort of the whole run).
+- **Per repo**, a typical sync issues several requests (metadata, open PRs, views, clones, referrers, paths; optional stargazer history when star sync is enabled). Failures on individual endpoints are logged and the repo loop **continues** (`slog.Warn`, no abort of the whole run).
+- **Star history (incremental):** after the first full stargazer pagination, later cycles **skip** when `stargazers_count` is unchanged, or fetch only **new** stars when the count grows. A drop in count triggers a full rebuild. This avoids O(n) stargazer pages every hour on large repos (see **[SPEC.md](SPEC.md)** §4.7). Cursor columns: `repos.last_seen_star_count`, `repos.last_starred_at`.
 - **Retries:** the GitHub client retries **429**, rate-limit **403**, **5xx**, and network errors with exponential backoff and full jitter (default 4 attempts; honors `X-RateLimit-Reset` when advertised). See **[SPEC.md](SPEC.md)**.
-- **Pragmatic scope:** for a personal or small-org PAT and hourly (or slower) sync, GitHub limits are usually enough. Very large repo lists, aggressive intervals, or star-history on huge repos can still hit limits — then increase the interval, narrow `GGHSTATS_FILTER`, or lower worker count.
+- **Pragmatic scope:** for a personal or small-org PAT and hourly (or slower) sync, GitHub limits are usually enough. Very large repo lists or aggressive intervals can still hit limits — then increase the interval, narrow `GGHSTATS_FILTER`, or lower worker count.
 
 [Back to top](#gghstats)
 

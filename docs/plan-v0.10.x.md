@@ -8,7 +8,7 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.
 
 | ID | Item | Notes |
 |----|------|--------|
-| SYNC | **Incremental star history** | Cursor / `last_seen_star_count` (or equivalent); avoid full O(n) stargazer pagination every sync. |
+| SYNC | **Incremental star history** | **Implemented:** `repos.last_seen_star_count` + `last_starred_at`; skip when count unchanged; `StargazersRecent` for delta; full rebuild on drop / first sync. See SPEC §4.7. |
 | A2 | **Opt-in alerts** | Threshold or WoW/MoM drop on clones/views; webhook and/or Slack/Loki-style sink; **off by default**. Pattern inspiration: **pgwd**. |
 | PATH | **XDG / default path prep** | Document and soft-land toward `~/.config/gghstats/` (or platform equivalent); keep `GGHSTATS_DB` override. No hard break yet. Cover **`gghstats.env.example`**, **`contrib/launchd/`**, and **BSD port** paths — not only the binary default. Optional: `gghstats --print-defaults` (or equivalent) for inspection. |
 | QW | Remaining quick wins | Prefer concrete leftovers (post-0.9 audit filter): `getPaginatedCtx` cleanup (dead `slicePtr` / double marshal); access-log **Warn/Error** by status (status field already logged); docs that **demo = collector/telemetry off**; optional `:develop` GHCR tag / collector `describe` only if cheap. **Do not** bump `SetMaxOpenConns` without evidence; **do not** add redundant `(repo, date)` INDEX (already PRIMARY KEY). |
@@ -30,13 +30,13 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.
 
 ## Checklist
 
-- [ ] Incremental star sync + tests
+- [x] Incremental star sync + tests
 - [ ] Alert sink(s) + env flags + docs
 - [ ] XDG / default path prep docs (env.example, launchd, BSD notes; soft behavior if any)
 - [ ] QW leftovers: `getPaginatedCtx` cleanup and/or access-log level by status (as capacity allows)
 - [ ] Demo/docs note: collector/telemetry off in demo (if not already obvious)
-- [ ] CHANGELOG + SPEC updates if new routes/metrics
-- [ ] `make test` / lint green
+- [x] CHANGELOG + SPEC updates if new routes/metrics (SPEC §4.7 + CHANGELOG Unreleased)
+- [x] `make test` / lint green
 
 ## Parked (do not promote without pain)
 

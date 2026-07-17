@@ -184,9 +184,10 @@ func TestRunWithStarHistory(t *testing.T) {
 			if r.Header.Get("Accept") != "application/vnd.github.v3.star+json" {
 				t.Errorf("Accept header = %q", r.Header.Get("Accept"))
 			}
+			// Newest-first (GitHub order)
 			json.NewEncoder(w).Encode([]github.Star{
-				{StarredAt: t1},
 				{StarredAt: t2},
+				{StarredAt: t1},
 			})
 		default:
 			t.Fatalf("unexpected request: %s", p)
@@ -212,6 +213,86 @@ func TestRunWithStarHistory(t *testing.T) {
 	}
 	if rows[0].Total != 1 || rows[1].Total != 2 {
 		t.Fatalf("cumulative stars: %+v", rows)
+	}
+	cur, err := s.GetStarSyncCursor(repoPath)
+	if err != nil || !cur.Synced || cur.LastSeenStarCount != 2 {
+		t.Fatalf("cursor: %+v err=%v", cur, err)
+	}
+}
+
+func TestRunStarHistoryIncrementalSkipsUnchanged(t *testing.T) {
+	repoPath := "owner/repo"
+	ts := time.Date(2026, 3, 20, 0, 0, 0, 0, time.UTC)
+	t1 := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	t2 := time.Date(2026, 1, 2, 12, 0, 0, 0, time.UTC)
+	t3 := time.Date(2026, 1, 3, 12, 0, 0, 0, time.UTC)
+	stargazerHits := 0
+	starCount := 2
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Path
+		switch {
+		case p == "/repos/"+repoPath:
+			json.NewEncoder(w).Encode(github.Repo{ID: 1, FullName: repoPath, StargazersCount: starCount})
+		case p == "/repos/"+repoPath+"/pulls":
+			json.NewEncoder(w).Encode([]github.PullRequest{})
+		case p == "/repos/"+repoPath+"/traffic/views":
+			json.NewEncoder(w).Encode(github.TrafficViews{
+				Views: []github.DailyStat{{Timestamp: ts, Count: 1, Uniques: 1}},
+			})
+		case p == "/repos/"+repoPath+"/traffic/clones":
+			json.NewEncoder(w).Encode(github.TrafficClones{
+				Clones: []github.DailyStat{{Timestamp: ts, Count: 1, Uniques: 1}},
+			})
+		case p == "/repos/"+repoPath+"/traffic/popular/referrers":
+			json.NewEncoder(w).Encode([]github.Referrer{})
+		case p == "/repos/"+repoPath+"/traffic/popular/paths":
+			json.NewEncoder(w).Encode([]github.PopularPath{})
+		case strings.HasPrefix(p, "/repos/"+repoPath+"/stargazers"):
+			stargazerHits++
+			if starCount == 2 {
+				json.NewEncoder(w).Encode([]github.Star{{StarredAt: t2}, {StarredAt: t1}})
+				return
+			}
+			json.NewEncoder(w).Encode([]github.Star{{StarredAt: t3}})
+		default:
+			t.Fatalf("unexpected request: %s", p)
+		}
+	}))
+	defer srv.Close()
+
+	c := github.NewClient("tok")
+	c.BaseURL = srv.URL
+	s := tempStore(t)
+
+	if err := Run(c, s, Options{Repos: []string{repoPath}, SyncStars: true}, nil); err != nil {
+		t.Fatalf("first Run: %v", err)
+	}
+	if stargazerHits != 1 {
+		t.Fatalf("first sync stargazerHits=%d want 1", stargazerHits)
+	}
+
+	if err := Run(c, s, Options{Repos: []string{repoPath}, SyncStars: true}, nil); err != nil {
+		t.Fatalf("second Run (unchanged): %v", err)
+	}
+	if stargazerHits != 1 {
+		t.Fatalf("unchanged sync should skip stargazers; hits=%d", stargazerHits)
+	}
+
+	starCount = 3
+	if err := Run(c, s, Options{Repos: []string{repoPath}, SyncStars: true}, nil); err != nil {
+		t.Fatalf("third Run (delta): %v", err)
+	}
+	if stargazerHits != 2 {
+		t.Fatalf("incremental sync stargazerHits=%d want 2", stargazerHits)
+	}
+
+	rows, err := s.StarsByRepo(repoPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 3 || rows[2].Total != 3 {
+		t.Fatalf("after incremental: %+v", rows)
 	}
 }
 
