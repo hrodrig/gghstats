@@ -9,9 +9,17 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **Serve env booleans:** `loadServeConfig` / metrics flags use `envBool` (`1`/`true`/`yes`/`on` and `0`/`false`/`no`/`off`), including `GGHSTATS_INCLUDE_PRIVATE`, collector, badge public, and metrics toggles.
+- **`gghstats --help`:** document missing serve env vars (`SYNC_WORKERS`, `INCLUDE_PRIVATE`, badge cache, collector/update-check, whitelist, rate limit, locales).
+- **README env table:** add `GGHSTATS_SYNC_WORKERS` and `GGHSTATS_DEMO`.
+- **SPEC §5:** document `fetch`, `report`, and `export` alongside backup/restore.
 - **README comparison table:** expand vs ghstats, git-clone-stats, gh-tracker, and GitHub Traffic; more operator-facing rows (maintenance, CLI, badges, i18n, metrics breadth, ops manifests); ToC link under Features.
 - **README Features:** add missing product capabilities with short “what it solves” blurbs (history >14d, sync, momentum, badges, themes, Prometheus, rate limit/whitelist, packaging).
 - **ROADMAP / band plans:** post-0.9 park of filtered leftover QW and sync notes into [plan-v0.10.x.md](docs/plan-v0.10.x.md); dogfood contract + CORS warn into [plan-v0.11.x.md](docs/plan-v0.11.x.md); Line A / “next” text updated after 0.9 ship.
+
+### Fixed
+
+- **CHANGELOG:** add missing `[0.7.10]` and `[0.7.6]` sections so footer compare links are not orphaned.
 
 ## [0.9.0] - 2026-07-12
 
@@ -114,6 +122,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 - **Reverse proxy CSP sanitisation:** backend `Content-Security-Policy` headers are stripped from proxied responses, preventing the upstream analytics backend from controlling the dashboard's CSP.
 
+## [0.7.10] - 2026-06-25
+
+### Fixed
+
+- **Whitelist + sync:** release tag for whitelist/sync interaction fix (see `v0.7.10`).
+
 ## [0.7.9] - 2026-06-16
 
 ### Added
@@ -150,6 +164,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - **Docs:** clarify `/metrics` is public by default and should be protected at the network edge.
 - **Docs:** add middleware chain order to rate limiting section.
 - Bump **`modernc.org/sqlite`** from 1.51.0 to 1.52.0 (SQLite 3.53.2; Dependabot #8).
+
+## [0.7.6] - 2026-06-14
+
+### Added
+
+- **IP whitelist** initial release (`GGHSTATS_WHITELIST` / `GGHSTATS_WHITELIST_PATHS`); refined in later 0.7.x notes.
 
 ## [0.7.5] - 2026-06-14
 

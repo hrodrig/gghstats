@@ -124,8 +124,13 @@ Also: `gghstats_sync_repos_processed_total{status}` with `success` | `error`.
 
 | Command | Contract |
 |---------|----------|
+| `gghstats fetch --repo OWNER/REPO` | Pull traffic (and related) from GitHub REST into SQLite for one repo; requires token |
+| `gghstats report --repo OWNER/REPO` | Print a terminal traffic summary from SQLite (`--days`, default 14) |
+| `gghstats export --repo OWNER/REPO` | Write traffic CSV to stdout or `--output` (`--days`, default 14) |
 | `gghstats backup --output PATH` | Snapshot DB via SQLite `VACUUM INTO` |
 | `gghstats restore --input PATH` | Replace target DB by file copy; stop `serve` if the DB is open |
+
+Shared flags for fetch/report/export: `--repo` / `GGHSTATS_REPO`, `--token` / `GGHSTATS_GITHUB_TOKEN`, `--db` / `GGHSTATS_DB`.
 
 ---
 

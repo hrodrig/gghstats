@@ -24,6 +24,33 @@ func TestEnvOr(t *testing.T) {
 	}
 }
 
+func TestEnvBool(t *testing.T) {
+	key := "GGHSTATS_TEST_ENV_BOOL_" + t.Name()
+	t.Setenv(key, "")
+	if !envBool(key, true) {
+		t.Error("empty with default true want true")
+	}
+	if envBool(key, false) {
+		t.Error("empty with default false want false")
+	}
+	for _, v := range []string{"1", "true", "TRUE", "yes", "on"} {
+		t.Setenv(key, v)
+		if !envBool(key, false) {
+			t.Errorf("%q want true", v)
+		}
+	}
+	for _, v := range []string{"0", "false", "FALSE", "no", "off"} {
+		t.Setenv(key, v)
+		if envBool(key, true) {
+			t.Errorf("%q want false", v)
+		}
+	}
+	t.Setenv(key, "maybe")
+	if !envBool(key, true) {
+		t.Error("unknown with default true want true")
+	}
+}
+
 func TestParseGlobalFlagsOK(t *testing.T) {
 	repoKey := "GGHSTATS_REPO"
 	tokenKey := "GGHSTATS_GITHUB_TOKEN"

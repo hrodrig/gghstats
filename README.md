@@ -411,6 +411,8 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_INCLUDE_PRIVATE` | `false` | Include private repos |
 | `GGHSTATS_SYNC_INTERVAL` | `1h` | Sync frequency |
 | `GGHSTATS_SYNC_ON_STARTUP` | `true` | Full sync when the process starts; set `false` to serve immediately using existing SQLite data |
+| `GGHSTATS_SYNC_WORKERS` | `4` | Concurrent repos per sync cycle (same as `gghstats serve --sync-workers`) |
+| `GGHSTATS_DEMO` | `false` | Sample-data UI; no GitHub token, sync, or update check (same as `gghstats serve --demo`) |
 | `GGHSTATS_OPEN_BROWSER` | `false` | Open the default browser when the server is ready (same as `gghstats serve --open`) |
 | `GGHSTATS_API_TOKEN` | (none) | If set, `GET /api/repos` requires matching `x-api-token` header (see [HTTP API (JSON)](#http-api-json)) |
 | `GGHSTATS_BADGE_PUBLIC` | `true` | Set to `false` to require `x-api-token` on badge URLs (breaks `![…](url)` in GitHub READMEs unless you use a proxy) |

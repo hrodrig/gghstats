@@ -56,13 +56,13 @@ func loadServeConfig() serveConfig {
 		Host:             envOr("GGHSTATS_HOST", "127.0.0.1"),
 		Port:             envOr("GGHSTATS_PORT", "8080"),
 		Filter:           envOr("GGHSTATS_FILTER", "*"),
-		IncludePrivate:   os.Getenv("GGHSTATS_INCLUDE_PRIVATE") == "true",
+		IncludePrivate:   envBool("GGHSTATS_INCLUDE_PRIVATE", false),
 		APIToken:         os.Getenv("GGHSTATS_API_TOKEN"),
 		SyncInterval:     1 * time.Hour,
 		SyncOnStartup:    envBool("GGHSTATS_SYNC_ON_STARTUP", true),
 		SyncWorkers:      4,
 		OpenBrowser:      envBool("GGHSTATS_OPEN_BROWSER", false),
-		BadgePublic:      os.Getenv("GGHSTATS_BADGE_PUBLIC") != "false",
+		BadgePublic:      envBool("GGHSTATS_BADGE_PUBLIC", true),
 		BadgeCacheMaxAge: 300,
 		PublicURL:        strings.TrimSpace(os.Getenv("GGHSTATS_PUBLIC_URL")),
 		Demo:             envBool("GGHSTATS_DEMO", false),
@@ -88,8 +88,8 @@ func loadServeConfig() serveConfig {
 
 	cfg.HeadHTML = os.Getenv("GGHSTATS_HEAD_HTML")
 	cfg.ReverseProxyRules = os.Getenv("GGHSTATS_REVERSE_PROXY_RULES")
-	cfg.EnableCollector = os.Getenv("GGHSTATS_ENABLE_COLLECTOR") == "true"
-	cfg.EnableUpdateCheck = os.Getenv("GGHSTATS_ENABLE_UPDATE_CHECK") != "false"
+	cfg.EnableCollector = envBool("GGHSTATS_ENABLE_COLLECTOR", false)
+	cfg.EnableUpdateCheck = envBool("GGHSTATS_ENABLE_UPDATE_CHECK", true)
 
 	return cfg
 }
@@ -137,7 +137,7 @@ func logServerStartup(cfg serveConfig) {
 		lvl = v
 	}
 	listenAddr := cfg.Host + ":" + cfg.Port
-	metricsEnabled := os.Getenv("GGHSTATS_METRICS") != "false"
+	metricsEnabled := envBool("GGHSTATS_METRICS", true)
 	slog.Info(fmt.Sprintf("gghstats v%s starting on %s (db=%s, filter=%s, sync=%s, log=%s, metrics=%s)",
 		version.Version,
 		listenAddr,
@@ -177,8 +177,8 @@ func startCollector(cfg serveConfig) {
 func collectFeatures(cfg serveConfig) collector.ServeFeatures {
 	return collector.ServeFeatures{
 		BadgePublic:      cfg.BadgePublic,
-		MetricsEnabled:   os.Getenv("GGHSTATS_METRICS") != "false",
-		MetricsPerRepo:   os.Getenv("GGHSTATS_METRICS_PER_REPO") == "true",
+		MetricsEnabled:   envBool("GGHSTATS_METRICS", true),
+		MetricsPerRepo:   envBool("GGHSTATS_METRICS_PER_REPO", false),
 		SyncOnStartup:    cfg.SyncOnStartup,
 		HasAPIToken:      cfg.APIToken != "",
 		HasPublicURL:     cfg.PublicURL != "",
@@ -215,12 +215,12 @@ func runServe(args []string) error {
 
 	var metricsReg *prometheus.Registry
 	var domainMetrics *metrics.Domain
-	if os.Getenv("GGHSTATS_METRICS") != "false" {
+	if envBool("GGHSTATS_METRICS", true) {
 		metricsReg, domainMetrics = server.NewMetricsRegistry(server.MetricsRegistryConfig{
 			Store:          db,
 			DBPath:         cfg.DB,
 			Filter:         cfg.Filter,
-			PerRepoEnabled: os.Getenv("GGHSTATS_METRICS_PER_REPO") == "true",
+			PerRepoEnabled: envBool("GGHSTATS_METRICS_PER_REPO", false),
 		})
 	}
 
