@@ -284,18 +284,23 @@ func runServe(args []string) error {
 			senders := alertSenders
 			rules := alertRules
 			publicURL := cfg.PublicURL
-			coord.SetAfterSync(func(success bool) {
-				if !success {
-					return
+			coord.SetAfterSync(func(result sync.RunResult) {
+				snap := alert.SyncSnapshot{
+					Success:            result.Success,
+					ReposAttempted:     result.ReposAttempted,
+					ReposFailed:        result.ReposFailed,
+					FailedRepos:        result.FailedRepos,
+					Unreachable:        result.Unreachable,
+					RateLimitRemaining: result.RateLimitRemaining,
 				}
-				alert.RunTrafficRules(ctx, alert.EvalConfig{
+				alert.RunAllRules(ctx, alert.EvalConfig{
 					DB:        db,
 					Rules:     rules,
 					Senders:   senders,
 					PublicURL: publicURL,
-				})
+				}, snap)
 			})
-			slog.Info(fmt.Sprintf("alerts: %d rule(s) will evaluate after successful sync", len(rules)))
+			slog.Info(fmt.Sprintf("alerts: %d rule(s) will evaluate after sync", len(rules)))
 		}
 		go startScheduler(ctx, coord, cfg.SyncInterval, cfg.SyncOnStartup)
 	}

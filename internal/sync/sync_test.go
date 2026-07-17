@@ -103,7 +103,7 @@ func TestRunNoRepos(t *testing.T) {
 	c.BaseURL = srv.URL
 	s := tempStore(t)
 
-	if err := Run(c, s, Options{}, nil); err != nil {
+	if _, err := Run(c, s, Options{}, nil); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 }
@@ -141,7 +141,7 @@ func TestRunOneExplicitRepo(t *testing.T) {
 	c.BaseURL = srv.URL
 	s := tempStore(t)
 
-	err := Run(c, s, Options{Repos: []string{repoPath}}, nil)
+	_, err := Run(c, s, Options{Repos: []string{repoPath}}, nil)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -199,7 +199,7 @@ func TestRunWithStarHistory(t *testing.T) {
 	c.BaseURL = srv.URL
 	s := tempStore(t)
 
-	err := Run(c, s, Options{Repos: []string{repoPath}, SyncStars: true}, nil)
+	_, err := Run(c, s, Options{Repos: []string{repoPath}, SyncStars: true}, nil)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -265,14 +265,14 @@ func TestRunStarHistoryIncrementalSkipsUnchanged(t *testing.T) {
 	c.BaseURL = srv.URL
 	s := tempStore(t)
 
-	if err := Run(c, s, Options{Repos: []string{repoPath}, SyncStars: true}, nil); err != nil {
+	if _, err := Run(c, s, Options{Repos: []string{repoPath}, SyncStars: true}, nil); err != nil {
 		t.Fatalf("first Run: %v", err)
 	}
 	if stargazerHits != 1 {
 		t.Fatalf("first sync stargazerHits=%d want 1", stargazerHits)
 	}
 
-	if err := Run(c, s, Options{Repos: []string{repoPath}, SyncStars: true}, nil); err != nil {
+	if _, err := Run(c, s, Options{Repos: []string{repoPath}, SyncStars: true}, nil); err != nil {
 		t.Fatalf("second Run (unchanged): %v", err)
 	}
 	if stargazerHits != 1 {
@@ -280,7 +280,7 @@ func TestRunStarHistoryIncrementalSkipsUnchanged(t *testing.T) {
 	}
 
 	starCount = 3
-	if err := Run(c, s, Options{Repos: []string{repoPath}, SyncStars: true}, nil); err != nil {
+	if _, err := Run(c, s, Options{Repos: []string{repoPath}, SyncStars: true}, nil); err != nil {
 		t.Fatalf("third Run (delta): %v", err)
 	}
 	if stargazerHits != 2 {

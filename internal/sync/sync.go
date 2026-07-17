@@ -24,33 +24,69 @@ type Options struct {
 // Run performs a full sync cycle: discover repos, fetch metrics, store.
 // When opts.Workers >= 2, repos are processed concurrently by a worker
 // pool. Errors from individual repos are logged and counted but do not
-// abort the cycle.
-func Run(gh *github.Client, db *store.Store, opts Options, rec ErrRecorder) error {
+// abort the cycle. The returned RunResult always describes the cycle
+// (even when err != nil from resolve failure).
+func Run(gh *github.Client, db *store.Store, opts Options, rec ErrRecorder) (RunResult, error) {
+	result := RunResult{RateLimitRemaining: -1}
+	if gh != nil {
+		result.RateLimitRemaining = gh.LastRateLimitRemaining()
+	}
+
 	repos, err := resolveRepos(gh, opts)
 	if err != nil {
-		return fmt.Errorf("resolve repos: %w", err)
+		result.Unreachable = isUnreachableErr(err)
+		result.Success = false
+		return result, fmt.Errorf("resolve repos: %w", err)
 	}
 
 	if len(repos) == 0 {
 		slog.Warn("no repos to sync")
-		return nil
+		result.Success = true
+		return result, nil
 	}
 
 	today := time.Now().UTC().Format("2006-01-02")
 	slog.Info("sync started", "repos", len(repos), "date", today, "workers", workerCount(opts.Workers))
 
+	counter := newRepoFailCounter(rec)
 	runWorkers(context.Background(), repos, workerOptions{
 		Workers: workerCount(opts.Workers),
-		Metrics: rec,
-		Work:    func(ctx context.Context, r github.Repo) error { return syncRepo(gh, db, r, today, opts.SyncStars, rec) },
+		Metrics: counter,
+		Work: func(ctx context.Context, r github.Repo) error {
+			return syncRepo(gh, db, r, today, opts.SyncStars, counter)
+		},
 	})
+
+	result.ReposAttempted = len(repos)
+	result.ReposFailed, result.FailedRepos = counter.snapshot()
+	if gh != nil {
+		result.RateLimitRemaining = gh.LastRateLimitRemaining()
+	}
 
 	if err := db.UpdateDeltas(); err != nil {
 		slog.Error("update deltas failed", "error", err)
 	}
 
-	slog.Info("sync completed", "repos", len(repos))
-	return nil
+	slog.Info("sync completed", "repos", len(repos), "failed", result.ReposFailed)
+	result.Success = true
+	return result, nil
+}
+
+func isUnreachableErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	for _, needle := range []string{
+		"connection refused", "no such host", "i/o timeout", "timeout",
+		"network is unreachable", "tls handshake", "dial tcp", "temporary failure",
+		"connection reset", "eof",
+	} {
+		if strings.Contains(msg, needle) {
+			return true
+		}
+	}
+	return false
 }
 
 // workerCount normalizes the user-supplied worker count to a safe minimum.

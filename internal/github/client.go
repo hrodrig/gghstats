@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"sync"
 	"time"
 )
 
@@ -19,14 +20,18 @@ type Client struct {
 	HTTPClient  *http.Client
 	retryConfig RetryConfig
 	metrics     MetricsRecorder
+
+	rateMu        sync.Mutex
+	lastRateLimit int // -1 = never observed
 }
 
 // NewClient returns a Client configured with the given token.
 func NewClient(token string) *Client {
 	return &Client{
-		BaseURL:     defaultBaseURL,
-		Token:       token,
-		retryConfig: DefaultRetry,
+		BaseURL:       defaultBaseURL,
+		Token:         token,
+		retryConfig:   DefaultRetry,
+		lastRateLimit: -1,
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 			Transport: &http.Transport{

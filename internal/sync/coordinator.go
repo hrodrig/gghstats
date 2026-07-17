@@ -31,7 +31,7 @@ type Coordinator struct {
 	opt Options
 
 	metrics   *metrics.Domain
-	afterSync func(success bool)
+	afterSync func(result RunResult)
 
 	running        bool
 	scope          string
@@ -47,9 +47,9 @@ func (c *Coordinator) SetMetrics(m *metrics.Domain) {
 	c.metrics = m
 }
 
-// SetAfterSync registers a callback invoked after each sync finishes (success or failure).
+// SetAfterSync registers a callback invoked after each sync finishes.
 // Used for post-sync alert evaluation. Must not block forever.
-func (c *Coordinator) SetAfterSync(fn func(success bool)) {
+func (c *Coordinator) SetAfterSync(fn func(result RunResult)) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.afterSync = fn
@@ -111,8 +111,11 @@ func (c *Coordinator) runBlocking(opt Options, scope, repo string) error {
 	c.markRunningLocked(scope, repo)
 	c.mu.Unlock()
 
-	err := Run(c.gh, c.db, opt, c.metrics)
-	c.finishRun(err)
+	result, err := Run(c.gh, c.db, opt, c.metrics)
+	if err != nil {
+		result.Success = false
+	}
+	c.finishRun(result, err)
 	return err
 }
 
@@ -126,8 +129,11 @@ func (c *Coordinator) startBackground(opt Options, scope, repo string) error {
 	c.mu.Unlock()
 
 	go func() {
-		err := Run(c.gh, c.db, opt, c.metrics)
-		c.finishRun(err)
+		result, err := Run(c.gh, c.db, opt, c.metrics)
+		if err != nil {
+			result.Success = false
+		}
+		c.finishRun(result, err)
 	}()
 	return nil
 }
@@ -142,7 +148,7 @@ func (c *Coordinator) markRunningLocked(scope, repo string) {
 	c.lastError = ""
 }
 
-func (c *Coordinator) finishRun(err error) {
+func (c *Coordinator) finishRun(result RunResult, err error) {
 	c.mu.Lock()
 	started := c.syncStartedAt
 	dom := c.metrics
@@ -160,6 +166,6 @@ func (c *Coordinator) finishRun(err error) {
 		dom.ObserveSync(time.Since(started), err == nil)
 	}
 	if after != nil {
-		after(err == nil)
+		after(result)
 	}
 }

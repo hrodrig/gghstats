@@ -220,13 +220,13 @@ func TestCoordinatorFinishRunDirect(t *testing.T) {
 	c := NewCoordinator(nil, nil, Options{})
 	c.SetMetrics(dom)
 
-	c.finishRun(nil)
+	c.finishRun(RunResult{Success: true}, nil)
 	if coordinatorHasSyncSample(reg, "success") {
 		t.Fatal("finishRun without markRunning should not observe sync")
 	}
 
 	c.markRunningLocked("all", "")
-	c.finishRun(errors.New("sync failed"))
+	c.finishRun(RunResult{Success: false}, errors.New("sync failed"))
 	if !coordinatorHasSyncSample(reg, "error") {
 		t.Fatal("expected error sync observation")
 	}
