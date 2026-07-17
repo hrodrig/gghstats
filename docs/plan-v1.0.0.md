@@ -16,7 +16,7 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Spec: [SPEC.md](../SPEC.md)
 
 | ID | Item | Notes |
 |----|------|--------|
-| DEF | **Stable default SQLite path** | Sensible local/daemon default (e.g. under `~/.config/gghstats/` or platform equivalent); `GGHSTATS_DB` always wins. Migration / upgrade notes in README. |
+| DEF | **Stable default SQLite path** | Sensible local/daemon default — Linux: XDG-style under `~/.config/gghstats/` ([Base Directory](https://specifications.freedesktop.org/basedir-spec/latest/)); macOS/BSD: platform equivalent. `GGHSTATS_DB` always wins. Migration / upgrade notes in README. |
 | API | **SPEC freeze** | Documented routes and JSON fields (including API-only mode) stable for 1.x; **additive** fields OK; removals/renames = major (2.0). |
 | PKG | **Packaging parity** | `.deb` / `.rpm` / Homebrew / GHCR tags; BSD ports + docs match `VERSION`. |
 | REL | **Release bar** | `make release-check` green (lint, test, security, docker-scan). Release only from `main` per git-flow. |

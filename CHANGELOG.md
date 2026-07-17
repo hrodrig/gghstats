@@ -20,7 +20,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- **README:** Data directory soft-land (recommended absolute paths per platform; binary default still `./data/gghstats.db` until v1.0 XDG); Opt-in alerts operator section + env table rows; Features bullets for alerts and demo (collector/update-check off).
+- **README:** Data directory soft-land (recommended absolute paths per platform; binary default still `./data/gghstats.db` until v1.0 XDG — short XDG Base Directory note); Opt-in alerts operator section + env table rows; Features bullets for alerts and demo (collector/update-check off).
 - **contrib:** path notes in `gghstats.env.example`, systemd + launchd docs, man `GGHSTATS_DB`.
 - **docs/plan-v0.10.x:** mark A2 + PATH docs done.
 - **serveHTTP:** wait on `context` (`signal.NotifyContext` in `runServe`) instead of raw `signal.Notify`; ListenAndServe failures return an error instead of `os.Exit(1)` from a goroutine.

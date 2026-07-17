@@ -453,7 +453,9 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | macOS LaunchAgent | `$HOME/Library/Application Support/gghstats/gghstats.db` | See [`contrib/launchd/README.md`](contrib/launchd/README.md) |
 | Docker / Compose | `/data/gghstats.db` (in-image) | Bind-mount host dir; [gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted) uses `GGHSTATS_HOST_DATA` |
 
-**Soft-land (0.10):** document recommended paths now; **do not** change the binary default yet. A stable user-config default (e.g. XDG `~/.config/gghstats/gghstats.db` or platform equivalent) is planned for **[v1.0.0](docs/plan-v1.0.0.md)** with migration notes. Until then: set **`GGHSTATS_DB`** explicitly for any long-running install.
+**Soft-land (0.10):** document recommended paths now; **do not** change the binary default yet. A stable user-config default is planned for **[v1.0.0](docs/plan-v1.0.0.md)** with migration notes. Until then: set **`GGHSTATS_DB`** explicitly for any long-running install.
+
+**What “XDG” means:** [XDG Base Directory](https://specifications.freedesktop.org/basedir-spec/latest/) (freedesktop.org) — common Linux/Unix layout for app files. Typical homes: config under `~/.config/` (`XDG_CONFIG_HOME`), data under `~/.local/share/` (`XDG_DATA_HOME`), cache under `~/.cache/` (`XDG_CACHE_HOME`). For gghstats v1.0 the likely local default is something like `~/.config/gghstats/gghstats.db` on Linux; macOS LaunchAgent and BSD packages keep platform paths (`Application Support`, `/var/db/…`) rather than forcing XDG on every OS.
 
 **Override always wins:** `--db` / `GGHSTATS_DB` → never rely on cwd for production.
 
