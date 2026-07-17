@@ -18,11 +18,11 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.
 | ID | Item | Notes |
 |----|------|--------|
 | SYNC | **Incremental star history** | **Implemented.** See [SPEC §4.7](../SPEC.md). |
-| A2 | **Opt-in alerts** | **To implement.** Sinks first (`slack` + `webhook` + **`loki`**), then traffic rules, then ops/sync-health rules. Contract: [SPEC §8](../SPEC.md). Off by default. |
+| A2 | **Opt-in alerts** | **Implemented** (0.10.0 delivery). Sinks + `alert test` + traffic + ops. Contract: [SPEC §8](../SPEC.md). Milestones/SMTP → A2+. |
 | A2+ | **Growth milestones** | Stretch **0.10.1+** after A2 delivery. [SPEC §8.3](../SPEC.md). |
 | A2+sink | **Email / SMTP sink** | Optional **0.10.1+** / **0.10.2**. Not required for 0.10.0. [SPEC §8.5](../SPEC.md). |
-| PATH | **XDG / default path prep** | Docs + soft-land; `GGHSTATS_DB` override. env.example, launchd, BSD paths. |
-| QW | Remaining quick wins | `getPaginatedCtx` cleanup; access-log level by status; demo = collector off (docs). No blind pool/INDEX bumps. |
+| PATH | **XDG / default path prep** | **Implemented** (docs soft-land). Binary default still `./data/gghstats.db`; recommended absolute paths in README / env / launchd / systemd. Code default → [v1.0.0](plan-v1.0.0.md). |
+| QW | Remaining quick wins | `getPaginatedCtx` cleanup; access-log level by status. Demo collector-off noted in README. No blind pool/INDEX bumps. |
 | SYNC+ | **UpdateDeltas efficiency** | Incremental / less frequent with star-sync work — not cargo-cult pool bumps. |
 | C? | **Optional thin leaderboard** | Only if A2/SYNC done early; reuse H2H — not full org BI. |
 
@@ -58,9 +58,10 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.
 - [x] **`gghstats alert test`** — smoke-test sinks without serve/sync ([SPEC §8.8](../SPEC.md))
 - [x] A2 traffic rules after sync + fan-out ([SPEC §8.2](../SPEC.md) / [§8.4](../SPEC.md) / [§8.6](../SPEC.md))
 - [x] A2 ops rules — counts / levels / rate-limit ([SPEC §8.7](../SPEC.md))
-- [ ] XDG / default path prep docs
-- [ ] QW leftovers (as capacity allows)
-- [ ] Demo/docs note: collector off in demo (if needed)
+- [x] Operator docs — README alerts + env table; man / env.example ([SPEC §8](../SPEC.md))
+- [x] XDG / default path prep docs (soft-land; no binary default change)
+- [ ] QW leftovers (as capacity allows) — `getPaginatedCtx`; access-log level by status
+- [x] Demo/docs note: collector / update-check off in demo (README Features)
 - [x] CHANGELOG notes for shipped SYNC work
 - [x] `make test` / lint green (current tree)
 - [ ] *(0.10.1+)* Growth milestones (A2+)

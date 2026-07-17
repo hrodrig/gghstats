@@ -112,7 +112,10 @@ GitHub personal access token (required for \fBserve\fR unless demo mode).
 When \fBtrue\fR, enable demo mode (sample data; no token; sync disabled).
 .TP
 .B GGHSTATS_DB
-SQLite path (default: \fB./data/gghstats.db\fR).
+SQLite path (default: \fB./data/gghstats.db\fR, relative to the process working directory).
+Daemons should set an absolute path (e.g. \fB/var/lib/gghstats/gghstats.db\fR).
+A user-config default (XDG / platform equivalent) is planned for v1.0; until then \fBGGHSTATS_DB\fR wins.
+See README "Data directory (SQLite paths)".
 .TP
 .B GGHSTATS_HOST
 Bind address (default: \fB127.0.0.1\fR; use \fB0.0.0.0\fR in Docker).

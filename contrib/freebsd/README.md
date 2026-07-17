@@ -293,7 +293,7 @@ vi /etc/gghstats/gghstats.env
 chmod 600 /etc/gghstats/gghstats.env
 ```
 
-Use **`GGHSTATS_DB=/var/db/gghstats/gghstats.db`** (or another persistent path) on servers.
+Use **`GGHSTATS_DB=/var/db/gghstats/gghstats.db`** (or another persistent path) on servers. The binary default when unset is still **`./data/gghstats.db`** (cwd-relative) until **v1.0**; see root **README** → **Data directory (SQLite paths)**.
 
 ---
 

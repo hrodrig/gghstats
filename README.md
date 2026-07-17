@@ -63,6 +63,8 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 - [Usage](#usage)
 - [Examples](#examples)
 - [Configuration](#configuration)
+- [Data directory (SQLite paths)](#data-directory-sqlite-paths)
+- [Opt-in alerts](#opt-in-alerts)
 - [Web UI languages (i18n)](#web-ui-languages-i18n)
 - [Environment file](#environment-file)
 - [Custom UI theme (optional)](#custom-ui-theme-optional)
@@ -96,7 +98,8 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 - **Per-IP rate limit + optional IP whitelist** — blunt abuse on public demos without a reverse-proxy rewrite
 - **Single binary + SQLite** — no external database; packages for Homebrew, `.deb`/`.rpm`, FreeBSD/OpenBSD (see [Install](#install))
 - **Docker** on GHCR; production Compose / Helm / observability in **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**
-- **Demo mode:** `gghstats serve --demo` (or `GGHSTATS_DEMO=true`) — try the UI with sample data, no GitHub token
+- **Demo mode:** `gghstats serve --demo` (or `GGHSTATS_DEMO=true`) — try the UI with sample data, no GitHub token (sync, update check, and collector stay off)
+- **Opt-in alerts:** Slack / webhook / Loki sinks + traffic and ops rules after sync; smoke-test with `gghstats alert test` (see [Opt-in alerts](#opt-in-alerts))
 - **Backup / restore:** `gghstats backup --output …` / `gghstats restore --input …` — snapshot SQLite before upgrades or moves
 
 ### Compared to similar tools
@@ -404,7 +407,7 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | Variable | Default | Description |
 | --- | --- | --- |
 | `GGHSTATS_GITHUB_TOKEN` | (required) | GitHub personal access token |
-| `GGHSTATS_DB` | `./data/gghstats.db` | SQLite database path |
+| `GGHSTATS_DB` | `./data/gghstats.db` | SQLite database path (`GGHSTATS_DB` always wins). See [Data directory](#data-directory-sqlite-paths) |
 | `GGHSTATS_HOST` | `127.0.0.1` | Bind address (localhost only on bare metal). **Production Compose** sets `0.0.0.0` in **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** |
 | `GGHSTATS_PORT` | `8080` | Listen port |
 | `GGHSTATS_FILTER` | `*` | Repo filter expression |
@@ -417,7 +420,7 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_API_TOKEN` | (none) | If set, `GET /api/repos` requires matching `x-api-token` header (see [HTTP API (JSON)](#http-api-json)) |
 | `GGHSTATS_BADGE_PUBLIC` | `true` | Set to `false` to require `x-api-token` on badge URLs (breaks `![…](url)` in GitHub READMEs unless you use a proxy) |
 | `GGHSTATS_BADGE_CACHE_SECONDS` | `300` | `Cache-Control: max-age` for badge SVG responses |
-| `GGHSTATS_PUBLIC_URL` | (none) | Optional public base URL for embed snippets, **`/sitemap.xml`**, and **`/robots.txt`** (e.g. `https://gghstats.example.com`); if unset, uses the request `Host`. On `localhost` / `127.0.0.1`, robots disallows crawling unless this is set |
+| `GGHSTATS_PUBLIC_URL` | (none) | Optional public base URL for embed snippets, **`/sitemap.xml`**, **`/robots.txt`**, and alert dashboard links (e.g. `https://gghstats.example.com`); if unset, uses the request `Host`. On `localhost` / `127.0.0.1`, robots disallows crawling unless this is set |
 | `GGHSTATS_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, or `error` (slog only; startup banner always prints) |
 | `GGHSTATS_METRICS` | (enabled) | Set to `false` to disable `GET /metrics` |
 | `GGHSTATS_METRICS_PER_REPO` | `false` | Set to `true` to expose per-repo Prometheus gauges (`owner`, `repo` labels); higher cardinality |
@@ -434,6 +437,65 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_REVERSE_PROXY_RULES` | (none) | JSON array of reverse-proxy rules: each rule maps a local path prefix to a remote backend, with optional header injection. See [`.env.example`](.env.example) for format |
 | `GGHSTATS_ENABLE_COLLECTOR` | `false` | Set to `true` to enable anonymous startup telemetry. Sends only non-identifying boolean feature flags (no credentials, paths, or repo names). See [`.env.example`](.env.example) |
 | `GGHSTATS_ENABLE_UPDATE_CHECK` | `true` | Set to `false` to disable the startup release check against the GitHub API (logs a warning when a newer gghstats version exists) |
+| `GGHSTATS_ALERTS_ENABLED` | `false` | When `true`, evaluate alert rules after each sync (requires valid sinks) |
+| `GGHSTATS_ALERT_SINKS` | (none) | JSON array of sinks: `slack`, `webhook`, `loki` (secrets via `*_env`). See [Opt-in alerts](#opt-in-alerts) |
+| `GGHSTATS_ALERT_RULES` | (none) | JSON array of traffic and/or ops rules evaluated after sync |
+
+### Data directory (SQLite paths)
+
+**Current default** (unchanged in 0.10): `./data/gghstats.db` relative to the process working directory when `GGHSTATS_DB` is unset. That is fine for laptop smoke tests; **daemons should set an absolute path**.
+
+| Context | Recommended `GGHSTATS_DB` | Notes |
+|---------|---------------------------|--------|
+| Local CLI / quick start | `./data/gghstats.db` (default) | Created under the cwd |
+| Linux systemd (`.deb`/`.rpm`) | `/var/lib/gghstats/gghstats.db` | See [`contrib/systemd/README.md`](contrib/systemd/README.md); also in [`contrib/gghstats.env.example`](contrib/gghstats.env.example) |
+| FreeBSD / OpenBSD | `/var/db/gghstats/gghstats.db` | See BSD port READMEs under `contrib/` |
+| macOS LaunchAgent | `$HOME/Library/Application Support/gghstats/gghstats.db` | See [`contrib/launchd/README.md`](contrib/launchd/README.md) |
+| Docker / Compose | `/data/gghstats.db` (in-image) | Bind-mount host dir; [gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted) uses `GGHSTATS_HOST_DATA` |
+
+**Soft-land (0.10):** document recommended paths now; **do not** change the binary default yet. A stable user-config default (e.g. XDG `~/.config/gghstats/gghstats.db` or platform equivalent) is planned for **[v1.0.0](docs/plan-v1.0.0.md)** with migration notes. Until then: set **`GGHSTATS_DB`** explicitly for any long-running install.
+
+**Override always wins:** `--db` / `GGHSTATS_DB` → never rely on cwd for production.
+
+### Opt-in alerts
+
+Off by default. Contract: **[SPEC.md §8](SPEC.md)**. Delivery first (sinks); rules evaluate after each sync when enabled.
+
+1. **Configure sinks** (secrets in env, referenced from JSON via `*_env`):
+
+```bash
+export GGHSTATS_SLACK_WEBHOOK_URL='https://hooks.slack.com/services/...'
+export GGHSTATS_ALERT_SINKS='[{"type":"slack","webhook_url_env":"GGHSTATS_SLACK_WEBHOOK_URL"}]'
+# Optional Loki:
+# export GGHSTATS_LOKI_URL='https://loki.example.com/loki/api/v1/push'
+# export GGHSTATS_ALERT_SINKS='[...,{"type":"loki","url_env":"GGHSTATS_LOKI_URL","labels":{"job":"gghstats"}}]'
+```
+
+2. **Smoke-test** without starting `serve` or syncing:
+
+```bash
+gghstats alert test
+gghstats alert test --kind ops --sink loki
+# Exit 0 = delivered; 1 = config; 4 = delivery failure
+```
+
+3. **Enable rules** (examples in [`contrib/gghstats.env.example`](contrib/gghstats.env.example)):
+
+```bash
+export GGHSTATS_ALERTS_ENABLED=true
+export GGHSTATS_ALERT_RULES='[
+  {"repo":"owner/repo","metric":"clones","window":"1d","op":"gte","value":225,"debounce":"once_per_utc_day"},
+  {"kind":"ops","event":"repo_fetch_failed","window":"this_sync","op":"gte","value":3,"level":"warn","debounce":"once_per_utc_day"}
+]'
+gghstats serve
+```
+
+| Rule kind | When it fires |
+|-----------|----------------|
+| **Traffic** | After a **successful** sync (clones/views thresholds, WoW drop, fleet lifetime, …) |
+| **Ops** | After every sync attempt (`repo_fetch_failed`, `sync_failed`, `rate_limit`, `github_unreachable`) |
+
+Growth star milestones and SMTP email sinks are **0.10.1+** (see SPEC §8.3 / §8.5).
 
 ### Rate limiting
 
