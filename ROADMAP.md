@@ -28,7 +28,7 @@ Detailed band plans (scope, exit criteria, checklist):
 
 | Line | What | Effort | Why |
 |------|------|--------|-----|
-| **A** | **Trending / velocity on repo page** + optional **alerts** (clone/view drop + ops) | M | Repo-page momentum shipped in **0.9**; alerts remain (opt-in Slack/webhook/**Loki** sinks — [SPEC §8](SPEC.md), incl. ops failure counts/levels). Growth milestones → **0.10.1+** after A2 sinks ([plan-v0.10.x.md](docs/plan-v0.10.x.md) A2+). |
+| **A** | **Trending / velocity on repo page** + optional **alerts** (clone/view drop + ops) | M | Momentum **0.9**; alerts **shipped in 0.10** (Slack/webhook/Loki — [SPEC §8](SPEC.md)). Growth milestones + SMTP → **0.10.1+** ([plan-v0.10.x.md](docs/plan-v0.10.x.md) A2+). |
 | **B** | **Webhooks + delta-oriented sync**; GraphQL where it cuts REST pagination | M–L | Less polling; large accounts hit REST rate limits. Prefer **1.1+** if it risks slipping 1.0. |
 | **C** | **Multi-repo analytics** (leaderboards, org rollups) | M | Reuse H2H scoring; expose rankings / rollups. |
 | **D** | **API-only mode** + JSON dogfood for official UI reads | M | Same binary; HTML optional. External React/Svelte/etc. against documented `/api/v1`. Not an in-tree SPA. |
@@ -59,9 +59,9 @@ Detailed band plans (scope, exit criteria, checklist):
 
 **Risk rule:** do **not** block 1.0 on Line B. Prefer 1.0 = A + incremental stars + defaults + **API-only if 0.11 landed**; finish B in **0.11 stretch** or **1.1**.
 
-## Next (after 0.9 breathe)
+## Next (after 0.10)
 
-**0.9.x shipped (2026-07-12).** Next band: [plan-v0.10.x.md](docs/plan-v0.10.x.md) — incremental stars, opt-in alerts, XDG prep; concrete QW leftovers parked there (not a dump of external audit lists).
+**0.10.x core shipped (2026-07-17, v0.10.0):** incremental stars, opt-in alerts (A2), PATH soft-land, QW. Stretch still open: milestones / SMTP (**0.10.1+**). Next band: [plan-v0.11.x.md](docs/plan-v0.11.x.md) — API-only mode + JSON dogfood.
 
 ## Explicit non-goals (this repo)
 

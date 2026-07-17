@@ -55,51 +55,41 @@ func (p Payload) CanonicalText() string {
 	b.WriteString("gghstats alert\n")
 	b.WriteString("version:  " + ver + "\n")
 	if p.Kind == KindOps || p.Kind == "ops" {
-		if p.Level != "" {
-			b.WriteString("level:    " + p.Level + "\n")
-		}
-		if p.Event != "" {
-			b.WriteString("event:    " + p.Event + "\n")
-		}
-		if p.Count != "" {
-			b.WriteString("count:    " + p.Count + "\n")
-		}
-		if p.Threshold != "" {
-			b.WriteString("threshold: " + p.Threshold + "\n")
-		}
-		if p.Window != "" {
-			b.WriteString("window:   " + p.Window + "\n")
-		}
-		if p.Detail != "" {
-			b.WriteString("detail:   " + p.Detail + "\n")
-		}
-		b.WriteString("when:     " + whenStr + "\n")
-		return strings.TrimRight(b.String(), "\n")
-	}
-
-	if p.Scope != "" {
-		b.WriteString("scope:    " + p.Scope + "\n")
-	}
-	if p.Repo != "" {
-		b.WriteString("repo:     " + p.Repo + "\n")
-	}
-	if p.Metric != "" {
-		b.WriteString("metric:   " + p.Metric + "\n")
-	}
-	if p.Window != "" {
-		b.WriteString("window:   " + p.Window + "\n")
-	}
-	if p.Value != "" {
-		b.WriteString("value:    " + p.Value + "\n")
-	}
-	if p.Rule != "" {
-		b.WriteString("rule:     " + p.Rule + "\n")
-	}
-	b.WriteString("when:     " + whenStr + "\n")
-	if p.Dash != "" {
-		b.WriteString("dash:     " + p.Dash + "\n")
+		writeOpsBody(&b, p, whenStr)
+	} else {
+		writeTrafficBody(&b, p, whenStr)
 	}
 	return strings.TrimRight(b.String(), "\n")
+}
+
+func writeField(b *strings.Builder, label, value string) {
+	if value == "" {
+		return
+	}
+	b.WriteString(label)
+	b.WriteString(value)
+	b.WriteByte('\n')
+}
+
+func writeOpsBody(b *strings.Builder, p Payload, whenStr string) {
+	writeField(b, "level:    ", p.Level)
+	writeField(b, "event:    ", p.Event)
+	writeField(b, "count:    ", p.Count)
+	writeField(b, "threshold: ", p.Threshold)
+	writeField(b, "window:   ", p.Window)
+	writeField(b, "detail:   ", p.Detail)
+	b.WriteString("when:     " + whenStr + "\n")
+}
+
+func writeTrafficBody(b *strings.Builder, p Payload, whenStr string) {
+	writeField(b, "scope:    ", p.Scope)
+	writeField(b, "repo:     ", p.Repo)
+	writeField(b, "metric:   ", p.Metric)
+	writeField(b, "window:   ", p.Window)
+	writeField(b, "value:    ", p.Value)
+	writeField(b, "rule:     ", p.Rule)
+	b.WriteString("when:     " + whenStr + "\n")
+	writeField(b, "dash:     ", p.Dash)
 }
 
 // OneLine is a short fallback title for Slack/logs.
