@@ -173,68 +173,73 @@ func metricValue(db *store.Store, rule RuleSpec, repo string, now time.Time, tod
 	window := rule.Window
 
 	if rule.Scope == "all_repos" && window == "lifetime" {
-		switch metric {
-		case "clones":
-			n, err := db.SumClonesAll()
-			return float64(n), "", err
-		case "views":
-			n, err := db.SumViewsAll()
-			return float64(n), "", err
-		default:
-			return 0, "", fmt.Errorf("lifetime all_repos unsupported metric %q", metric)
-		}
+		return lifetimeAllRepos(db, metric)
 	}
-
 	if repo == "" && rule.Scope != "all_repos" {
 		return 0, "", fmt.Errorf("repo required")
 	}
-
-	table := metric
 	if metric != "clones" && metric != "views" {
 		return 0, "", fmt.Errorf("unsupported metric %q (MVP: clones, views)", metric)
 	}
 
 	switch window {
 	case "1d":
-		n, err := db.DayCount(table, repo, today)
+		n, err := db.DayCount(metric, repo, today)
 		return float64(n), "", err
 	case "7d":
-		n, err := sumRange(db, table, repo, now, 0, 7)
+		n, err := sumRange(db, metric, repo, now, 0, 7)
 		return float64(n), "", err
 	case "30d":
-		n, err := sumRange(db, table, repo, now, 0, 30)
+		n, err := sumRange(db, metric, repo, now, 0, 30)
 		return float64(n), "", err
 	case "lifetime":
-		if metric == "clones" {
-			sum, err := db.RepoByName(repo)
-			if err != nil || sum == nil {
-				return 0, "", err
-			}
-			return float64(sum.TotalClones), "", nil
-		}
-		sum, err := db.RepoByName(repo)
-		if err != nil || sum == nil {
-			return 0, "", err
-		}
-		return float64(sum.TotalViews), "", nil
+		return lifetimeRepo(db, metric, repo)
 	case "wow":
-		cur, err := sumRange(db, table, repo, now, 0, 7)
-		if err != nil {
-			return 0, "", err
-		}
-		prev, err := sumRange(db, table, repo, now, 7, 7)
-		if err != nil {
-			return 0, "", err
-		}
-		if prev < 1 {
-			prev = 1
-		}
-		dropPct := (1.0 - float64(cur)/float64(prev)) * 100.0
-		detail := fmt.Sprintf("this_week=%d last_week=%d", cur, prev)
-		return dropPct, detail, nil
+		return wowDropPct(db, metric, repo, now)
 	default:
 		return 0, "", fmt.Errorf("unsupported window %q", window)
 	}
+}
+
+func lifetimeAllRepos(db *store.Store, metric string) (float64, string, error) {
+	switch metric {
+	case "clones":
+		n, err := db.SumClonesAll()
+		return float64(n), "", err
+	case "views":
+		n, err := db.SumViewsAll()
+		return float64(n), "", err
+	default:
+		return 0, "", fmt.Errorf("lifetime all_repos unsupported metric %q", metric)
+	}
+}
+
+func lifetimeRepo(db *store.Store, metric, repo string) (float64, string, error) {
+	sum, err := db.RepoByName(repo)
+	if err != nil || sum == nil {
+		return 0, "", err
+	}
+	if metric == "clones" {
+		return float64(sum.TotalClones), "", nil
+	}
+	return float64(sum.TotalViews), "", nil
+}
+
+func wowDropPct(db *store.Store, metric, repo string, now time.Time) (float64, string, error) {
+	cur, err := sumRange(db, metric, repo, now, 0, 7)
+	if err != nil {
+		return 0, "", err
+	}
+	prev, err := sumRange(db, metric, repo, now, 7, 7)
+	if err != nil {
+		return 0, "", err
+	}
+	if prev < 1 {
+		prev = 1
+	}
+	dropPct := (1.0 - float64(cur)/float64(prev)) * 100.0
+	detail := fmt.Sprintf("this_week=%d last_week=%d", cur, prev)
+	return dropPct, detail, nil
 }
 
 func sumRange(db *store.Store, table, repo string, now time.Time, daysBackEnd, spanDays int) (int, error) {

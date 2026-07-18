@@ -162,36 +162,17 @@ func TestRunWithStarHistory(t *testing.T) {
 	t2 := time.Date(2026, 1, 2, 12, 0, 0, 0, time.UTC)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		p := r.URL.Path
-		switch {
-		case p == "/repos/"+repoPath:
-			json.NewEncoder(w).Encode(github.Repo{ID: 1, FullName: repoPath, StargazersCount: 2})
-		case p == "/repos/"+repoPath+"/pulls":
-			json.NewEncoder(w).Encode([]github.PullRequest{})
-		case p == "/repos/"+repoPath+"/traffic/views":
-			json.NewEncoder(w).Encode(github.TrafficViews{
-				Views: []github.DailyStat{{Timestamp: ts, Count: 1, Uniques: 1}},
-			})
-		case p == "/repos/"+repoPath+"/traffic/clones":
-			json.NewEncoder(w).Encode(github.TrafficClones{
-				Clones: []github.DailyStat{{Timestamp: ts, Count: 1, Uniques: 1}},
-			})
-		case p == "/repos/"+repoPath+"/traffic/popular/referrers":
-			json.NewEncoder(w).Encode([]github.Referrer{})
-		case p == "/repos/"+repoPath+"/traffic/popular/paths":
-			json.NewEncoder(w).Encode([]github.PopularPath{})
-		case strings.HasPrefix(p, "/repos/"+repoPath+"/stargazers"):
+		if handleSyncTrafficFixture(t, w, r, repoPath, ts, 2) {
+			return
+		}
+		if strings.HasPrefix(r.URL.Path, "/repos/"+repoPath+"/stargazers") {
 			if r.Header.Get("Accept") != "application/vnd.github.v3.star+json" {
 				t.Errorf("Accept header = %q", r.Header.Get("Accept"))
 			}
-			// Newest-first (GitHub order)
-			json.NewEncoder(w).Encode([]github.Star{
-				{StarredAt: t2},
-				{StarredAt: t1},
-			})
-		default:
-			t.Fatalf("unexpected request: %s", p)
+			json.NewEncoder(w).Encode([]github.Star{{StarredAt: t2}, {StarredAt: t1}})
+			return
 		}
+		t.Fatalf("unexpected request: %s", r.URL.Path)
 	}))
 	defer srv.Close()
 
@@ -230,34 +211,19 @@ func TestRunStarHistoryIncrementalSkipsUnchanged(t *testing.T) {
 	starCount := 2
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		p := r.URL.Path
-		switch {
-		case p == "/repos/"+repoPath:
-			json.NewEncoder(w).Encode(github.Repo{ID: 1, FullName: repoPath, StargazersCount: starCount})
-		case p == "/repos/"+repoPath+"/pulls":
-			json.NewEncoder(w).Encode([]github.PullRequest{})
-		case p == "/repos/"+repoPath+"/traffic/views":
-			json.NewEncoder(w).Encode(github.TrafficViews{
-				Views: []github.DailyStat{{Timestamp: ts, Count: 1, Uniques: 1}},
-			})
-		case p == "/repos/"+repoPath+"/traffic/clones":
-			json.NewEncoder(w).Encode(github.TrafficClones{
-				Clones: []github.DailyStat{{Timestamp: ts, Count: 1, Uniques: 1}},
-			})
-		case p == "/repos/"+repoPath+"/traffic/popular/referrers":
-			json.NewEncoder(w).Encode([]github.Referrer{})
-		case p == "/repos/"+repoPath+"/traffic/popular/paths":
-			json.NewEncoder(w).Encode([]github.PopularPath{})
-		case strings.HasPrefix(p, "/repos/"+repoPath+"/stargazers"):
+		if handleSyncTrafficFixture(t, w, r, repoPath, ts, starCount) {
+			return
+		}
+		if strings.HasPrefix(r.URL.Path, "/repos/"+repoPath+"/stargazers") {
 			stargazerHits++
 			if starCount == 2 {
 				json.NewEncoder(w).Encode([]github.Star{{StarredAt: t2}, {StarredAt: t1}})
 				return
 			}
 			json.NewEncoder(w).Encode([]github.Star{{StarredAt: t3}})
-		default:
-			t.Fatalf("unexpected request: %s", p)
+			return
 		}
+		t.Fatalf("unexpected request: %s", r.URL.Path)
 	}))
 	defer srv.Close()
 
@@ -294,6 +260,34 @@ func TestRunStarHistoryIncrementalSkipsUnchanged(t *testing.T) {
 	if len(rows) != 3 || rows[2].Total != 3 {
 		t.Fatalf("after incremental: %+v", rows)
 	}
+}
+
+// handleSyncTrafficFixture serves repo metadata + traffic endpoints used by star-history tests.
+// Returns true when the request was handled (caller should return).
+func handleSyncTrafficFixture(t *testing.T, w http.ResponseWriter, r *http.Request, repoPath string, ts time.Time, starCount int) bool {
+	t.Helper()
+	p := r.URL.Path
+	switch p {
+	case "/repos/" + repoPath:
+		json.NewEncoder(w).Encode(github.Repo{ID: 1, FullName: repoPath, StargazersCount: starCount})
+	case "/repos/" + repoPath + "/pulls":
+		json.NewEncoder(w).Encode([]github.PullRequest{})
+	case "/repos/" + repoPath + "/traffic/views":
+		json.NewEncoder(w).Encode(github.TrafficViews{
+			Views: []github.DailyStat{{Timestamp: ts, Count: 1, Uniques: 1}},
+		})
+	case "/repos/" + repoPath + "/traffic/clones":
+		json.NewEncoder(w).Encode(github.TrafficClones{
+			Clones: []github.DailyStat{{Timestamp: ts, Count: 1, Uniques: 1}},
+		})
+	case "/repos/" + repoPath + "/traffic/popular/referrers":
+		json.NewEncoder(w).Encode([]github.Referrer{})
+	case "/repos/" + repoPath + "/traffic/popular/paths":
+		json.NewEncoder(w).Encode([]github.PopularPath{})
+	default:
+		return false
+	}
+	return true
 }
 
 func TestUpsertRepoRecordClampsNegativeIssues(t *testing.T) {

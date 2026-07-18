@@ -1,6 +1,6 @@
 # Spec — HTTP API and sync
 
-Normative operator contracts for **gghstats** as of **v0.9.0**.  
+Normative operator contracts for **gghstats** as of **v0.10.0**.  
 Narrative examples and env tables: **[README.md](README.md)**. Product direction: **[ROADMAP.md](ROADMAP.md)**.
 
 This document describes **current** behavior. Changes that break clients must bump SemVer appropriately and update this file + CHANGELOG.

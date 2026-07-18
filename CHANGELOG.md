@@ -7,6 +7,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-07-17
+
 ### Added
 
 - **Incremental star history sync:** persist `last_seen_star_count` / `last_starred_at` on `repos`; skip stargazer pagination when the count is unchanged; fetch only new stars when it grows; full rebuild if the count drops. Documents why in SPEC §4.7 and README sync notes.
@@ -20,6 +22,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **gocyclo:** split `metricValue` / `CanonicalText` helpers; share sync star-history HTTP fixtures so `make security` stays under `-over 15`.
 - **getPaginatedCtx:** drop redundant `*[]Star` type assert; always unmarshal into `dest`.
 - **HTTP access log:** `http` slog level by status (Info below 400, Warn 4xx, Error 5xx).
 - **docs/plan-v0.10.x:** mark QW leftovers done.
@@ -473,7 +476,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/hrodrig/gghstats/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/hrodrig/gghstats/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/hrodrig/gghstats/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/hrodrig/gghstats/compare/v0.7.11...v0.8.0

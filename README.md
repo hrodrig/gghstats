@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.9.0-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.10.0-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -19,7 +19,11 @@ Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only k
 
 If you want your **own self-hosted** deployment (Docker Compose, Traefik with TLS, Helm, optional Prometheus/Grafana/Loki), use the companion repo **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** — it lists the supported options and example manifests.
 
-**Related (same maintainer):** **[pgwd](https://github.com/hrodrig/pgwd)** — PostgreSQL connection watchdog (Slack/Loki alerts); production manifests in **[pgwd-selfhosted](https://github.com/hrodrig/pgwd-selfhosted)**.
+**Related tools (same maintainer):**
+- **[pgwd](https://github.com/hrodrig/pgwd)** — PostgreSQL connection watchdog ([live traffic](https://gghstats.hermesrodriguez.com/hrodrig/pgwd); deploy: [pgwd-selfhosted](https://github.com/hrodrig/pgwd-selfhosted))
+- **[gghstats](https://github.com/hrodrig/gghstats)** — GitHub repo traffic beyond 14 days ([live demo](https://gghstats.hermesrodriguez.com); deploy: [gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted))
+- **[kzero](https://github.com/hrodrig/kzero)** — bastion-first declarative workload reset ([live traffic](https://gghstats.hermesrodriguez.com/hrodrig/kzero); deploy: [kzero-selfhosted](https://github.com/hrodrig/kzero-selfhosted))
+- **[groot](https://github.com/hrodrig/groot)** — Kubernetes diagnostics archive ([live traffic](https://gghstats.hermesrodriguez.com/hrodrig/groot); deploy: [groot-selfhosted](https://github.com/hrodrig/groot-selfhosted))
 
 **Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.6.0`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
 
@@ -75,7 +79,6 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 - [Security and quality](#security-and-quality)
 - [Database](#database)
 - [Community standards](#community-standards)
-- [Star History](#star-history)
 - [Acknowledgments](#acknowledgments)
 - [License](#license)
 - [Roadmap](ROADMAP.md) · [Spec (API & sync)](SPEC.md)
@@ -108,7 +111,7 @@ Niche peers that **archive GitHub traffic beyond the 14-day window**. Not a full
 
 | | **gghstats** | [ghstats](https://github.com/vladkens/ghstats) | [git-clone-stats](https://github.com/taylorwilsdon/git-clone-stats) | [gh-tracker](https://github.com/rayketcham-lab/gh-tracker) | GitHub Traffic |
 |--|--------------|------------------------------------------------|------------------------------------------------------------------|--------------------------------------------------------------|----------------|
-| Maintenance (checked 2026-07) | Active (`v0.9.0`) | Occasional (last commit ~2026-06) | Quiet (last release ~2025-08) | Early / intermittent (last commit ~2026-04) | Active (GitHub product) |
+| Maintenance (checked 2026-07) | Active (`v0.10.0`) | Occasional (last commit ~2026-06) | Quiet (last release ~2025-08) | Early / intermittent (last commit ~2026-04) | Active (GitHub product) |
 | History beyond 14d | Yes (SQLite) | Yes (SQLite) | Yes (SQLite / Firestore) | Yes (SQLite) | No (14d only) |
 | Self-hosted dashboard | Yes | Yes | Yes (minimal HTML/JS) | Yes (React + FastAPI) | GitHub UI only |
 | Runtime / packaging | Go single binary; `.deb`/`.rpm`/BSD | Rust single binary; Docker | Python (PyPI / Docker) | Python + Node frontend | — |
@@ -1099,12 +1102,6 @@ Clarification — not a separate DB write lock.
 - CODEOWNERS: `.github/CODEOWNERS`
 
 Thanks for using and contributing to `gghstats`.
-
-[Back to top](#gghstats)
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/chart?repos=hrodrig/gghstats&type=date&legend=bottom-right)](https://www.star-history.com/?repos=hrodrig%2Fgghstats&type=date&legend=bottom-right)
 
 [Back to top](#gghstats)
 

@@ -1,5 +1,7 @@
 # Plan — v0.10.x
 
+**Status:** **v0.10.0** core band closed (2026-07-17). Remaining in-band stretch: A2+ milestones / SMTP → **0.10.1+**.
+
 **Band goal:** cheaper sync for star-heavy repos, and **opt-in** operator signals (traffic + ops) when rules fire.
 
 Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.md)
