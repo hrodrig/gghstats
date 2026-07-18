@@ -79,7 +79,6 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 - [Security and quality](#security-and-quality)
 - [Database](#database)
 - [Community standards](#community-standards)
-- [Star History](#star-history)
 - [Acknowledgments](#acknowledgments)
 - [License](#license)
 - [Roadmap](ROADMAP.md) · [Spec (API & sync)](SPEC.md)
@@ -1103,12 +1102,6 @@ Clarification — not a separate DB write lock.
 - CODEOWNERS: `.github/CODEOWNERS`
 
 Thanks for using and contributing to `gghstats`.
-
-[Back to top](#gghstats)
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/chart?repos=hrodrig/gghstats&type=date&legend=bottom-right)](https://www.star-history.com/?repos=hrodrig%2Fgghstats&type=date&legend=bottom-right)
 
 [Back to top](#gghstats)
 
