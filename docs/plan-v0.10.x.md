@@ -26,7 +26,6 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.
 | PATH | **XDG / default path prep** | **Implemented** (docs soft-land). Binary default still `./data/gghstats.db`; recommended absolute paths in README / env / launchd / systemd. Code default → [v1.0.0](plan-v1.0.0.md). |
 | QW | Remaining quick wins | **Implemented.** `getPaginatedCtx` dead `*[]Star` branch removed; access-log level by status (4xx warn / 5xx error). |
 | SYNC+ | **UpdateDeltas efficiency** | Incremental / less frequent with star-sync work — not cargo-cult pool bumps. |
-| C? | **Optional thin leaderboard** | Only if A2/SYNC done early; reuse H2H — not full org BI. |
 
 ## Implementation order (A2)
 
@@ -46,6 +45,7 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.
 - SPEC API freeze (→ 1.0)
 - Multi-writer SQLite / Postgres
 - WhatsApp / native Discord|Teams types / SMTP-in-0.10.0 (see SPEC §8)
+- Thin leaderboard (→ [plan-v0.11.x.md](plan-v0.11.x.md) stretch **C?**)
 
 ## Exit criteria
 
