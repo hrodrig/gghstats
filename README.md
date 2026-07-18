@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.10.0-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.10.1-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -19,7 +19,11 @@ Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only k
 
 If you want your **own self-hosted** deployment (Docker Compose, Traefik with TLS, Helm, optional Prometheus/Grafana/Loki), use the companion repo **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** — it lists the supported options and example manifests.
 
-**Related (same maintainer):** **[pgwd](https://github.com/hrodrig/pgwd)** — PostgreSQL connection watchdog (Slack/Loki alerts); production manifests in **[pgwd-selfhosted](https://github.com/hrodrig/pgwd-selfhosted)**.
+**Related tools (same maintainer):**
+- **[pgwd](https://github.com/hrodrig/pgwd)** — PostgreSQL connection watchdog ([live traffic](https://gghstats.hermesrodriguez.com/hrodrig/pgwd); deploy: [pgwd-selfhosted](https://github.com/hrodrig/pgwd-selfhosted))
+- **[gghstats](https://github.com/hrodrig/gghstats)** — GitHub repo traffic beyond 14 days ([live demo](https://gghstats.hermesrodriguez.com); deploy: [gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted))
+- **[kzero](https://github.com/hrodrig/kzero)** — bastion-first declarative workload reset ([live traffic](https://gghstats.hermesrodriguez.com/hrodrig/kzero); deploy: [kzero-selfhosted](https://github.com/hrodrig/kzero-selfhosted))
+- **[groot](https://github.com/hrodrig/groot)** — Kubernetes diagnostics archive ([live traffic](https://gghstats.hermesrodriguez.com/hrodrig/groot); deploy: [groot-selfhosted](https://github.com/hrodrig/groot-selfhosted))
 
 **Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) ship binaries (tarballs/zip + checksums). **Multi-arch** container images (`linux/amd64`, `linux/arm64`) are on [GHCR](https://github.com/hrodrig/gghstats/pkgs/container/gghstats) as `ghcr.io/hrodrig/gghstats:v<version>` (same `v` prefix as the Git tag, e.g. `v0.6.0`) and `:latest`. Pushing a `v*` tag on `main` triggers the [Release workflow](.github/workflows/release.yml) (GoReleaser). Day-to-day work happens on `develop` (see [Release workflow](#release-workflow)).
 
@@ -75,7 +79,6 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 - [Security and quality](#security-and-quality)
 - [Database](#database)
 - [Community standards](#community-standards)
-- [Star History](#star-history)
 - [Acknowledgments](#acknowledgments)
 - [License](#license)
 - [Roadmap](ROADMAP.md) · [Spec (API & sync)](SPEC.md)
@@ -99,7 +102,7 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 - **Single binary + SQLite** — no external database; packages for Homebrew, `.deb`/`.rpm`, FreeBSD/OpenBSD (see [Install](#install))
 - **Docker** on GHCR; production Compose / Helm / observability in **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**
 - **Demo mode:** `gghstats serve --demo` (or `GGHSTATS_DEMO=true`) — try the UI with sample data, no GitHub token (sync, update check, and collector stay off)
-- **Opt-in alerts:** Slack / webhook / Loki sinks + traffic and ops rules after sync; smoke-test with `gghstats alert test` (see [Opt-in alerts](#opt-in-alerts))
+- **Opt-in alerts:** Slack / webhook / Loki sinks + traffic, ops, and **star milestone** rules after sync; smoke-test with `gghstats alert test` (see [Opt-in alerts](#opt-in-alerts))
 - **Backup / restore:** `gghstats backup --output …` / `gghstats restore --input …` — snapshot SQLite before upgrades or moves
 
 ### Compared to similar tools
@@ -108,7 +111,7 @@ Niche peers that **archive GitHub traffic beyond the 14-day window**. Not a full
 
 | | **gghstats** | [ghstats](https://github.com/vladkens/ghstats) | [git-clone-stats](https://github.com/taylorwilsdon/git-clone-stats) | [gh-tracker](https://github.com/rayketcham-lab/gh-tracker) | GitHub Traffic |
 |--|--------------|------------------------------------------------|------------------------------------------------------------------|--------------------------------------------------------------|----------------|
-| Maintenance (checked 2026-07) | Active (`v0.10.0`) | Occasional (last commit ~2026-06) | Quiet (last release ~2025-08) | Early / intermittent (last commit ~2026-04) | Active (GitHub product) |
+| Maintenance (checked 2026-07) | Active (`v0.10.1`) | Occasional (last commit ~2026-06) | Quiet (last release ~2025-08) | Early / intermittent (last commit ~2026-04) | Active (GitHub product) |
 | History beyond 14d | Yes (SQLite) | Yes (SQLite) | Yes (SQLite / Firestore) | Yes (SQLite) | No (14d only) |
 | Self-hosted dashboard | Yes | Yes | Yes (minimal HTML/JS) | Yes (React + FastAPI) | GitHub UI only |
 | Runtime / packaging | Go single binary; `.deb`/`.rpm`/BSD | Rust single binary; Docker | Python (PyPI / Docker) | Python + Node frontend | — |
@@ -438,7 +441,7 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_ENABLE_COLLECTOR` | `false` | Set to `true` to enable anonymous startup telemetry. Sends only non-identifying boolean feature flags (no credentials, paths, or repo names). See [`.env.example`](.env.example) |
 | `GGHSTATS_ENABLE_UPDATE_CHECK` | `true` | Set to `false` to disable the startup release check against the GitHub API (logs a warning when a newer gghstats version exists) |
 | `GGHSTATS_ALERTS_ENABLED` | `false` | When `true`, evaluate alert rules after each sync (requires valid sinks) |
-| `GGHSTATS_ALERT_SINKS` | (none) | JSON array of sinks: `slack`, `webhook`, `loki` (secrets via `*_env`). See [Opt-in alerts](#opt-in-alerts) |
+| `GGHSTATS_ALERT_SINKS` | (none) | JSON array of sinks: `slack`, `webhook`, `loki`, `smtp` (secrets via `*_env`). See [Opt-in alerts](#opt-in-alerts) |
 | `GGHSTATS_ALERT_RULES` | (none) | JSON array of traffic and/or ops rules evaluated after sync |
 
 ### Data directory (SQLite paths)
@@ -471,6 +474,13 @@ export GGHSTATS_ALERT_SINKS='[{"type":"slack","webhook_url_env":"GGHSTATS_SLACK_
 # Optional Loki:
 # export GGHSTATS_LOKI_URL='https://loki.example.com/loki/api/v1/push'
 # export GGHSTATS_ALERT_SINKS='[...,{"type":"loki","url_env":"GGHSTATS_LOKI_URL","labels":{"job":"gghstats"}}]'
+# Optional SMTP (port 587 = STARTTLS; use_tls:true for 465):
+# export GGHSTATS_SMTP_HOST=smtp.example.com
+# export GGHSTATS_SMTP_PORT=587
+# export GGHSTATS_SMTP_USER=alerts@example.com
+# export GGHSTATS_SMTP_PASSWORD=...
+# export GGHSTATS_SMTP_TO=you@example.com
+# export GGHSTATS_ALERT_SINKS='[...,{"type":"smtp","host_env":"GGHSTATS_SMTP_HOST","port_env":"GGHSTATS_SMTP_PORT","user_env":"GGHSTATS_SMTP_USER","password_env":"GGHSTATS_SMTP_PASSWORD","to_env":"GGHSTATS_SMTP_TO"}]'
 ```
 
 2. **Smoke-test** without starting `serve` or syncing:
@@ -478,6 +488,7 @@ export GGHSTATS_ALERT_SINKS='[{"type":"slack","webhook_url_env":"GGHSTATS_SLACK_
 ```bash
 gghstats alert test
 gghstats alert test --kind ops --sink loki
+gghstats alert test --sink smtp
 # Exit 0 = delivered; 1 = config; 4 = delivery failure
 ```
 
@@ -487,6 +498,7 @@ gghstats alert test --kind ops --sink loki
 export GGHSTATS_ALERTS_ENABLED=true
 export GGHSTATS_ALERT_RULES='[
   {"repo":"owner/repo","metric":"clones","window":"1d","op":"gte","value":225,"debounce":"once_per_utc_day"},
+  {"repo":"owner/repo","metric":"stars","milestones":[100,500],"fire":"once"},
   {"kind":"ops","event":"repo_fetch_failed","window":"this_sync","op":"gte","value":3,"level":"warn","debounce":"once_per_utc_day"}
 ]'
 gghstats serve
@@ -495,10 +507,10 @@ gghstats serve
 | Rule kind | When it fires |
 |-----------|----------------|
 | **Traffic** | After a **successful** sync (clones/views thresholds, WoW drop, fleet lifetime, …) |
+| **Milestones** | After a **successful** sync when `repos.stars` crosses each ladder rung (`metric=stars`, `milestones:[…]`); each threshold **fire-once** |
 | **Ops** | After every sync attempt (`repo_fetch_failed`, `sync_failed`, `rate_limit`, `github_unreachable`) |
 
-Growth star milestones and SMTP email sinks are **0.10.1+** (see SPEC §8.3 / §8.5).
-
+SMTP uses the same `GGHSTATS_ALERT_SINKS` array as other sinks (SPEC §8.5).
 ### Rate limiting
 
 gghstats applies **per-IP token-bucket rate limiting** to all HTTP routes except `/metrics` and `/api/v1/healthz`. When a client exceeds the limit the server returns `429 Too Many Requests` with a JSON body `{"error":"rate_limit_exceeded"}` and a `Retry-After: 60` header.
@@ -1099,12 +1111,6 @@ Clarification — not a separate DB write lock.
 - CODEOWNERS: `.github/CODEOWNERS`
 
 Thanks for using and contributing to `gghstats`.
-
-[Back to top](#gghstats)
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/chart?repos=hrodrig/gghstats&type=date&legend=bottom-right)](https://www.star-history.com/?repos=hrodrig%2Fgghstats&type=date&legend=bottom-right)
 
 [Back to top](#gghstats)
 

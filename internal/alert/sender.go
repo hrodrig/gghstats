@@ -115,6 +115,17 @@ func BuildSenders(sinks []ResolvedSink, client *http.Client) []Sender {
 			out = append(out, &Webhook{URL: s.URL, Headers: s.Headers, Body: s.Body, Client: client})
 		case TypeLoki:
 			out = append(out, &Loki{URL: s.URL, Labels: s.Labels, Headers: s.Headers, Client: client})
+		case TypeSMTP:
+			out = append(out, &SMTP{
+				Host:       s.SMTPHost,
+				Port:       s.SMTPPort,
+				Username:   s.SMTPUser,
+				Password:   s.SMTPPassword,
+				From:       s.SMTPFrom,
+				To:         s.SMTPTo,
+				UseTLS:     s.SMTPUseTLS,
+				SkipVerify: s.SMTPSkipVerify,
+			})
 		}
 	}
 	return out

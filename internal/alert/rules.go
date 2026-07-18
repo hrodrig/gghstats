@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -20,7 +21,7 @@ type RuleSpec struct {
 	Fire       string  `json:"fire,omitempty"`
 	Level      string  `json:"level,omitempty"`      // ops
 	Event      string  `json:"event,omitempty"`      // ops
-	Milestones []int   `json:"milestones,omitempty"` // A2+ — skipped in MVP evaluator
+	Milestones []int   `json:"milestones,omitempty"` // growth ladder (SPEC §8.3)
 }
 
 // ParseRulesJSON parses GGHSTATS_ALERT_RULES.
@@ -57,8 +58,7 @@ func normalizeRule(r *RuleSpec) error {
 	r.Level = strings.ToLower(strings.TrimSpace(r.Level))
 
 	if len(r.Milestones) > 0 {
-		// A2+ — accepted in JSON but not evaluated yet
-		return nil
+		return normalizeMilestoneRule(r)
 	}
 	switch r.Kind {
 	case KindTraffic:
@@ -84,6 +84,44 @@ func normalizeRule(r *RuleSpec) error {
 	return nil
 }
 
+func normalizeMilestoneRule(r *RuleSpec) error {
+	if r.Kind != KindTraffic && r.Kind != "" {
+		return fmt.Errorf("milestone rules must be kind traffic (got %q)", r.Kind)
+	}
+	r.Kind = KindTraffic
+	if r.Metric == "" {
+		r.Metric = "stars"
+	}
+	if r.Metric != "stars" {
+		return fmt.Errorf("milestones only support metric=stars (got %q)", r.Metric)
+	}
+	if r.Repo == "" {
+		return fmt.Errorf("milestone rule requires repo")
+	}
+	cleaned := make([]int, 0, len(r.Milestones))
+	seen := make(map[int]struct{}, len(r.Milestones))
+	for _, t := range r.Milestones {
+		if t <= 0 {
+			return fmt.Errorf("milestone thresholds must be positive (got %d)", t)
+		}
+		if _, ok := seen[t]; ok {
+			continue
+		}
+		seen[t] = struct{}{}
+		cleaned = append(cleaned, t)
+	}
+	if len(cleaned) == 0 {
+		return fmt.Errorf("milestones must list at least one positive threshold")
+	}
+	sort.Ints(cleaned)
+	r.Milestones = cleaned
+	// Fire-once per threshold (SPEC §8.3); ignore once_per_utc_day.
+	r.Fire = "once"
+	r.Debounce = "once"
+	r.Window = "milestone"
+	return nil
+}
+
 // RulesFromEnv loads GGHSTATS_ALERT_RULES.
 func RulesFromEnv(getenv func(string) string) ([]RuleSpec, error) {
 	if getenv == nil {
@@ -92,7 +130,14 @@ func RulesFromEnv(getenv func(string) string) ([]RuleSpec, error) {
 	return ParseRulesJSON(getenv("GGHSTATS_ALERT_RULES"))
 }
 
+func (r RuleSpec) isMilestone() bool {
+	return len(r.Milestones) > 0
+}
+
 func (r RuleSpec) debounceMode() string {
+	if r.isMilestone() {
+		return "once"
+	}
 	if r.Fire == "once" || r.Debounce == "once" {
 		return "once"
 	}
@@ -108,4 +153,9 @@ func (r RuleSpec) debounceMode() string {
 func (r RuleSpec) identityKey(repoOrScope string) string {
 	return fmt.Sprintf("%s|%s|%s|%s|%s|%g|%s",
 		r.Kind, repoOrScope, r.Metric, r.Window, r.Op, r.Value, r.debounceMode())
+}
+
+// milestoneIdentityKey is one debounce key per ladder rung.
+func (r RuleSpec) milestoneIdentityKey(threshold int) string {
+	return fmt.Sprintf("milestone|%s|stars|%d|once", r.Repo, threshold)
 }

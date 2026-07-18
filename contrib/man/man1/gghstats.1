@@ -1,5 +1,5 @@
 .\" Man page for gghstats(1)
-.TH GGHSTATS 1 "July 2026" "gghstats v0.10.0" "User Commands"
+.TH GGHSTATS 1 "July 2026" "gghstats v0.10.1" "User Commands"
 .SH NAME
 gghstats \- self-hosted GitHub repository traffic dashboard and CLI
 .SH SYNOPSIS
@@ -60,7 +60,7 @@ Replace the database file from a backup
 .B alert test
 Send a synthetic alert to configured sinks
 (\fBGGHSTATS_ALERT_SINKS\fR) without starting \fBserve\fR or syncing.
-Optional \fB\-\-kind traffic|ops\fR and \fB\-\-sink slack|webhook|loki\fR.
+Optional \fB\-\-kind traffic|ops\fR and \fB\-\-sink slack|webhook|loki|smtp\fR.
 Exit \fB4\fR if delivery fails. See SPEC §8.8.
 .TP
 .B version
@@ -72,7 +72,7 @@ Print build version information.
 (\fBalert test\fR) Synthetic payload kind (default \fBtraffic\fR).
 .TP
 .BR \-\-sink ", " TYPE
-(\fBalert test\fR) Only send to this sink type (\fBslack\fR, \fBwebhook\fR, or \fBloki\fR).
+(\fBalert test\fR) Only send to this sink type (\fBslack\fR, \fBwebhook\fR, \fBloki\fR, or \fBsmtp\fR).
 .TP
 .BR \-\-repo ", " owner/repo
 Repository (or \fBGGHSTATS_REPO\fR).
@@ -173,11 +173,14 @@ When \fBtrue\fR, evaluate alert rules after sync (default \fBfalse\fR).
 Requires at least one valid entry in \fBGGHSTATS_ALERT_SINKS\fR.
 .TP
 .B GGHSTATS_ALERT_SINKS
-JSON array of sinks (\fBslack\fR, \fBwebhook\fR, \fBloki\fR). Secrets via
+JSON array of sinks (\fBslack\fR, \fBwebhook\fR, \fBloki\fR, \fBsmtp\fR). Secrets via
 \fB*_env\fR fields. Used by \fBserve\fR and by \fBgghstats alert test\fR.
 .TP
 .B GGHSTATS_ALERT_RULES
-JSON array of traffic/ops rules (evaluated after sync when alerts are enabled).
+JSON array of traffic, \fBstar milestone\fR, and ops rules (evaluated after sync when
+alerts are enabled). Milestone example:
+\fB{"repo":"owner/repo","metric":"stars","milestones":[100,500],"fire":"once"}\fR
+— each threshold notifies at most once (SPEC §8.3).
 .TP
 .B GGHSTATS_WHITELIST
 Comma-separated IPs/CIDRs allowed to access the server (empty = all allowed).

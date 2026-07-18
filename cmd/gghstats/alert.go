@@ -36,7 +36,7 @@ func exitCodeOf(err error) int {
 
 func runAlert(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: gghstats alert test [--kind traffic|ops] [--sink slack|webhook|loki]")
+		return fmt.Errorf("usage: gghstats alert test [--kind traffic|ops] [--sink slack|webhook|loki|smtp]")
 	}
 	switch args[0] {
 	case "test":
@@ -46,6 +46,7 @@ func runAlert(args []string) error {
 
 Send a synthetic alert to configured sinks (GGHSTATS_ALERT_SINKS).
 Does not start serve or run sync. See SPEC §8.8.
+--sink filters: slack, webhook, loki, smtp.
 
 `)
 		return nil
@@ -58,7 +59,7 @@ func runAlertTest(args []string) error {
 	fs := flag.NewFlagSet("alert test", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
 	kind := fs.String("kind", alert.KindTraffic, "payload kind: traffic or ops")
-	sinkFilter := fs.String("sink", "", "optional sink type filter: slack, webhook, or loki")
+	sinkFilter := fs.String("sink", "", "optional sink type filter: slack, webhook, loki, or smtp")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}

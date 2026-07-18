@@ -36,7 +36,7 @@ Backup / restore:
   --input  PATH            restore: backup file to copy from (required)
 
 Alert smoke-test:
-  gghstats alert test [--kind traffic|ops] [--sink slack|webhook|loki]
+  gghstats alert test [--kind traffic|ops] [--sink slack|webhook|loki|smtp]
                        Uses GGHSTATS_ALERT_SINKS (ENABLED not required). Exit 4 on delivery failure.
 
 Server (gghstats serve or gghstats run):

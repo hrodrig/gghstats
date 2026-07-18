@@ -17,7 +17,7 @@ Scoped implementation checklists per SemVer band (behavior details live in SPEC)
 | Band | Plan |
 |------|------|
 | **0.9.x** | [plan-v0.9.x.md](plan-v0.9.x.md) (shipped as **v0.9.0**) |
-| **0.10.x** | [plan-v0.10.x.md](plan-v0.10.x.md) (core shipped as **v0.10.0**; A2+ stretch open) |
+| **0.10.x** | [plan-v0.10.x.md](plan-v0.10.x.md) (closed **v0.10.1**) |
 | **0.11.x** | [plan-v0.11.x.md](plan-v0.11.x.md) |
 | **1.0.0** | [plan-v1.0.0.md](plan-v1.0.0.md) |
 

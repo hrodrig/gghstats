@@ -28,6 +28,7 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior: [plan-v0.10.x.md](plan-v0.10.x.md)
 | ID | Item | Notes |
 |----|------|--------|
 | B1–B4 | **Webhooks + delta sync** | Former primary of this band. Only if API1–API4 done early and scope stays tight. Else → **1.1+**. |
+| C? | **Optional thin leaderboard** | Moved from 0.10.x. Rank tracked repos via H2H scoring — not full org BI (Line **C**). Only if API1–API5 done early. |
 
 ## Out of scope
 
@@ -60,3 +61,4 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior: [plan-v0.10.x.md](plan-v0.10.x.md)
 - [ ] SPEC + README (“Bring your own frontend”; sitemap/robots policy)
 - [ ] CHANGELOG
 - [ ] (Stretch) Webhooks / delta — or explicit defer note to 1.1
+- [ ] (Stretch) Thin leaderboard (C?) — or keep parked under ROADMAP Line C

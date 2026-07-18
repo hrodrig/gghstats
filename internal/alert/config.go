@@ -4,14 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
-// SinkType values supported in 0.10.0 MVP.
+// SinkType values supported for GGHSTATS_ALERT_SINKS.
 const (
 	TypeSlack   = "slack"
 	TypeWebhook = "webhook"
 	TypeLoki    = "loki"
+	TypeSMTP    = "smtp"
 )
 
 // Body presets for type=webhook.
@@ -31,6 +33,22 @@ type SinkSpec struct {
 	HeadersEnv    map[string]string `json:"headers_env,omitempty"`
 	Body          string            `json:"body,omitempty"`   // discord | teams | generic
 	Labels        map[string]string `json:"labels,omitempty"` // loki
+
+	// SMTP (SPEC §8.5) — secrets via *_env; inline fields for tests only.
+	HostEnv     string `json:"host_env,omitempty"`
+	PortEnv     string `json:"port_env,omitempty"`
+	UserEnv     string `json:"user_env,omitempty"`
+	PasswordEnv string `json:"password_env,omitempty"`
+	FromEnv     string `json:"from_env,omitempty"`
+	ToEnv       string `json:"to_env,omitempty"`
+	Host        string `json:"host,omitempty"`
+	Port        string `json:"port,omitempty"` // string so JSON can be "587"
+	User        string `json:"user,omitempty"`
+	Password    string `json:"password,omitempty"`
+	From        string `json:"from,omitempty"`
+	To          string `json:"to,omitempty"`
+	UseTLS      bool   `json:"use_tls,omitempty"`     // implicit TLS (e.g. 465)
+	SkipVerify  bool   `json:"skip_verify,omitempty"` // insecure; tests / lab only
 }
 
 // ResolvedSink is a sink ready to deliver (secrets resolved from the environment).
@@ -40,6 +58,16 @@ type ResolvedSink struct {
 	Headers map[string]string
 	Body    string
 	Labels  map[string]string
+
+	// SMTP
+	SMTPHost       string
+	SMTPPort       int
+	SMTPUser       string
+	SMTPPassword   string
+	SMTPFrom       string
+	SMTPTo         []string
+	SMTPUseTLS     bool
+	SMTPSkipVerify bool
 }
 
 // ParseSinksJSON parses the GGHSTATS_ALERT_SINKS JSON array and resolves *_env fields.
@@ -118,11 +146,85 @@ func resolveSink(s SinkSpec, getenv func(string) string) (ResolvedSink, error) {
 			Headers: resolveHeaders(s.HeadersEnv, getenv),
 			Labels:  labels,
 		}, nil
+	case TypeSMTP:
+		return resolveSMTPSink(s, getenv)
 	case "":
 		return ResolvedSink{}, fmt.Errorf("type is required")
 	default:
-		return ResolvedSink{}, fmt.Errorf("unsupported type %q (use slack, webhook, or loki)", s.Type)
+		return ResolvedSink{}, fmt.Errorf("unsupported type %q (use slack, webhook, loki, or smtp)", s.Type)
 	}
+}
+
+func resolveSMTPSink(s SinkSpec, getenv func(string) string) (ResolvedSink, error) {
+	host, err := resolveOptional(s.HostEnv, s.Host, getenv, "host_env")
+	if err != nil {
+		return ResolvedSink{}, err
+	}
+	if host == "" {
+		return ResolvedSink{}, fmt.Errorf("smtp host_env or host is required")
+	}
+	portStr, err := resolveOptional(s.PortEnv, s.Port, getenv, "port_env")
+	if err != nil {
+		return ResolvedSink{}, err
+	}
+	port := 587
+	if strings.TrimSpace(portStr) != "" {
+		p, err := strconv.Atoi(strings.TrimSpace(portStr))
+		if err != nil || p <= 0 || p > 65535 {
+			return ResolvedSink{}, fmt.Errorf("smtp port %q invalid", portStr)
+		}
+		port = p
+	}
+	user, err := resolveOptional(s.UserEnv, s.User, getenv, "user_env")
+	if err != nil {
+		return ResolvedSink{}, err
+	}
+	password, err := resolveOptional(s.PasswordEnv, s.Password, getenv, "password_env")
+	if err != nil {
+		return ResolvedSink{}, err
+	}
+	from, err := resolveOptional(s.FromEnv, s.From, getenv, "from_env")
+	if err != nil {
+		return ResolvedSink{}, err
+	}
+	if from == "" {
+		from = user
+	}
+	if from == "" {
+		return ResolvedSink{}, fmt.Errorf("smtp from_env/from or user_env/user is required")
+	}
+	toRaw, err := resolveOptional(s.ToEnv, s.To, getenv, "to_env")
+	if err != nil {
+		return ResolvedSink{}, err
+	}
+	to := splitRecipients(toRaw)
+	if len(to) == 0 {
+		return ResolvedSink{}, fmt.Errorf("smtp to_env or to is required")
+	}
+	return ResolvedSink{
+		Type:           TypeSMTP,
+		SMTPHost:       host,
+		SMTPPort:       port,
+		SMTPUser:       user,
+		SMTPPassword:   password,
+		SMTPFrom:       from,
+		SMTPTo:         to,
+		SMTPUseTLS:     s.UseTLS,
+		SMTPSkipVerify: s.SkipVerify,
+	}, nil
+}
+
+// resolveOptional returns env value when envName set; empty env name uses inline.
+// Empty result is OK (caller decides required fields).
+func resolveOptional(envName, inline string, getenv func(string) string, envField string) (string, error) {
+	if strings.TrimSpace(envName) != "" {
+		v := strings.TrimSpace(getenv(envName))
+		if v == "" {
+			return "", fmt.Errorf("%s %q is empty", envField, envName)
+		}
+		return v, nil
+	}
+	return strings.TrimSpace(inline), nil
 }
 
 func resolveURL(envName, inline string, getenv func(string) string, envField string) (string, error) {
