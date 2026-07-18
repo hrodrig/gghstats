@@ -173,7 +173,7 @@ See **Non-goals** in [ROADMAP.md](ROADMAP.md). Multi-writer SQLite, GitHub Apps,
 
 ## 8. Alerts (target behavior — 0.10.x)
 
-**Status:** Sinks, **`gghstats alert test`**, **traffic**, **ops**, and **star growth milestones** (§8.3) after sync are implemented. SMTP remains later (A2+sink). Band checklist: [docs/plan-v0.10.x.md](docs/plan-v0.10.x.md).
+**Status:** Sinks (**slack** / **webhook** / **loki** / **smtp**), **`gghstats alert test`**, **traffic**, **ops**, and **star growth milestones** (§8.3) after sync are implemented. Band checklist: [docs/plan-v0.10.x.md](docs/plan-v0.10.x.md).
 
 Operator-facing copies (README, `contrib/gghstats.env.example`, man page) must stay aligned with this section when the feature ships.
 
@@ -302,7 +302,7 @@ GGHSTATS_ALERT_SINKS='[
 
 **Implementation order (A2):**
 
-1. **Sinks** — parse `GGHSTATS_ALERT_SINKS`; resolve `*_env` → `os.Getenv`; send a fixed test payload (`slack` / `webhook` / `loki`); fail closed if enabled but no valid sink.
+1. **Sinks** — parse `GGHSTATS_ALERT_SINKS`; resolve `*_env` → `os.Getenv`; send a fixed test payload (`slack` / `webhook` / `loki` / `smtp`); fail closed if enabled but no valid sink.
 2. **`gghstats alert test`** — smoke-test delivery to configured sinks **without** waiting for a real rule (§8.8). Required before shipping rule evaluation so operators can prove Slack/Loki wiring.
 3. **Rules** — parse `GGHSTATS_ALERT_RULES`; evaluate after sync (traffic + ops); call the same sink layer.
 4. **Docs** — glossary + plain-language examples + env.example.
@@ -373,13 +373,14 @@ GGHSTATS_ALERT_SINKS='[{
 # Runtime sends: Authorization: <value of GGHSTATS_N8N_TOKEN>  (prefix "Bearer " only if the env value includes it, or document auto-Bearer)
 ```
 
-**SMTP (0.10.1+ sketch — not 0.10.0):**
+**SMTP (implemented — same pattern as [groot](https://github.com/hrodrig/groot) email notifier):**
 
 ```bash
 GGHSTATS_SMTP_HOST=smtp.example.com
 GGHSTATS_SMTP_PORT=587
 GGHSTATS_SMTP_USER=alerts@example.com
 GGHSTATS_SMTP_PASSWORD=...
+GGHSTATS_SMTP_FROM=alerts@example.com
 GGHSTATS_SMTP_TO=you@example.com
 GGHSTATS_ALERT_SINKS='[{
   "type":"smtp",
@@ -387,9 +388,12 @@ GGHSTATS_ALERT_SINKS='[{
   "port_env":"GGHSTATS_SMTP_PORT",
   "user_env":"GGHSTATS_SMTP_USER",
   "password_env":"GGHSTATS_SMTP_PASSWORD",
+  "from_env":"GGHSTATS_SMTP_FROM",
   "to_env":"GGHSTATS_SMTP_TO"
 }]'
 ```
+
+Port **587** uses STARTTLS; set `"use_tls":true` for implicit TLS (e.g. 465). `from_env` optional (defaults to `user`). Multiple `to` addresses: semicolon or comma separated.
 
 **Loki (first-class sink — same band as Slack/webhook):**
 
@@ -416,12 +420,12 @@ Push body: Loki streams API — one stream with configured labels + line = canon
 | **Discord** | Via **`webhook`** | Discord Incoming Webhook URL; may need a thin JSON body map (`content` / embeds) — document one working example; no separate `type=discord` required for MVP. |
 | **Microsoft Teams** | Via **`webhook`** | Incoming Webhook / Workflows URL; payload often Adaptive Card JSON — document one example; no `type=teams` in MVP unless Slack-like convenience is needed later. |
 | **WhatsApp** | **No** (out of scope) | Needs Meta Cloud API / Twilio / BSP — credentials, templates, opt-in. Operator bridges: `webhook` → n8n/Make → WhatsApp. |
+| **Email / SMTP** | Yes (`type=smtp`) | Plain-text body = canonical alert text; secrets via `*_env` (groot-style STARTTLS / TLS). |
 
 Off until `GGHSTATS_ALERTS_ENABLED=true` **and** at least one sink is valid.
 
-**Not in 0.10.0 MVP:** email/SMTP, PagerDuty, **WhatsApp**, Discord/Teams *native* types (use generic `webhook`).  
-**In 0.10.0 MVP sinks:** `slack`, `webhook`, **`loki`**.  
-**0.10.1+ candidate:** `type=smtp` / email (see A2+sink) — only after Slack/webhook/Loki delivery is proven.
+**Not first-class:** PagerDuty, **WhatsApp**, Discord/Teams *native* types (use generic `webhook`).  
+**Sinks:** `slack`, `webhook`, **`loki`**, **`smtp`**.
 
 Plain language → sink:
 
@@ -430,7 +434,7 @@ Plain language → sink:
 | “Send it to my Slack channel.” | `type=slack` + Incoming Webhook URL |
 | “Send it to Discord / Teams / n8n.” | `type=webhook` + that product’s webhook URL |
 | “Push it to Loki / Grafana logs.” | `type=loki` + Push API URL |
-| “Email me.” | **Not in 0.10.0** — candidate `type=smtp` in **0.10.1+** |
+| “Email me.” | `type=smtp` + host/user/password/to via `*_env` |
 | “WhatsApp me.” | Not in-app — webhook → external automation |
 
 ### 8.6 Notification message style
@@ -767,7 +771,7 @@ gghstats alert test [--kind traffic|ops] [--sink TYPE] ...
 | **Config source** | Same env as serve: `GGHSTATS_ALERT_SINKS` (+ secret env vars). Optional: require `GGHSTATS_ALERTS_ENABLED=true`, **or** allow test when sinks are non-empty even if enabled is false (document one rule — prefer: **sinks non-empty is enough** for test; `ENABLED` gates post-sync evaluation only). |
 | **Default payload** | Synthetic traffic-shaped message (`kind=traffic`, metric/repo placeholders, `rule: delivery check`) including **gghstats version**. |
 | **`--kind ops`** | Synthetic ops payload (`event=alert_test`, `level=info`, detail = delivery check). |
-| **`--sink TYPE`** | Optional filter: only that sink type (`slack` / `webhook` / `loki`). Default = **fan-out all** resolved sinks. |
+| **`--sink TYPE`** | Optional filter: only that sink type (`slack` / `webhook` / `loki` / `smtp`). Default = **fan-out all** resolved sinks. |
 | **Stdout success** | e.g. `alert test: sent kind "traffic" to N sink(s)`. |
 | **Exit codes** | **0** all targeted sinks succeeded; **1** config/parse error or no sinks; **non-zero** (recommend **4**, aligned with groot/kzero) if any targeted sink failed delivery. |
 | **Fail closed** | No sinks / empty URL after `*_env` resolve → exit **1**, do not pretend success. |

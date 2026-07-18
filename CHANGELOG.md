@@ -10,6 +10,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 - **Star growth milestones (A2+):** `GGHSTATS_ALERT_RULES` entries with `metric=stars` and `milestones:[100,500]` fire once per threshold after a successful sync (`repos.stars`); debounce key per rung via SQLite `alert_debounce` (SPEC §8.3).
+- **SMTP alert sink (A2+sink):** `type=smtp` in `GGHSTATS_ALERT_SINKS` (host/port/user/password/to via `*_env`; STARTTLS on 587, optional `use_tls` for implicit TLS); `gghstats alert test --sink smtp` (SPEC §8.5; pattern from groot email notifier).
 
 ## [0.10.0] - 2026-07-17
 

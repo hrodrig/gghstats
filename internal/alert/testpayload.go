@@ -49,9 +49,9 @@ func FilterSinks(sinks []ResolvedSink, sinkType string) ([]ResolvedSink, error) 
 		return sinks, nil
 	}
 	switch sinkType {
-	case TypeSlack, TypeWebhook, TypeLoki:
+	case TypeSlack, TypeWebhook, TypeLoki, TypeSMTP:
 	default:
-		return nil, fmt.Errorf("unknown sink type %q (want: slack, webhook, loki)", sinkType)
+		return nil, fmt.Errorf("unknown sink type %q (want: slack, webhook, loki, smtp)", sinkType)
 	}
 	out := make([]ResolvedSink, 0, len(sinks))
 	for _, s := range sinks {

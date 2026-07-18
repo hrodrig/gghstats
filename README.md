@@ -441,7 +441,7 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_ENABLE_COLLECTOR` | `false` | Set to `true` to enable anonymous startup telemetry. Sends only non-identifying boolean feature flags (no credentials, paths, or repo names). See [`.env.example`](.env.example) |
 | `GGHSTATS_ENABLE_UPDATE_CHECK` | `true` | Set to `false` to disable the startup release check against the GitHub API (logs a warning when a newer gghstats version exists) |
 | `GGHSTATS_ALERTS_ENABLED` | `false` | When `true`, evaluate alert rules after each sync (requires valid sinks) |
-| `GGHSTATS_ALERT_SINKS` | (none) | JSON array of sinks: `slack`, `webhook`, `loki` (secrets via `*_env`). See [Opt-in alerts](#opt-in-alerts) |
+| `GGHSTATS_ALERT_SINKS` | (none) | JSON array of sinks: `slack`, `webhook`, `loki`, `smtp` (secrets via `*_env`). See [Opt-in alerts](#opt-in-alerts) |
 | `GGHSTATS_ALERT_RULES` | (none) | JSON array of traffic and/or ops rules evaluated after sync |
 
 ### Data directory (SQLite paths)
@@ -474,6 +474,13 @@ export GGHSTATS_ALERT_SINKS='[{"type":"slack","webhook_url_env":"GGHSTATS_SLACK_
 # Optional Loki:
 # export GGHSTATS_LOKI_URL='https://loki.example.com/loki/api/v1/push'
 # export GGHSTATS_ALERT_SINKS='[...,{"type":"loki","url_env":"GGHSTATS_LOKI_URL","labels":{"job":"gghstats"}}]'
+# Optional SMTP (port 587 = STARTTLS; use_tls:true for 465):
+# export GGHSTATS_SMTP_HOST=smtp.example.com
+# export GGHSTATS_SMTP_PORT=587
+# export GGHSTATS_SMTP_USER=alerts@example.com
+# export GGHSTATS_SMTP_PASSWORD=...
+# export GGHSTATS_SMTP_TO=you@example.com
+# export GGHSTATS_ALERT_SINKS='[...,{"type":"smtp","host_env":"GGHSTATS_SMTP_HOST","port_env":"GGHSTATS_SMTP_PORT","user_env":"GGHSTATS_SMTP_USER","password_env":"GGHSTATS_SMTP_PASSWORD","to_env":"GGHSTATS_SMTP_TO"}]'
 ```
 
 2. **Smoke-test** without starting `serve` or syncing:
@@ -481,6 +488,7 @@ export GGHSTATS_ALERT_SINKS='[{"type":"slack","webhook_url_env":"GGHSTATS_SLACK_
 ```bash
 gghstats alert test
 gghstats alert test --kind ops --sink loki
+gghstats alert test --sink smtp
 # Exit 0 = delivered; 1 = config; 4 = delivery failure
 ```
 
@@ -502,8 +510,7 @@ gghstats serve
 | **Milestones** | After a **successful** sync when `repos.stars` crosses each ladder rung (`metric=stars`, `milestones:[…]`); each threshold **fire-once** |
 | **Ops** | After every sync attempt (`repo_fetch_failed`, `sync_failed`, `rate_limit`, `github_unreachable`) |
 
-SMTP email sinks remain **0.10.1+ / 0.10.2** (see SPEC §8.5).
-
+SMTP uses the same `GGHSTATS_ALERT_SINKS` array as other sinks (SPEC §8.5).
 ### Rate limiting
 
 gghstats applies **per-IP token-bucket rate limiting** to all HTTP routes except `/metrics` and `/api/v1/healthz`. When a client exceeds the limit the server returns `429 Too Many Requests` with a JSON body `{"error":"rate_limit_exceeded"}` and a `Retry-After: 60` header.
