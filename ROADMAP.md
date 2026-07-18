@@ -28,7 +28,7 @@ Detailed band plans (scope, exit criteria, checklist):
 
 | Line | What | Effort | Why |
 |------|------|--------|-----|
-| **A** | **Trending / velocity on repo page** + optional **alerts** (clone/view drop + ops + star milestones + SMTP) | M | Momentum **0.9**; alerts **shipped in 0.10** (Slack/webhook/Loki — [SPEC §8](SPEC.md)); milestones + SMTP on `develop` for **0.10.1** ([plan-v0.10.x.md](docs/plan-v0.10.x.md)). |
+| **A** | **Trending / velocity on repo page** + optional **alerts** (clone/view drop + ops + star milestones + SMTP) | M | Momentum **0.9**; alerts **0.10** (Slack/webhook/Loki) + milestones/SMTP in **v0.10.1** ([SPEC §8](SPEC.md)). Thin leaderboard → [0.11 stretch](docs/plan-v0.11.x.md). |
 | **B** | **Webhooks + delta-oriented sync**; GraphQL where it cuts REST pagination | M–L | Less polling; large accounts hit REST rate limits. Prefer **1.1+** if it risks slipping 1.0. |
 | **C** | **Multi-repo analytics** (leaderboards, org rollups) | M | Reuse H2H scoring; expose rankings / rollups. Thin leaderboard stretch in [0.11.x](docs/plan-v0.11.x.md); full org BI later. |
 | **D** | **API-only mode** + JSON dogfood for official UI reads | M | Same binary; HTML optional. External React/Svelte/etc. against documented `/api/v1`. Not an in-tree SPA. |
@@ -61,7 +61,7 @@ Detailed band plans (scope, exit criteria, checklist):
 
 ## Next (after 0.10)
 
-**0.10.x core shipped (2026-07-17, v0.10.0):** incremental stars, opt-in alerts (A2), PATH soft-land, QW. Stretch on `develop` for **0.10.1**: milestones + SMTP. Next band: [plan-v0.11.x.md](docs/plan-v0.11.x.md) — API-only mode + JSON dogfood.
+**0.10.x closed (2026-07-18, v0.10.1):** incremental stars, opt-in alerts (A2), milestones, SMTP, PATH soft-land, QW, sqlite 1.54. Next band: [plan-v0.11.x.md](docs/plan-v0.11.x.md) — API-only mode + JSON dogfood.
 
 ## Explicit non-goals (this repo)
 
