@@ -183,10 +183,11 @@ func defaultOpsLevel(event string) string {
 	}
 }
 
-// RunAllRules runs ops rules always and traffic rules when the sync succeeded.
+// RunAllRules runs ops rules always; traffic + milestone rules when the sync succeeded.
 func RunAllRules(ctx context.Context, cfg EvalConfig, snap SyncSnapshot) {
 	RunOpsRules(ctx, cfg, snap)
 	if snap.Success {
 		RunTrafficRules(ctx, cfg)
+		RunMilestoneRules(ctx, cfg)
 	}
 }

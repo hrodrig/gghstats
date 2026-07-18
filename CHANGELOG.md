@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Star growth milestones (A2+):** `GGHSTATS_ALERT_RULES` entries with `metric=stars` and `milestones:[100,500]` fire once per threshold after a successful sync (`repos.stars`); debounce key per rung via SQLite `alert_debounce` (SPEC §8.3).
+
 ## [0.10.0] - 2026-07-17
 
 ### Added

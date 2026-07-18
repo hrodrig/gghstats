@@ -1,6 +1,6 @@
 # Plan — v0.10.x
 
-**Status:** **v0.10.0** core band closed (2026-07-17). Remaining in-band stretch: A2+ milestones / SMTP → **0.10.1+**.
+**Status:** **v0.10.0** core band closed (2026-07-17). A2+ star milestones implemented on `develop` (ship with **0.10.1**). Remaining: SMTP → **0.10.1+ / 0.10.2**.
 
 **Band goal:** cheaper sync for star-heavy repos, and **opt-in** operator signals (traffic + ops) when rules fire.
 
@@ -21,7 +21,7 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.
 |----|------|--------|
 | SYNC | **Incremental star history** | **Implemented.** See [SPEC §4.7](../SPEC.md). |
 | A2 | **Opt-in alerts** | **Implemented** (0.10.0 delivery). Sinks + `alert test` + traffic + ops. Contract: [SPEC §8](../SPEC.md). Milestones/SMTP → A2+. |
-| A2+ | **Growth milestones** | Stretch **0.10.1+** after A2 delivery. [SPEC §8.3](../SPEC.md). |
+| A2+ | **Growth milestones** | **Implemented** (stars ladders, fire-once). [SPEC §8.3](../SPEC.md). |
 | A2+sink | **Email / SMTP sink** | Optional **0.10.1+** / **0.10.2**. Not required for 0.10.0. [SPEC §8.5](../SPEC.md). |
 | PATH | **XDG / default path prep** | **Implemented** (docs soft-land). Binary default still `./data/gghstats.db`; recommended absolute paths in README / env / launchd / systemd. Code default → [v1.0.0](plan-v1.0.0.md). |
 | QW | Remaining quick wins | **Implemented.** `getPaginatedCtx` dead `*[]Star` branch removed; access-log level by status (4xx warn / 5xx error). |
@@ -66,7 +66,7 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.
 - [x] Demo/docs note: collector / update-check off in demo (README Features)
 - [x] CHANGELOG notes for shipped SYNC work
 - [x] `make test` / lint green (current tree)
-- [ ] *(0.10.1+)* Growth milestones (A2+)
+- [x] *(0.10.1+)* Growth milestones (A2+) — `metric=stars`, `milestones:[…]`, fire-once
 - [ ] *(0.10.1+ / 0.10.2)* Email/SMTP sink (A2+sink)
 
 ## Parked (do not promote without pain)

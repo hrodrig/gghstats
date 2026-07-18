@@ -177,7 +177,10 @@ JSON array of sinks (\fBslack\fR, \fBwebhook\fR, \fBloki\fR). Secrets via
 \fB*_env\fR fields. Used by \fBserve\fR and by \fBgghstats alert test\fR.
 .TP
 .B GGHSTATS_ALERT_RULES
-JSON array of traffic/ops rules (evaluated after sync when alerts are enabled).
+JSON array of traffic, \fBstar milestone\fR, and ops rules (evaluated after sync when
+alerts are enabled). Milestone example:
+\fB{"repo":"owner/repo","metric":"stars","milestones":[100,500],"fire":"once"}\fR
+— each threshold notifies at most once (SPEC §8.3).
 .TP
 .B GGHSTATS_WHITELIST
 Comma-separated IPs/CIDRs allowed to access the server (empty = all allowed).

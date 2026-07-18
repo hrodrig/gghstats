@@ -23,7 +23,7 @@ type EvalConfig struct {
 }
 
 // RunTrafficRules evaluates traffic rules and fans out matching alerts (SPEC §8.2 / §8.4).
-// Skips ops and milestone rules. Best-effort delivery; logs FanOut errors.
+// Skips ops and milestone rules (milestones use RunMilestoneRules). Best-effort delivery.
 func RunTrafficRules(ctx context.Context, cfg EvalConfig) {
 	if cfg.DB == nil || len(cfg.Senders) == 0 || len(cfg.Rules) == 0 {
 		return
@@ -35,8 +35,7 @@ func RunTrafficRules(ctx context.Context, cfg EvalConfig) {
 	today := now.Format("2006-01-02")
 
 	for _, rule := range cfg.Rules {
-		if len(rule.Milestones) > 0 {
-			slog.Debug("alert: skipping milestone rule (A2+)", "repo", rule.Repo)
+		if rule.isMilestone() {
 			continue
 		}
 		if rule.Kind == KindOps {

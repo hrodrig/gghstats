@@ -102,7 +102,7 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 - **Single binary + SQLite** — no external database; packages for Homebrew, `.deb`/`.rpm`, FreeBSD/OpenBSD (see [Install](#install))
 - **Docker** on GHCR; production Compose / Helm / observability in **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)**
 - **Demo mode:** `gghstats serve --demo` (or `GGHSTATS_DEMO=true`) — try the UI with sample data, no GitHub token (sync, update check, and collector stay off)
-- **Opt-in alerts:** Slack / webhook / Loki sinks + traffic and ops rules after sync; smoke-test with `gghstats alert test` (see [Opt-in alerts](#opt-in-alerts))
+- **Opt-in alerts:** Slack / webhook / Loki sinks + traffic, ops, and **star milestone** rules after sync; smoke-test with `gghstats alert test` (see [Opt-in alerts](#opt-in-alerts))
 - **Backup / restore:** `gghstats backup --output …` / `gghstats restore --input …` — snapshot SQLite before upgrades or moves
 
 ### Compared to similar tools
@@ -490,6 +490,7 @@ gghstats alert test --kind ops --sink loki
 export GGHSTATS_ALERTS_ENABLED=true
 export GGHSTATS_ALERT_RULES='[
   {"repo":"owner/repo","metric":"clones","window":"1d","op":"gte","value":225,"debounce":"once_per_utc_day"},
+  {"repo":"owner/repo","metric":"stars","milestones":[100,500],"fire":"once"},
   {"kind":"ops","event":"repo_fetch_failed","window":"this_sync","op":"gte","value":3,"level":"warn","debounce":"once_per_utc_day"}
 ]'
 gghstats serve
@@ -498,9 +499,10 @@ gghstats serve
 | Rule kind | When it fires |
 |-----------|----------------|
 | **Traffic** | After a **successful** sync (clones/views thresholds, WoW drop, fleet lifetime, …) |
+| **Milestones** | After a **successful** sync when `repos.stars` crosses each ladder rung (`metric=stars`, `milestones:[…]`); each threshold **fire-once** |
 | **Ops** | After every sync attempt (`repo_fetch_failed`, `sync_failed`, `rate_limit`, `github_unreachable`) |
 
-Growth star milestones and SMTP email sinks are **0.10.1+** (see SPEC §8.3 / §8.5).
+SMTP email sinks remain **0.10.1+ / 0.10.2** (see SPEC §8.5).
 
 ### Rate limiting
 

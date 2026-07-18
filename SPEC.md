@@ -173,7 +173,7 @@ See **Non-goals** in [ROADMAP.md](ROADMAP.md). Multi-writer SQLite, GitHub Apps,
 
 ## 8. Alerts (target behavior — 0.10.x)
 
-**Status:** Sinks, **`gghstats alert test`**, **traffic** and **ops** rule evaluation after sync are implemented. **Milestones** (§8.3) and SMTP remain later. Band checklist: [docs/plan-v0.10.x.md](docs/plan-v0.10.x.md).
+**Status:** Sinks, **`gghstats alert test`**, **traffic**, **ops**, and **star growth milestones** (§8.3) after sync are implemented. SMTP remains later (A2+sink). Band checklist: [docs/plan-v0.10.x.md](docs/plan-v0.10.x.md).
 
 Operator-facing copies (README, `contrib/gghstats.env.example`, man page) must stay aligned with this section when the feature ships.
 
@@ -212,11 +212,11 @@ Comparison windows for **drops** (A2) must be named in config/docs:
 
 Alert payload / log line must include: **metric**, **window**, **before/after or current vs threshold**, **repo**, **configured rule**. Never opaque “alert fired.”
 
-**Non-goals for A2 traffic rules:** undocumented sink channels, arbitrary custom SQL. Growth **milestones** (fire-once star ladders) stay A2+. **Ops / sync-health** rules are separate (§8.7) — same sinks, different trigger.
+**Non-goals for A2 traffic rules:** undocumented sink channels, arbitrary custom SQL. Growth **milestones** (fire-once star ladders) are §8.3. **Ops / sync-health** rules are separate (§8.7) — same sinks, different trigger.
 
-### 8.3 Growth milestones (A2+ / 0.10.1+)
+### 8.3 Growth milestones
 
-A **growth milestone** means: an upward **goal** the operator set was **crossed**.
+A **growth milestone** means: an upward **goal** the operator set was **crossed**. Implemented for **`metric=stars`** (fire-once per threshold).
 
 | Concept | Operator meaning | Example |
 |---------|------------------|---------|
