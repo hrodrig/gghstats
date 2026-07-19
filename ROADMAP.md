@@ -54,14 +54,14 @@ Detailed band plans (scope, exit criteria, checklist):
 |------|------|-----------|--------|
 | **0.9.x** | Raw data → insights; zero-friction try-out | Trends on repo page; backup **or** demo; README comparison; selected quick wins | Webhooks (B); heavy alerts; API-only |
 | **0.10.x** | Cheaper sync; usable ops signals | Incremental stars; opt-in alerts (A2); XDG prep (docs/flag); leftover QW in plan | Full GraphQL rewrite |
-| **0.11.x** | Bring-your-own frontend (still named gghstats) | API-only mode; JSON covers official UI reads; CORS/auth + dogfood contract test in SPEC | In-tree SPA; GitHub App — webhooks optional stretch → else **1.1+** |
+| **0.11.x** | Bring-your-own frontend (still named gghstats) | API-only mode; JSON covers official UI reads; CORS/auth + dogfood contract test in SPEC; **SEC1–SEC2** trusted proxies + server timeouts (post-0.10.1 review) | In-tree SPA; GitHub App — webhooks optional stretch → else **1.1+**; full CSP/HSTS not band-exit blockers |
 | **1.0.0** | Safe to depend | Sensible default DB path; SPEC freeze (incl. API-only); packaging parity; `release-check`; Line A done | Large new features |
 
 **Risk rule:** do **not** block 1.0 on Line B. Prefer 1.0 = A + incremental stars + defaults + **API-only if 0.11 landed**; finish B in **0.11 stretch** or **1.1**.
 
 ## Next (after 0.10)
 
-**0.10.x closed (2026-07-18, v0.10.1):** incremental stars, opt-in alerts (A2), milestones, SMTP, PATH soft-land, QW, sqlite 1.54. Next band: [plan-v0.11.x.md](docs/plan-v0.11.x.md) — API-only mode + JSON dogfood.
+**0.10.x closed (2026-07-18, v0.10.1):** incremental stars, opt-in alerts (A2), milestones, SMTP, PATH soft-land, QW, sqlite 1.54. Next band: [plan-v0.11.x.md](docs/plan-v0.11.x.md) — API-only + JSON dogfood + security hardening (trusted proxies, server timeouts).
 
 ## Explicit non-goals (this repo)
 
