@@ -328,9 +328,28 @@ func (s *Store) SetStarSyncCursor(repo string, count int, lastStarredAt time.Tim
 	return err
 }
 
-// UpdateDeltas recalculates count_delta and uniques_delta for referrers and paths
-// using the LAG window function.
+// UpdateDeltas recalculates count_delta and uniques_delta for all referrers and paths rows.
 func (s *Store) UpdateDeltas() error {
+	return s.updateDeltasSince("")
+}
+
+// UpdateDeltasSince recalculates deltas for rows with date >= sinceDate (YYYY-MM-DD).
+// The window includes one calendar day of lookback so LAG sees the previous day.
+// Empty sinceDate rebuilds all rows (same as UpdateDeltas).
+func (s *Store) UpdateDeltasSince(sinceDate string) error {
+	return s.updateDeltasSince(sinceDate)
+}
+
+func (s *Store) updateDeltasSince(sinceDate string) error {
+	lookback := ""
+	if sinceDate != "" {
+		d, err := time.Parse("2006-01-02", sinceDate)
+		if err != nil {
+			return fmt.Errorf("update deltas since: %w", err)
+		}
+		lookback = d.AddDate(0, 0, -1).Format("2006-01-02")
+	}
+
 	tables := []struct {
 		table, col string
 	}{
@@ -338,7 +357,10 @@ func (s *Store) UpdateDeltas() error {
 		{"paths", "path"},
 	}
 	for _, t := range tables {
-		query := fmt.Sprintf(`
+		var query string
+		var args []interface{}
+		if sinceDate == "" {
+			query = fmt.Sprintf(`
 			WITH cte AS (
 				SELECT repo, date, %[2]s, uniques, count,
 					LAG(uniques) OVER (PARTITION BY repo, %[2]s ORDER BY date) AS prev_uniques,
@@ -350,8 +372,26 @@ func (s *Store) UpdateDeltas() error {
 				count_delta = MAX(0, cte.count - COALESCE(cte.prev_count, 0))
 			FROM cte
 			WHERE %[1]s.repo = cte.repo AND %[1]s.date = cte.date AND %[1]s.%[2]s = cte.%[2]s`,
-			t.table, t.col)
-		if _, err := s.db.Exec(query); err != nil {
+				t.table, t.col)
+		} else {
+			query = fmt.Sprintf(`
+			WITH cte AS (
+				SELECT repo, date, %[2]s, uniques, count,
+					LAG(uniques) OVER (PARTITION BY repo, %[2]s ORDER BY date) AS prev_uniques,
+					LAG(count) OVER (PARTITION BY repo, %[2]s ORDER BY date) AS prev_count
+				FROM %[1]s
+				WHERE date >= ?
+			)
+			UPDATE %[1]s SET
+				uniques_delta = MAX(0, cte.uniques - COALESCE(cte.prev_uniques, 0)),
+				count_delta = MAX(0, cte.count - COALESCE(cte.prev_count, 0))
+			FROM cte
+			WHERE %[1]s.repo = cte.repo AND %[1]s.date = cte.date AND %[1]s.%[2]s = cte.%[2]s
+			  AND %[1]s.date >= ?`,
+				t.table, t.col)
+			args = []interface{}{lookback, sinceDate}
+		}
+		if _, err := s.db.Exec(query, args...); err != nil {
 			return fmt.Errorf("update deltas for %s: %w", t.table, err)
 		}
 	}
