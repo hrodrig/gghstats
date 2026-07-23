@@ -595,6 +595,99 @@ func TestUpdateDeltas(t *testing.T) {
 	}
 }
 
+func referrerDelta(t *testing.T, s *Store, repo, date, referrer string) (countDelta, uniquesDelta int) {
+	t.Helper()
+	err := s.db.QueryRow(
+		`SELECT count_delta, uniques_delta FROM referrers WHERE repo=? AND date=? AND referrer=?`,
+		repo, date, referrer,
+	).Scan(&countDelta, &uniquesDelta)
+	if err != nil {
+		t.Fatalf("referrerDelta: %v", err)
+	}
+	return countDelta, uniquesDelta
+}
+
+func pathDelta(t *testing.T, s *Store, repo, date, path string) (countDelta, uniquesDelta int) {
+	t.Helper()
+	err := s.db.QueryRow(
+		`SELECT count_delta, uniques_delta FROM paths WHERE repo=? AND date=? AND path=?`,
+		repo, date, path,
+	).Scan(&countDelta, &uniquesDelta)
+	if err != nil {
+		t.Fatalf("pathDelta: %v", err)
+	}
+	return countDelta, uniquesDelta
+}
+
+func TestUpdateDeltasSince_ParityWithFull(t *testing.T) {
+	s := tempDB(t)
+	s.UpsertReferrer("r", "2026-03-20", "google.com", 40, 10)
+	s.UpsertReferrer("r", "2026-03-21", "google.com", 50, 15)
+	s.UpsertReferrer("r", "2026-03-22", "google.com", 55, 16)
+	s.UpsertPath("r", "2026-03-20", "/doc", 40, 10)
+	s.UpsertPath("r", "2026-03-21", "/doc", 50, 15)
+	s.UpsertPath("r", "2026-03-22", "/doc", 55, 16)
+
+	if err := s.UpdateDeltas(); err != nil {
+		t.Fatal(err)
+	}
+	wantRC, wantRU := referrerDelta(t, s, "r", "2026-03-22", "google.com")
+	wantPC, wantPU := pathDelta(t, s, "r", "2026-03-22", "/doc")
+
+	// Reset recent deltas to garbage; leave day-20 as after full rebuild.
+	if _, err := s.db.Exec(
+		`UPDATE referrers SET count_delta=999, uniques_delta=999 WHERE date=?`,
+		"2026-03-22",
+	); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.db.Exec(
+		`UPDATE paths SET count_delta=999, uniques_delta=999 WHERE date=?`,
+		"2026-03-22",
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := s.UpdateDeltasSince("2026-03-22"); err != nil {
+		t.Fatal(err)
+	}
+	gotRC, gotRU := referrerDelta(t, s, "r", "2026-03-22", "google.com")
+	gotPC, gotPU := pathDelta(t, s, "r", "2026-03-22", "/doc")
+	if gotRC != wantRC || gotRU != wantRU {
+		t.Errorf("referrer 03-22 deltas = (%d,%d), want (%d,%d)", gotRC, gotRU, wantRC, wantRU)
+	}
+	if gotPC != wantPC || gotPU != wantPU {
+		t.Errorf("path 03-22 deltas = (%d,%d), want (%d,%d)", gotPC, gotPU, wantPC, wantPU)
+	}
+}
+
+func TestUpdateDeltasSince_LeavesOlderRowsUntouched(t *testing.T) {
+	s := tempDB(t)
+	s.UpsertReferrer("r", "2026-03-20", "google.com", 40, 10)
+	s.UpsertReferrer("r", "2026-03-21", "google.com", 50, 15)
+	if err := s.UpdateDeltas(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.db.Exec(
+		`UPDATE referrers SET count_delta=42, uniques_delta=7 WHERE date=?`,
+		"2026-03-20",
+	); err != nil {
+		t.Fatal(err)
+	}
+	s.UpsertReferrer("r", "2026-03-22", "google.com", 55, 16)
+	if err := s.UpdateDeltasSince("2026-03-22"); err != nil {
+		t.Fatal(err)
+	}
+	c, u := referrerDelta(t, s, "r", "2026-03-20", "google.com")
+	if c != 42 || u != 7 {
+		t.Errorf("older row mutated: count_delta=%d uniques_delta=%d", c, u)
+	}
+	c22, _ := referrerDelta(t, s, "r", "2026-03-22", "google.com")
+	if c22 != 5 { // 55-50
+		t.Errorf("03-22 count_delta=%d, want 5", c22)
+	}
+}
+
 func TestHasRepos(t *testing.T) {
 	s := tempDB(t)
 
