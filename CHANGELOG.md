@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Access logs:** include effective client `ip` (same `clientIP` + `GGHSTATS_TRUSTED_PROXIES` rules as rate limit / whitelist). Behind a reverse proxy with trusted peers set, logs show the public client address from `X-Forwarded-For` / `X-Real-IP` instead of only the proxy peer. **Parked for 1.0.0** — not a standalone 0.11.x patch.
+
 ## [0.11.0] - 2026-07-23
 
 ### Added

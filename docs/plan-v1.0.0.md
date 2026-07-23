@@ -21,6 +21,7 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Spec: [SPEC.md](../SPEC.md)
 | PKG | **Packaging parity** | `.deb` / `.rpm` / Homebrew / GHCR tags; BSD ports + docs match `VERSION`. |
 | REL | **Release bar** | `make release-check` green (lint, test, security, docker-scan). Release only from `main` per git-flow. |
 | DOC | **Man / env / ports sync** | `contrib/man`, `gghstats.env.example`, FreeBSD/OpenBSD sync when `VERSION` bumps (`AGENTS.md`). |
+| OBS | **Access log client IP** | Include effective `ip` in HTTP access logs (`clientIP` + `GGHSTATS_TRUSTED_PROXIES`). Code ready on `develop` (Unreleased); **do not** cut a patch release only for this — ship with **1.0.0**. |
 
 ## Out of scope (this release)
 

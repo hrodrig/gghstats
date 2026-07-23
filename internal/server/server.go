@@ -219,15 +219,16 @@ func mountHTMLRoutes(mux *http.ServeMux, cfg Config, tmpl *template.Template) {
 
 func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 	var h http.Handler = mux
+	skip := PublicMiddlewareSkip(cfg.ReverseProxyRules)
 	if cfg.DisableMetrics {
-		h = logMiddleware(mux)
+		h = logMiddleware(cfg.TrustedProxies, mux)
 	} else {
 		reg := cfg.MetricsRegistry
 		if reg == nil {
 			reg = newMetricsRegistry()
 		}
 		mux.Handle("GET "+MetricsPath, metricsScrapeHandler(reg, cfg.DomainMetrics))
-		h = logMiddleware(wrapWithHTTPMetrics(reg, mux))
+		h = logMiddleware(cfg.TrustedProxies, wrapWithHTTPMetrics(reg, mux))
 		// Inject per-middleware metric vectors so RateLimiter and Whitelist
 		// record decisions at the point of reject/accept.
 		if cfg.RateLimiter != nil && cfg.ServerMetrics != nil {
@@ -237,7 +238,6 @@ func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 			cfg.Whitelist.SetWhitelistMetrics(cfg.ServerMetrics.WhitelistRequests)
 		}
 	}
-	skip := PublicMiddlewareSkip(cfg.ReverseProxyRules)
 	if cfg.Whitelist != nil {
 		h = cfg.Whitelist.Middleware(h, skip)
 	}
@@ -250,7 +250,7 @@ func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 
 // --- Middleware ---
 
-func logMiddleware(next http.Handler) http.Handler {
+func logMiddleware(trusted *TrustedProxies, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
@@ -260,6 +260,7 @@ func logMiddleware(next http.Handler) http.Handler {
 				"method", r.Method,
 				"path", r.URL.Path,
 				"status", rec.status,
+				"ip", clientIP(r, trusted),
 				"dur", time.Since(start).Round(time.Millisecond),
 			}
 			slog.Log(r.Context(), httpAccessLogLevel(rec.status), "http", attrs...)

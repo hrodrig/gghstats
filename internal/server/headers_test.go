@@ -1,9 +1,11 @@
 package server
 
 import (
+	"bytes"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -66,12 +68,58 @@ func TestLogMiddlewareRecordsStatus(t *testing.T) {
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTeapot)
 	})
-	h := logMiddleware(inner)
+	h := logMiddleware(nil, inner)
 	req := httptest.NewRequest(http.MethodGet, "/x", nil)
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusTeapot {
 		t.Fatalf("status = %d", w.Code)
+	}
+}
+
+func TestLogMiddlewareLogsClientIPFromXFF(t *testing.T) {
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, nil)))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	trusted := ParseTrustedProxies("10.0.0.0/8")
+	h := logMiddleware(trusted, inner)
+	req := httptest.NewRequest(http.MethodGet, "/x", nil)
+	req.RemoteAddr = "10.1.2.3:12345"
+	req.Header.Set("X-Forwarded-For", "203.0.113.50")
+	h.ServeHTTP(httptest.NewRecorder(), req)
+
+	out := buf.String()
+	if !strings.Contains(out, `"ip":"203.0.113.50"`) {
+		t.Fatalf("access log missing client ip from XFF: %s", out)
+	}
+}
+
+func TestLogMiddlewareLogsPeerIPWithoutTrusted(t *testing.T) {
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, nil)))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	h := logMiddleware(nil, inner)
+	req := httptest.NewRequest(http.MethodGet, "/x", nil)
+	req.RemoteAddr = "10.1.2.3:12345"
+	req.Header.Set("X-Forwarded-For", "203.0.113.50")
+	h.ServeHTTP(httptest.NewRecorder(), req)
+
+	out := buf.String()
+	if !strings.Contains(out, `"ip":"10.1.2.3"`) {
+		t.Fatalf("access log should use peer when untrusted: %s", out)
+	}
+	if strings.Contains(out, `"ip":"203.0.113.50"`) {
+		t.Fatalf("must not trust XFF without trusted proxies: %s", out)
 	}
 }
 
