@@ -85,7 +85,7 @@ func (rl *RateLimiter) Middleware(next http.Handler, skip MiddlewareSkip) http.H
 			next.ServeHTTP(w, r)
 			return
 		}
-		ip := clientIP(r)
+		ip := clientIP(r, nil)
 		entry := rl.getOrCreate(ip)
 		if !entry.limiter.Allow() {
 			if rl.rateLimitedReq != nil {
@@ -142,21 +142,30 @@ func (rl *RateLimiter) cleanup() {
 	})
 }
 
-// clientIP extracts the client IP from X-Forwarded-For, X-Real-IP, or RemoteAddr.
-func clientIP(r *http.Request) string {
+func clientIP(r *http.Request, trusted *TrustedProxies) string {
+	peer := peerIP(r.RemoteAddr)
+	peerParsed := net.ParseIP(peer)
+	if trusted.empty() || peerParsed == nil || !trusted.ContainsIP(peerParsed) {
+		return peer
+	}
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		// Take the leftmost (original client) IP.
 		ip := strings.TrimSpace(strings.Split(xff, ",")[0])
-		if ip != "" {
+		if ip != "" && net.ParseIP(ip) != nil {
 			return ip
 		}
 	}
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		return strings.TrimSpace(xri)
+	if xri := strings.TrimSpace(r.Header.Get("X-Real-IP")); xri != "" {
+		if net.ParseIP(xri) != nil {
+			return xri
+		}
 	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	return peer
+}
+
+func peerIP(remoteAddr string) string {
+	host, _, err := net.SplitHostPort(remoteAddr)
 	if err != nil {
-		return r.RemoteAddr
+		return remoteAddr
 	}
 	return host
 }

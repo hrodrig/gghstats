@@ -95,7 +95,7 @@ func (w *Whitelist) Middleware(next http.Handler, exempt MiddlewareSkip) http.Ha
 			next.ServeHTTP(wr, r)
 			return
 		}
-		ip := clientIP(r)
+		ip := clientIP(r, nil)
 		if !w.allowed(ip) {
 			if w.whitelistReq != nil {
 				w.whitelistReq.WithLabelValues("blocked").Inc()
