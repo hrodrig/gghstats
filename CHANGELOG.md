@@ -20,6 +20,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 - **Breaking:** unconditional trust of `X-Forwarded-For` / `X-Real-IP` has been removed. Deployments behind a reverse proxy must set `GGHSTATS_TRUSTED_PROXIES` to the proxy IP or CIDR so rate limiting and IP whitelist see the real client.
 - **Docs:** README, sample env, man page, SPEC, and release plans now explain the trusted-proxy problem, operator setup situations, and the new timeout defaults.
+- **README:** remove inactive Go Report Card badge.
 
 ## [0.10.1] - 2026-07-18
 
