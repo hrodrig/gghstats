@@ -45,8 +45,11 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Test with coverage
-        run: go test ./... -race -coverprofile=coverage.out -covermode=atomic
+      - name: Test with race detector
+        run: make test
+
+      - name: Coverage gate (≥80%, SPEC §6.1)
+        run: make cover
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5

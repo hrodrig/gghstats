@@ -13,6 +13,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 - **Trusted proxies (SEC1):** `GGHSTATS_TRUSTED_PROXIES` now gates trust of `X-Forwarded-For` / `X-Real-IP`; when the list is empty (default), gghstats ignores those headers and uses the TCP peer for rate limiting and IP whitelist decisions. `gghstats serve` warns at startup when rate limiting or IP whitelist is active without trusted proxies configured.
 - **HTTP server timeouts (SEC2):** `http.Server` now sets `ReadHeaderTimeout=10s`, `ReadTimeout=30s`, `WriteTimeout=60s`, and `IdleTimeout=120s`.
+- **deps:** bump pinned `golang.org/x/net` `v0.55.0` → `v0.57.0` (GO-2026-5942 / CVE-2026-46600 SVCB/HTTPS RR panic in `dns/dnsmessage`; also pulls newer transitive `x/sys`).
+- **Release bar:** statement coverage must be **≥ 80%** (`make cover`); enforced by `make release-check` and CI (SPEC §6.1).
 
 ### Changed
 

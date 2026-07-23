@@ -28,7 +28,9 @@ LIMIT ?=
 .PHONY: build check-x-net-pin clean compose-down compose-up cover dist-freebsd dist-openbsd docker-build docker-build-amd64 docker-export-amd64 docker-run docker-scan gocyclo govulncheck grype help install install-man lint lint-fix port-freebsd-sync port-openbsd-sync release release-check security server server-metrics snapshot test test-platforms test-platforms-ping test-release tools
 
 # Minimum golang.org/x/net (explicit go.mod pin; go mod tidy drops it → Prometheus resolves v0.43.0).
-X_NET_MIN_VERSION ?= v0.55.0
+X_NET_MIN_VERSION ?= v0.57.0
+# Project-wide statement coverage floor (make cover / release-check). SPEC §6.1.
+COVER_MIN_PERCENT ?= 80
 
 GREEN  := \033[0;32m
 YELLOW := \033[0;33m
@@ -50,7 +52,7 @@ help:
 	@echo "  $(GREEN)server-metrics$(RESET)   Same as server with GGHSTATS_METRICS_PER_REPO=true"
 	@echo ""
 	@echo "$(YELLOW)Quality:$(RESET)"
-	@echo "  $(GREEN)cover$(RESET)            Run tests with coverage profile and total % (stdout + coverage.out)"
+	@echo "  $(GREEN)cover$(RESET)            Run tests with coverage; fail if total < $(COVER_MIN_PERCENT)% (SPEC §6.1)"
 	@echo "  $(GREEN)grype$(RESET)            Grype directory scan (excludes ./dist/**, ./gghstats)"
 	@echo "  $(GREEN)lint$(RESET)             Check gofmt, go vet, and x/net security pin"
 	@echo "  $(GREEN)lint-fix$(RESET)         Apply gofmt -s -w"
@@ -70,7 +72,7 @@ help:
 	@echo ""
 	@echo "$(YELLOW)Release:$(RESET)"
 	@echo "  $(GREEN)release$(RESET)            Publish release (main branch only)"
-	@echo "  $(GREEN)release-check$(RESET)      lint, test, security, docker-scan (requires Docker)"
+	@echo "  $(GREEN)release-check$(RESET)      lint, test, cover (≥$(COVER_MIN_PERCENT)%), security, docker-scan (Docker)"
 	@echo "  $(GREEN)snapshot$(RESET)           Goreleaser snapshot (VERSION → <semver>-next, dist/, no Docker)"
 	@echo "  $(GREEN)test-release$(RESET)       Snapshot dry-run (--skip=publish; same VERSION source)"
 	@echo "  $(GREEN)dist-freebsd$(RESET)       Build FreeBSD tar.gz distfile for ports local testing"
@@ -124,7 +126,9 @@ test-platforms-ping:
 
 cover:
 	go test ./... -coverprofile=coverage.out -covermode=atomic
-	@go tool cover -func=coverage.out | tail -1
+	@total=$$(go tool cover -func=coverage.out | tail -1); echo "$$total"; \
+	pct=$$(echo "$$total" | awk '{print $$NF}' | tr -d '%'); \
+	awk -v p="$$pct" -v min="$(COVER_MIN_PERCENT)" 'BEGIN { if ((p+0) < (min+0)) { printf "coverage %s%% must be >= %s%% (SPEC §6.1)\n", p, min; exit 1 } }'
 
 lint:
 	@$(MAKE) check-x-net-pin
@@ -290,9 +294,10 @@ release-check:
 	@echo "Release version: $(VERSION) (tag: $(TAG))"
 	@echo "$(VERSION)" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$$' || (echo "VERSION must be semantic version (e.g. 0.1.0)"; exit 1)
 	@command -v goreleaser >/dev/null 2>&1 || (echo "goreleaser is required. Install from https://goreleaser.com/install/"; exit 1)
-	@echo "Running release checks (lint, test, security, docker-scan)..."
+	@echo "Running release checks (lint, test, cover ≥$(COVER_MIN_PERCENT)%, security, docker-scan)..."
 	@$(MAKE) lint
 	@$(MAKE) test
+	@$(MAKE) cover
 	@$(MAKE) security
 	@$(MAKE) docker-scan
 	@echo "All release checks passed."

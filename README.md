@@ -1050,7 +1050,7 @@ make release
 ```bash
 # 1) On develop: land changes, bump version if needed
 git checkout develop
-make release-check                    # lint, test, security, docker-scan (Docker required)
+make release-check                    # lint, test, cover (≥80%), security, docker-scan (Docker required)
 make test-release                     # optional: dry-run GoReleaser (VERSION → *-next; no publish)
 
 # 2) Update VERSION, README version badge, CHANGELOG; commit on develop

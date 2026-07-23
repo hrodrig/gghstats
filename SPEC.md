@@ -167,6 +167,22 @@ Removing or renaming documented fields/routes is a **breaking** change (major af
 
 Prometheus metric names introduced in release notes are treated as operator-facing; renames require a CHANGELOG entry.
 
+### 6.1 Release quality bar
+
+Before merging to **`main`** or publishing a tagged release, **`make release-check`** must pass. That gate includes (in order):
+
+| Step | Requirement |
+|------|-------------|
+| **`make lint`** | `gofmt -s`, `go vet`, and the pinned `golang.org/x/net` check |
+| **`make test`** | `go test -race ./...` |
+| **`make cover`** | Statement coverage **≥ 80%** project-wide (`go tool cover -func`; fails below the floor) |
+| **`make security`** | govulncheck, gocyclo, Grype directory scan |
+| **`make docker-scan`** | Image build + Grype (`--fail-on high`); requires Docker |
+
+**Hard rule:** do not tag or run `make release` if coverage is below **80%**. Raise coverage with tests (or shrink untested surface) before release — do not lower the floor without a SPEC + CHANGELOG note.
+
+Local check without the full release suite: `make cover`.
+
 ---
 
 ## 7. Out of scope
