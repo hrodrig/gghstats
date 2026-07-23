@@ -10,7 +10,6 @@
 [![Go 1.26.5](https://img.shields.io/badge/go-1.26.5-00ADD8?logo=go)](https://go.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![pkg.go.dev](https://pkg.go.dev/badge/github.com/hrodrig/gghstats)](https://pkg.go.dev/github.com/hrodrig/gghstats)
-[![Go Report Card](https://goreportcard.com/badge/github.com/hrodrig/gghstats)](https://goreportcard.com/report/github.com/hrodrig/gghstats)
 [![deps.dev](https://img.shields.io/badge/deps.dev-go%20module-blue)](https://deps.dev/go/github.com%2Fhrodrig%2Fgghstats)
 
 **Repo:** [github.com/hrodrig/gghstats](https://github.com/hrodrig/gghstats) · **Releases:** [Releases](https://github.com/hrodrig/gghstats/releases)
@@ -111,7 +110,7 @@ Niche peers that **archive GitHub traffic beyond the 14-day window**. Not a full
 
 | | **gghstats** | [ghstats](https://github.com/vladkens/ghstats) | [git-clone-stats](https://github.com/taylorwilsdon/git-clone-stats) | [gh-tracker](https://github.com/rayketcham-lab/gh-tracker) | GitHub Traffic |
 |--|--------------|------------------------------------------------|------------------------------------------------------------------|--------------------------------------------------------------|----------------|
-| Maintenance (checked 2026-07) | Active (`v0.10.1`) | Occasional (last commit ~2026-06) | Quiet (last release ~2025-08) | Early / intermittent (last commit ~2026-04) | Active (GitHub product) |
+| Maintenance (checked 2026-07) | Active (`v0.10.2`) | Occasional (last commit ~2026-06) | Quiet (last release ~2025-08) | Early / intermittent (last commit ~2026-04) | Active (GitHub product) |
 | History beyond 14d | Yes (SQLite) | Yes (SQLite) | Yes (SQLite / Firestore) | Yes (SQLite) | No (14d only) |
 | Self-hosted dashboard | Yes | Yes | Yes (minimal HTML/JS) | Yes (React + FastAPI) | GitHub UI only |
 | Runtime / packaging | Go single binary; `.deb`/`.rpm`/BSD | Rust single binary; Docker | Python (PyPI / Docker) | Python + Node frontend | — |
