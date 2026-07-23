@@ -61,7 +61,8 @@ func trafficDateRangeUTC(days int, extentMin string, extentOk bool) (from, to st
 	return from, to, nil
 }
 
-func handleAPIRepoTraffic(db *store.Store) http.HandlerFunc {
+func handleAPIRepoTraffic(cfg Config) http.HandlerFunc {
+	db := cfg.Store
 	return func(w http.ResponseWriter, r *http.Request) {
 		fullName := repoFullNameFromRequest(r)
 		if fullName == "" {
@@ -124,7 +125,7 @@ func handleAPIRepoTraffic(db *store.Store) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		setAPICORS(w, r, cfg.CORSOrigins)
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
 			writeJSONError(w, http.StatusInternalServerError, "encode error")
 		}

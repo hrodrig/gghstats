@@ -8,8 +8,8 @@
 # See README.md and PORT-RELEASE.md.
 
 COMMENT =	GitHub traffic dashboard and CLI (SQLite)
-DISTNAME =	gghstats_0.10.2_openbsd_${MACHINE_ARCH:S/aarch64/arm64/}
-PKGNAME =	gghstats-0.10.2
+DISTNAME =	gghstats_0.11.0_openbsd_${MACHINE_ARCH:S/aarch64/arm64/}
+PKGNAME =	gghstats-0.11.0
 CATEGORIES =	sysutils
 HOMEPAGE =	https://github.com/hrodrig/gghstats
 MAINTAINER =	hrodrig@usb.ve
@@ -21,8 +21,8 @@ PERMIT_DISTFILES =	Yes
 # Local test before release: copy tarball to DISTDIR or use
 #   make fetch MASTER_SITES=file:///absolute/path/to/dir/
 # See README.md "Test with a local tarball".
-MASTER_SITES =	https://github.com/hrodrig/gghstats/releases/download/v0.10.2/
-DISTFILES =	gghstats_0.10.2_openbsd_${MACHINE_ARCH:S/aarch64/arm64/}.tar.gz
+MASTER_SITES =	https://github.com/hrodrig/gghstats/releases/download/v0.11.0/
+DISTFILES =	gghstats_0.11.0_openbsd_${MACHINE_ARCH:S/aarch64/arm64/}.tar.gz
 EXTRACT_SUFX =	.tar.gz
 
 ONLY_FOR_ARCHS =	amd64 arm64 aarch64

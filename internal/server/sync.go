@@ -8,26 +8,28 @@ import (
 	"github.com/hrodrig/gghstats/internal/sync"
 )
 
-func handleAPISyncStatus(coord *sync.Coordinator) http.HandlerFunc {
+func handleAPISyncStatus(cfg Config) http.HandlerFunc {
+	coord := cfg.SyncCoordinator
 	return func(w http.ResponseWriter, r *http.Request) {
 		if coord == nil {
 			http.NotFound(w, r)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		setAPICORS(w, r, cfg.CORSOrigins)
 		_ = json.NewEncoder(w).Encode(coord.Status())
 	}
 }
 
-func handleAPISyncStart(coord *sync.Coordinator) http.HandlerFunc {
+func handleAPISyncStart(cfg Config) http.HandlerFunc {
+	coord := cfg.SyncCoordinator
 	return func(w http.ResponseWriter, r *http.Request) {
 		if coord == nil {
 			http.NotFound(w, r)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		setAPICORS(w, r, cfg.CORSOrigins)
 
 		repo, err := parseSyncRepoQuery(r.URL.Query().Get("repo"))
 		if err != nil {

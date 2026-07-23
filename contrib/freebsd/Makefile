@@ -1,5 +1,5 @@
 PORTNAME=	gghstats
-PORTVERSION=	0.10.2
+PORTVERSION=	0.11.0
 DISTVERSIONPREFIX=	v
 CATEGORIES=	sysutils
 # Local test before release: copy the tarball into DISTDIR (see `make -V DISTDIR`

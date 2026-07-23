@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.10.2-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.11.0-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -71,7 +71,7 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 - [Web UI languages (i18n)](#web-ui-languages-i18n)
 - [Environment file](#environment-file)
 - [Custom UI theme (optional)](#custom-ui-theme-optional)
-- [HTTP API (JSON)](#http-api-json)
+- [HTTP API (JSON)](#http-api-json) · **[API consumer guide](docs/api.md)** (auth, examples, dogfood map)
 - [Typical scenarios](#typical-scenarios)
 - [Troubleshooting](#troubleshooting)
 - [Release workflow](#release-workflow)
@@ -80,7 +80,7 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 - [Community standards](#community-standards)
 - [Acknowledgments](#acknowledgments)
 - [License](#license)
-- [Roadmap](ROADMAP.md) · [Spec (API & sync)](SPEC.md)
+- [Roadmap](ROADMAP.md) · [Spec (API & sync)](SPEC.md) · [API consumer guide](docs/api.md)
 
 ## Features
 
@@ -94,7 +94,7 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 - **SVG badges** — embed clones/views/stars in READMEs (`/api/v1/badge/…`); copy Markdown from the repo page
 - **Web UI languages (i18n):** English (default), Spanish, German, French, and Brazilian Portuguese — sidebar **EN | ES | DE | FR | PT**, cookie `gghstats_locale`, env defaults (see [Web UI languages](#web-ui-languages-i18n))
 - **Light/dark theme** in the sidebar, plus optional **custom CSS** (`GGHSTATS_CUSTOM_CSS` / [contrib/themes](contrib/themes/)) when neo-brutalist is too loud
-- **JSON API** for scripts and external UIs (`/api/v1/…` — see [HTTP API](#http-api-json) and [SPEC.md](SPEC.md))
+- **JSON API** for scripts and external UIs — start with **[docs/api.md](docs/api.md)** (examples + dogfood map); contracts in [SPEC.md](SPEC.md); optional **`GGHSTATS_API_ONLY`**
 - **CLI** for one-shot `fetch` / `report` / `export` without running the full dashboard
 - **Prometheus metrics** at `GET /metrics` — scrape sync health and HTTP traffic from Grafana/Alloy
 - **Per-IP rate limit + optional IP whitelist** — blunt abuse on public demos without a reverse-proxy rewrite
@@ -419,7 +419,10 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_SYNC_WORKERS` | `4` | Concurrent repos per sync cycle (same as `gghstats serve --sync-workers`) |
 | `GGHSTATS_DEMO` | `false` | Sample-data UI; no GitHub token, sync, or update check (same as `gghstats serve --demo`) |
 | `GGHSTATS_OPEN_BROWSER` | `false` | Open the default browser when the server is ready (same as `gghstats serve --open`) |
-| `GGHSTATS_API_TOKEN` | (none) | If set, `GET /api/repos` requires matching `x-api-token` header (see [HTTP API (JSON)](#http-api-json)) |
+| `GGHSTATS_API_TOKEN` | (none) | If set, JSON API routes require matching `x-api-token` header (see [HTTP API (JSON)](#http-api-json)) |
+| `GGHSTATS_API_ONLY` | `false` | When true, skip HTML dashboard and SEO (`/robots.txt`, `/sitemap.xml`); JSON/probes still work |
+| `GGHSTATS_CORS_ORIGINS` | `*` (empty) | Comma-separated allowed `Origin` values for authenticated JSON; empty = `*`. Warns at startup if API-only + `*` |
+| `GGHSTATS_CSP` | report-only | Set `enforce` for enforcing CSP when `GGHSTATS_HEAD_HTML` is empty |
 | `GGHSTATS_BADGE_PUBLIC` | `true` | Set to `false` to require `x-api-token` on badge URLs (breaks `![…](url)` in GitHub READMEs unless you use a proxy) |
 | `GGHSTATS_BADGE_CACHE_SECONDS` | `300` | `Cache-Control: max-age` for badge SVG responses |
 | `GGHSTATS_PUBLIC_URL` | (none) | Optional public base URL for embed snippets, **`/sitemap.xml`**, **`/robots.txt`**, and alert dashboard links (e.g. `https://gghstats.example.com`); if unset, uses the request `Host`. On `localhost` / `127.0.0.1`, robots disallows crawling unless this is set |
@@ -747,7 +750,11 @@ GGHSTATS_FILTER="*,!your-github-user/legacy-repo"
 
 ### HTTP API (JSON)
 
-gghstats exposes a **small read-only JSON surface** for probes and integrations. There is **no** generic REST CRUD layer; everything else is the HTML UI or the CLI.
+gghstats exposes a **small read-only JSON surface** for probes, scripts, and **bring-your-own frontends**. There is **no** generic REST CRUD layer.
+
+**Start here for clients:** **[docs/api.md](docs/api.md)** — authentication, CORS, request/response examples, and the dogfood map (index / repo / H2H). Normative status codes and sync rules: [SPEC.md](SPEC.md) §2–§3.
+
+**Bring your own frontend:** set `GGHSTATS_API_ONLY=true` to disable the HTML dashboard and SEO routes. Protect the API with `GGHSTATS_API_TOKEN`; for browser SPAs use a BFF/proxy and set `GGHSTATS_CORS_ORIGINS` — do **not** put the token in a public bundle (startup warns if API-only + open CORS `*`).
 
 #### `GET /api/v1/healthz`
 
@@ -797,7 +804,7 @@ On each repository page, the **Embed badge** card builds this Markdown (metric s
 | --- | --- |
 | **Purpose** | Daily **clone** and **view** time series for one repository (for Grafana, scripts, or external charts). |
 | **Auth** | Same as **`GET /api/repos`**: requires **`GGHSTATS_API_TOKEN`** and header **`x-api-token`**. Returns **`404`** when the API is disabled (token unset). |
-| **CORS** | **`Access-Control-Allow-Origin: *`** on success. |
+| **CORS** | `GGHSTATS_CORS_ORIGINS` (empty = `*`) on success. |
 
 **Query parameters:**
 
@@ -864,22 +871,13 @@ When **`GGHSTATS_API_TOKEN`** is set, the sidebar shows **Sync all** on the inde
 
 | | |
 | --- | --- |
-| **Purpose** | Snapshot of all **non-hidden** repositories in the local SQLite DB with aggregate counters. |
-| **Auth** | **Required** when `GGHSTATS_API_TOKEN` is set: send header **`x-api-token: <value>`** matching that env var exactly. If `GGHSTATS_API_TOKEN` is **unset**, requests to this path return **`404 Not Found`** (API disabled by default). |
-| **CORS** | Successful responses include **`Access-Control-Allow-Origin: *`** so browser dashboards on another origin can read the JSON (you still must keep the API token secret). |
-| **Sort order** | Items are always returned in **`total_views` descending** (see `handleAPIRepos` in the server code). This is **independent** of the web index `sort=` query parameter. |
-| **Errors** | **`401`** with JSON `{"error":"unauthorized"}` if the token header is missing or wrong. **`500`** with JSON `{"error":"…"}` on database or encoding failures. |
+| **Purpose** | Snapshot of repositories in SQLite with aggregate counters (dogfood for the index page). |
+| **Auth** | **Required** when `GGHSTATS_API_TOKEN` is set: send header **`x-api-token: <value>`**. If unset → **`404`**. |
+| **CORS** | `GGHSTATS_CORS_ORIGINS` (empty = `*`). Keep the token secret; prefer a BFF for browser SPAs. |
+| **Query** | `sort`, `dir`, `q` (name filter). Default sort **`total_views`/`desc`** (compat). Optional `page` / `per_page` (pagination only when either is set). |
+| **Errors** | **`401`** `{"error":"unauthorized"}`; **`500`** on DB failures. |
 
-**Response shape (`200`):**
-
-| Field | Type | Meaning |
-| --- | --- | --- |
-| `total_count` | number | Count of repos in `items`. |
-| `total_stars` | number | Sum of `stars` across repos. |
-| `total_forks` | number | Sum of `forks` across repos. |
-| `total_views` | number | Sum of `total_views` across repos. |
-| `total_clones` | number | Sum of `total_clones` across repos. |
-| `items` | array | One object per repository (see table below). |
+**Response shape (`200`):** `total_count`, KPI totals, `sort`, `dir`, `q`, `items[]`; when paginating also `page`, `per_page`, `total_pages`.
 
 **Each element of `items`** matches [`RepoSummary`](internal/store/store.go) JSON tags:
 
@@ -902,6 +900,16 @@ When **`GGHSTATS_API_TOKEN`** is set, the sidebar shows **Sync all** on the inde
 ```bash
 curl -sS -H "x-api-token: $GGHSTATS_API_TOKEN" http://localhost:8080/api/repos
 ```
+
+**Dogfood companions** (same auth/CORS; full examples in **[docs/api.md](docs/api.md)**; contracts in [SPEC.md](SPEC.md) §3.6–§3.10):
+
+| Route | Purpose |
+| --- | --- |
+| `GET /api/v1/repos/{owner}/{repo}` | Summary + momentum 7d/30d |
+| `GET /api/v1/repos/{owner}/{repo}/stars` | Star history series |
+| `GET /api/v1/repos/{owner}/{repo}/popular` | Referrers + paths (14d) |
+| `GET /api/v1/h2h?a=&b=&w=` | Head-to-head scores + charts |
+| `GET /api/v1/charts/index-clones` | Aggregated index clones chart |
 
 **Example response (truncated to one repo):**
 
@@ -1142,7 +1150,7 @@ Clarification — not a separate DB write lock.
 ## Community standards
 
 - Roadmap: [`ROADMAP.md`](ROADMAP.md) — priority lines and release bands to 1.x ([band plans](docs/plan-v0.9.x.md))
-- Spec: [`SPEC.md`](SPEC.md) — HTTP API and sync contracts (source of truth vs older Database notes below if they diverge)
+- Spec: [`SPEC.md`](SPEC.md) — normative HTTP/sync contracts · **API how-to:** [`docs/api.md`](docs/api.md)
 - License: `LICENSE`
 - Contributing: `CONTRIBUTING.md`
 - Code of conduct: `CODE_OF_CONDUCT.md`

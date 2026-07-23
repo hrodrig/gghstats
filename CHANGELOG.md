@@ -7,6 +7,23 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-07-23
+
+### Added
+
+- **API-only mode (API1):** `GGHSTATS_API_ONLY=true` skips the HTML dashboard and SEO routes (`/robots.txt`, `/sitemap.xml`); JSON API, healthz, badges, and metrics still work as configured.
+- **Dogfood JSON (API2):** additive routes for external UIs — extend `GET /api/repos` with `sort`/`dir`/`q`/`page`/`per_page`; `GET /api/v1/repos/{owner}/{repo}` (summary + momentum); `.../stars`; `.../popular`; `GET /api/v1/h2h`; `GET /api/v1/charts/index-clones`.
+- **API consumer guide:** [docs/api.md](docs/api.md) — auth, CORS, curl/JSON examples, dogfood map (index / repo / H2H), TypeScript sketch.
+- **CORS (API3):** `GGHSTATS_CORS_ORIGINS` (comma list; empty = `*` for compat). Startup warn when API-only + open CORS (`*`) — do not embed the API token in a public SPA.
+- **CSP (SEC3):** default `Content-Security-Policy-Report-Only` baseline; `GGHSTATS_CSP=enforce` when `GGHSTATS_HEAD_HTML` is empty (otherwise warn and stay report-only).
+- **Dogfood contract test (API5):** `TestDogfoodContract_APIOnly` rebuilds index + repo + H2H via documented endpoints under API-only.
+- **API tests:** handler coverage for dogfood routes (auth, 400/404, pagination, H2H snake_case); startup warn tests for API-only+open CORS and CSP enforce+HeadHTML.
+- **H2H JSON:** `h2h.Result` / related structs use snake_case JSON tags for API responses.
+
+### Changed
+
+- **SPEC / README / man / env.example:** document API-only, new routes, CORS, CSP; ROADMAP and `docs/plan-v0.11.x.md` updated (SEC1/SEC2 remain in **0.10.2**; webhooks/leaderboard deferred).
+
 ## [0.10.2] - 2026-07-22
 
 ### Security
@@ -503,7 +520,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.10.2...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/hrodrig/gghstats/compare/v0.10.2...v0.11.0
 [0.10.2]: https://github.com/hrodrig/gghstats/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/hrodrig/gghstats/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/hrodrig/gghstats/compare/v0.9.0...v0.10.0
