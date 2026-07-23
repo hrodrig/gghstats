@@ -655,7 +655,7 @@ func TestIsolationBetweenRepos(t *testing.T) {
 	}
 }
 
-func TestAlertDebounceAndFleetSums(t *testing.T) {
+func TestAlertDebounce(t *testing.T) {
 	s := tempDB(t)
 
 	stamp, err := s.AlertDebounceGet("missing")
@@ -676,6 +676,10 @@ func TestAlertDebounceAndFleetSums(t *testing.T) {
 	if err != nil || stamp != "fired" {
 		t.Fatalf("upsert: stamp=%q err=%v", stamp, err)
 	}
+}
+
+func TestFleetSums(t *testing.T) {
+	s := tempDB(t)
 
 	clones, err := s.SumClonesAll()
 	if err != nil || clones != 0 {
@@ -703,6 +707,16 @@ func TestAlertDebounceAndFleetSums(t *testing.T) {
 	views, err = s.SumViewsAll()
 	if err != nil || views != 20 {
 		t.Fatalf("SumViewsAll = %d err=%v, want 20", views, err)
+	}
+}
+
+func TestDayCount(t *testing.T) {
+	s := tempDB(t)
+	if err := s.UpsertClone("o/r", "2026-07-01", 10, 2); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertView("o/r", "2026-07-01", 20, 4); err != nil {
+		t.Fatal(err)
 	}
 
 	n, err := s.DayCount("clones", "o/r", "2026-07-01")
