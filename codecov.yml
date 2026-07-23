@@ -6,8 +6,9 @@ coverage:
   status:
     project:
       default:
-        target: auto
-        threshold: 1%
+        # Align with SPEC §6.1 / make cover (COVER_MIN_PERCENT).
+        target: 80%
+        threshold: 0%
     patch:
       default:
         informational: true

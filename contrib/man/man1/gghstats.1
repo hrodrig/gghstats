@@ -1,5 +1,5 @@
 .\" Man page for gghstats(1)
-.TH GGHSTATS 1 "July 2026" "gghstats v0.10.1" "User Commands"
+.TH GGHSTATS 1 "July 2026" "gghstats v0.10.2" "User Commands"
 .SH NAME
 gghstats \- self-hosted GitHub repository traffic dashboard and CLI
 .SH SYNOPSIS
@@ -167,6 +167,13 @@ Time window for rate limiting as a Go duration (default: \fB1m\fR).
 .B GGHSTATS_RATE_LIMIT_BURST
 Maximum burst of requests before smoothing (default: \fB20\fR).
 Exempt paths: \fB/metrics\fR, \fB/api/v1/healthz\fR, \fB/api/v1/badge/*\fR (README embeds).
+.TP
+.B GGHSTATS_TRUSTED_PROXIES
+Comma-separated proxy IPs and/or CIDRs allowed to supply
+\fBX-Forwarded-For\fR or \fBX-Real-IP\fR for client IP resolution.
+Empty by default, which means those headers are ignored and the TCP peer
+address is used for rate limiting and IP whitelist checks.
+Set only to your reverse proxy IP or network; do not use \fB0.0.0.0/0\fR.
 .TP
 .B GGHSTATS_ALERTS_ENABLED
 When \fBtrue\fR, evaluate alert rules after sync (default \fBfalse\fR).

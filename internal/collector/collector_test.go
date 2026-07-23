@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/hrodrig/gghstats/internal/version"
 )
 
 func TestCreateBody(t *testing.T) {
@@ -139,6 +141,53 @@ func TestCollectSendsPayload(t *testing.T) {
 	if !received {
 		t.Error("server did not receive payload")
 	}
+}
+
+func TestCollectAndCheckUpdate(t *testing.T) {
+	var gotCollect, gotUpdate bool
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			gotCollect = true
+			w.WriteHeader(http.StatusOK)
+		case http.MethodGet:
+			gotUpdate = true
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"tag_name":"v99.0.0"}`))
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	prevCollect, prevUpdate := collectEndpoint, updateCheckURL
+	collectEndpoint, updateCheckURL = srv.URL, srv.URL
+	t.Cleanup(func() {
+		collectEndpoint, updateCheckURL = prevCollect, prevUpdate
+	})
+
+	CollectWithUpdate(ServeFeatures{Port: "8080", Host: "127.0.0.1"})
+	if !gotCollect {
+		t.Fatal("Collect did not POST to collect endpoint")
+	}
+	if !gotUpdate {
+		t.Fatal("CheckUpdate did not GET release endpoint")
+	}
+}
+
+func TestCheckUpdateSameVersion(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"tag_name":"v` + version.Version + `"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	prev := updateCheckURL
+	updateCheckURL = srv.URL
+	t.Cleanup(func() { updateCheckURL = prev })
+
+	CheckUpdate() // same version — no warn path beyond decode
 }
 
 func TestSemverGT(t *testing.T) {

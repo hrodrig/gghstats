@@ -36,6 +36,10 @@ This document describes **current** behavior. Changes that break clients must bu
 
 When `GGHSTATS_API_TOKEN` is set, a matching **`x-api-token`** header bypasses the IP whitelist on protected paths (token still validated by the API handler).
 
+For rate limit and IP whitelist identity, `X-Forwarded-For` / `X-Real-IP`
+are trusted only when the TCP peer is in `GGHSTATS_TRUSTED_PROXIES`.
+Otherwise the peer `RemoteAddr` is authoritative.
+
 There is **no** generic REST CRUD layer.
 
 **Security headers** on all HTTP responses: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera/mic/geolocation disabled).
@@ -162,6 +166,22 @@ Until **1.0.0**, the JSON API may gain additive fields without a major bump.
 Removing or renaming documented fields/routes is a **breaking** change (major after 1.0; clear CHANGELOG note before).
 
 Prometheus metric names introduced in release notes are treated as operator-facing; renames require a CHANGELOG entry.
+
+### 6.1 Release quality bar
+
+Before merging to **`main`** or publishing a tagged release, **`make release-check`** must pass. That gate includes (in order):
+
+| Step | Requirement |
+|------|-------------|
+| **`make lint`** | `gofmt -s`, `go vet`, and the pinned `golang.org/x/net` check |
+| **`make test`** | `go test -race ./...` |
+| **`make cover`** | Statement coverage **≥ 80%** project-wide (`go tool cover -func`; fails below the floor) |
+| **`make security`** | govulncheck, gocyclo, Grype directory scan |
+| **`make docker-scan`** | Image build + Grype (`--fail-on high`); requires Docker |
+
+**Hard rule:** do not tag or run `make release` if coverage is below **80%**. Raise coverage with tests (or shrink untested surface) before release — do not lower the floor without a SPEC + CHANGELOG note.
+
+Local check without the full release suite: `make cover`.
 
 ---
 

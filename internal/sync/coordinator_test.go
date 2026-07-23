@@ -235,6 +235,22 @@ func TestCoordinatorFinishRunDirect(t *testing.T) {
 	}
 }
 
+func TestCoordinatorSetAfterSync(t *testing.T) {
+	c := NewCoordinator(nil, nil, Options{})
+	called := false
+	c.SetAfterSync(func(RunResult) { called = true })
+	c.mu.Lock()
+	fn := c.afterSync
+	c.mu.Unlock()
+	if fn == nil {
+		t.Fatal("afterSync not set")
+	}
+	fn(RunResult{Success: true})
+	if !called {
+		t.Fatal("callback not invoked")
+	}
+}
+
 func coordinatorHasSyncSample(reg *prometheus.Registry, status string) bool {
 	mfs, err := reg.Gather()
 	if err != nil {

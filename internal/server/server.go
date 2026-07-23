@@ -62,6 +62,8 @@ type Config struct {
 	RateLimiter *RateLimiter
 	// Whitelist, when non-nil, restricts access to whitelisted IPs on configured paths (see GGHSTATS_WHITELIST* env vars).
 	Whitelist *Whitelist
+	// TrustedProxies controls which TCP peers may supply client IP headers.
+	TrustedProxies *TrustedProxies
 	// HeadHTML is optional raw HTML injected just before </head> on every HTML page.
 	HeadHTML template.HTML
 	// ReverseProxyRules configures reverse-proxy mappings (see ReverseProxyRule).
@@ -78,6 +80,12 @@ func withCacheControl(directive string, next http.Handler) http.Handler {
 // New returns an http.Handler with all routes configured.
 func New(cfg Config) http.Handler {
 	cfg = normalizeLocaleConfig(cfg)
+	if cfg.RateLimiter != nil {
+		cfg.RateLimiter.trusted = cfg.TrustedProxies
+	}
+	if cfg.Whitelist != nil {
+		cfg.Whitelist.trusted = cfg.TrustedProxies
+	}
 	i18n.MustLoad()
 	// Register per-middleware metric vectors before mounting routes so badge
 	// handler can be wrapped with its own latency/counter metrics.

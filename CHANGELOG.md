@@ -7,6 +7,20 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.2] - 2026-07-22
+
+### Security
+
+- **Trusted proxies (SEC1):** `GGHSTATS_TRUSTED_PROXIES` now gates trust of `X-Forwarded-For` / `X-Real-IP`; when the list is empty (default), gghstats ignores those headers and uses the TCP peer for rate limiting and IP whitelist decisions. `gghstats serve` warns at startup when rate limiting or IP whitelist is active without trusted proxies configured.
+- **HTTP server timeouts (SEC2):** `http.Server` now sets `ReadHeaderTimeout=10s`, `ReadTimeout=30s`, `WriteTimeout=60s`, and `IdleTimeout=120s`.
+- **deps:** bump pinned `golang.org/x/net` `v0.55.0` → `v0.57.0` (GO-2026-5942 / CVE-2026-46600 SVCB/HTTPS RR panic in `dns/dnsmessage`; also pulls newer transitive `x/sys`).
+- **Release bar:** statement coverage must be **≥ 80%** (`make cover`); enforced by `make release-check` and CI (SPEC §6.1).
+
+### Changed
+
+- **Breaking:** unconditional trust of `X-Forwarded-For` / `X-Real-IP` has been removed. Deployments behind a reverse proxy must set `GGHSTATS_TRUSTED_PROXIES` to the proxy IP or CIDR so rate limiting and IP whitelist see the real client.
+- **Docs:** README, sample env, man page, SPEC, and release plans now explain the trusted-proxy problem, operator setup situations, and the new timeout defaults.
+
 ## [0.10.1] - 2026-07-18
 
 ### Added
@@ -488,7 +502,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v0.10.2...HEAD
+[0.10.2]: https://github.com/hrodrig/gghstats/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/hrodrig/gghstats/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/hrodrig/gghstats/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/hrodrig/gghstats/compare/v0.8.1...v0.9.0

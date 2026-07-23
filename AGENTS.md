@@ -2,11 +2,11 @@
 
 - Use English for all project artifacts (code, docs, commit messages, UI text).
 - Follow git flow: feature work in `develop`; releases from `main`.
-- Before release, run `make release-check` (lint, tests, security, **docker-scan**; requires Docker).
+- Before release, run `make release-check` (lint, tests, **cover ≥80%**, security, **docker-scan**; requires Docker). See **SPEC §6.1**.
 - Keep `VERSION`, README badges, and release tags synchronized. Deployment manifests (Compose prod, Helm, observability) belong in the **gghstats-selfhosted** repository, not in this repo.
 - Do not commit without first showing the proposed commit message and getting explicit user approval.
 - **Supply chain:** Prefer resolving dependency and Dependabot-style work **inside the clone** (read diffs, `go get module@version`, `go mod tidy`, `go test ./...`, merge bot branches from **trusted Git remotes**). Do not replace that with pasted blobs from random sites, `curl | sh` installers, or unknown `GOPROXY` / disabled checksums unless the user explicitly accepts that risk.
-- **`golang.org/x/net` pin:** Keep **`golang.org/x/net v0.55.0 // indirect`** in **`go.mod`** (HTTP/2 fix + newer transitive **`x/crypto`**). **`go mod tidy`** may drop it; after tidy or Dependabot bumps run **`go get golang.org/x/net@v0.55.0`** and **`make check-x-net-pin`**. CI **`make lint`** enforces the pin (`X_NET_MIN_VERSION` in **`Makefile`**). **GoReleaser** does **not** run **`go mod tidy`** (see **`.goreleaser.yaml`**); release builds use committed **`go.mod`** / **`go.sum`**.
+- **`golang.org/x/net` pin:** Keep **`golang.org/x/net v0.57.0 // indirect`** in **`go.mod`** (HTTP/2 fix + newer transitive **`x/crypto`**; GO-2026-5942 / SVCB panic fixed in ≥0.56.0). **`go mod tidy`** may drop it; after tidy or Dependabot bumps run **`go get golang.org/x/net@v0.57.0`** and **`make check-x-net-pin`**. CI **`make lint`** enforces the pin (`X_NET_MIN_VERSION` in **`Makefile`**). **GoReleaser** does **not** run **`go mod tidy`** (see **`.goreleaser.yaml`**); release builds use committed **`go.mod`** / **`go.sum`**.
 - **`.cursor/` is local-only** — not committed to this repository (same for **gghstats-selfhosted**). Put shared agent and release policy in tracked files such as this **AGENTS.md**, **README**, and **CONTRIBUTING.md**.
 
 ## Man page sync (before each release)

@@ -2,7 +2,7 @@
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
-[![Version](https://img.shields.io/badge/version-0.10.1-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-0.10.2-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -521,7 +521,48 @@ gghstats applies **per-IP token-bucket rate limiting** to all HTTP routes except
 
 **Defaults:** 120 requests per minute, burst of 20. For most dashboard browsing this is generous; adjust for high-traffic or protected deployments.
 
-Behind a **reverse proxy** (nginx, Traefik, Caddy, haproxy), gghstats reads the client IP from `X-Forwarded-For` (preferred) or `X-Real-IP`. Ensure your proxy sets one of these headers, otherwise all requests appear to come from the proxy itself and share a single rate-limit bucket.
+### Client IP behind reverse proxies
+
+**Problem.** Rate limiting and the optional IP whitelist key off the client IP.
+If gghstats is reachable without a trusted hop, a client can send
+`X-Forwarded-For: ...` or `X-Real-IP: ...` and spoof that identity.
+
+**Approach.** Set `GGHSTATS_TRUSTED_PROXIES` to the reverse proxy IP or CIDR.
+gghstats trusts forwarded headers only when the TCP peer is in that list.
+If the list is empty (default), those headers are ignored and the peer
+`RemoteAddr` is used. When rate limiting or a whitelist is active and the list
+is empty, `gghstats serve` logs a startup warning so operators do not assume
+forwarded headers are in effect.
+
+**How to apply**
+
+**A - Direct exposure** (host port or Docker `-p`, no reverse proxy): leave it unset.
+
+```bash
+# GGHSTATS_TRUSTED_PROXIES=
+```
+
+Forged `X-Forwarded-For` and `X-Real-IP` headers are ignored.
+
+**B - Traefik / Caddy / nginx on a Docker network:** trust the proxy IP or bridge CIDR.
+
+```bash
+GGHSTATS_TRUSTED_PROXIES=172.16.0.0/12
+```
+
+Rate-limit buckets and whitelist checks use the real client from forwarded headers
+once the proxy peer is trusted.
+
+**C - Proxy on the host, app on localhost:** trust loopback only.
+
+```bash
+GGHSTATS_TRUSTED_PROXIES=127.0.0.1/32,::1/128
+```
+
+The local proxy can pass the real client IP while direct clients cannot spoof it.
+
+Do **not** set `GGHSTATS_TRUSTED_PROXIES=0.0.0.0/0` or another over-broad CIDR.
+That would trust forwarded headers from any peer and reopen header forgery.
 
 ```
 # Tighten for a protected API-only instance
@@ -1009,7 +1050,7 @@ make release
 ```bash
 # 1) On develop: land changes, bump version if needed
 git checkout develop
-make release-check                    # lint, test, security, docker-scan (Docker required)
+make release-check                    # lint, test, cover (≥80%), security, docker-scan (Docker required)
 make test-release                     # optional: dry-run GoReleaser (VERSION → *-next; no publish)
 
 # 2) Update VERSION, README version badge, CHANGELOG; commit on develop

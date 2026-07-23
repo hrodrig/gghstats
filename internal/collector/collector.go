@@ -24,6 +24,12 @@ const repoLatestReleaseURL = "https://api.github.com/repos/hrodrig/gghstats/rele
 // collectorURL is the endpoint that receives anonymous usage reports.
 const collectorURL = "https://collect.gghstats.com/c5f7a2e1d9b83460"
 
+// Overridable in tests (httptest); production keeps the const defaults above.
+var (
+	collectEndpoint = collectorURL
+	updateCheckURL  = repoLatestReleaseURL
+)
+
 // data is the JSON payload sent to the collector.
 type data struct {
 	Version   string   `json:"version"`
@@ -78,7 +84,7 @@ func Collect(cfg ServeFeatures) {
 	// Log the exact payload at debug level so users can verify what is sent.
 	slog.Debug("collector: sending anonymous usage report", "payload", buf.String())
 
-	resp, err := client.Post(collectorURL, "application/json; charset=utf-8", buf)
+	resp, err := client.Post(collectEndpoint, "application/json; charset=utf-8", buf)
 	if resp != nil {
 		_ = resp.Body.Close()
 	}
@@ -163,7 +169,7 @@ func CheckUpdate() {
 // checkUpdate queries the GitHub API for the latest release and logs a warning
 // if the running version is older.
 func checkUpdate(client *http.Client) {
-	req, err := http.NewRequest("GET", repoLatestReleaseURL, nil)
+	req, err := http.NewRequest("GET", updateCheckURL, nil)
 	if err != nil {
 		slog.Debug("collector: update check request failed", "error", err)
 		return

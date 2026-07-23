@@ -131,6 +131,7 @@ func TestWhitelistMiddlewareBlocksNonWhitelisted(t *testing.T) {
 
 func TestWhitelistMiddlewareXForwardedFor(t *testing.T) {
 	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/8"}, "")
+	w.trusted = ParseTrustedProxies("192.168.1.0/24")
 	handler := w.Middleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusOK)
 	}), MiddlewareSkip{})
@@ -141,7 +142,24 @@ func TestWhitelistMiddlewareXForwardedFor(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
-		t.Errorf("got %d, want 200 (should trust X-Forwarded-For)", rec.Code)
+		t.Errorf("got %d, want 200 (trusted peer + X-Forwarded-For)", rec.Code)
+	}
+}
+
+func TestWhitelistMiddlewareRejectsForgedXForwardedForFromUntrustedPeer(t *testing.T) {
+	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/8"}, "")
+	w.trusted = ParseTrustedProxies("192.168.1.0/24")
+	handler := w.Middleware(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		rw.WriteHeader(http.StatusOK)
+	}), MiddlewareSkip{})
+
+	req := httptest.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Forwarded-For", "10.5.5.5, 172.16.0.1")
+	req.RemoteAddr = "203.0.113.7:12345"
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("got %d, want 403 (untrusted peer must not forge X-Forwarded-For)", rec.Code)
 	}
 }
 
@@ -302,9 +320,9 @@ func TestWhitelistBypassWithValidAPIToken(t *testing.T) {
 }
 
 func TestWhitelistMiddlewareAllowsAllWhenNil(t *testing.T) {
-	var w *Whitelist
-	if w != nil {
-		t.Fatal("nil whitelist should be nil")
+	cfg := Config{Whitelist: nil}
+	if cfg.Whitelist != nil {
+		t.Fatal("nil whitelist should remain nil")
 	}
 	// When whitelist is nil, finalizeHandler skips it entirely.
 }

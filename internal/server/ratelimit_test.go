@@ -8,19 +8,80 @@ import (
 )
 
 func TestClientIP(t *testing.T) {
+	trustedLAN := ParseTrustedProxies("10.0.0.0/8")
 	tests := []struct {
 		name          string
+		trusted       *TrustedProxies
 		xForwardedFor string
 		xRealIP       string
 		remoteAddr    string
 		want          string
 	}{
-		{"x-forwarded-for", "1.2.3.4, 5.6.7.8", "", "10.0.0.1:12345", "1.2.3.4"},
-		{"x-real-ip", "", "9.9.9.9", "", "9.9.9.9"},
-		{"remote-addr with port", "", "", "192.168.1.1:54321", "192.168.1.1"},
-		{"remote-addr no port", "", "", "192.168.1.1", "192.168.1.1"},
-		{"x-forwarded-for trumps x-real-ip", "4.4.4.4", "8.8.8.8", "10.0.0.1:9999", "4.4.4.4"},
-		{"x-real-ip trumps remote-addr", "", "6.6.6.6", "10.0.0.1:9999", "6.6.6.6"},
+		{
+			name:          "empty trusted ignores xff forge",
+			trusted:       nil,
+			xForwardedFor: "203.0.113.1",
+			remoteAddr:    "198.51.100.9:12345",
+			want:          "198.51.100.9",
+		},
+		{
+			name:       "empty trusted ignores x-real-ip",
+			trusted:    ParseTrustedProxies(""),
+			xRealIP:    "203.0.113.1",
+			remoteAddr: "198.51.100.9:12345",
+			want:       "198.51.100.9",
+		},
+		{
+			name:          "untrusted peer ignores xff",
+			trusted:       trustedLAN,
+			xForwardedFor: "10.5.5.5",
+			remoteAddr:    "198.51.100.9:12345",
+			want:          "198.51.100.9",
+		},
+		{
+			name:          "trusted peer uses leftmost xff",
+			trusted:       trustedLAN,
+			xForwardedFor: "10.5.5.5, 172.16.0.1",
+			remoteAddr:    "10.0.0.1:12345",
+			want:          "10.5.5.5",
+		},
+		{
+			name:          "trusted peer skips empty xff hop",
+			trusted:       trustedLAN,
+			xForwardedFor: ", 10.5.5.5",
+			xRealIP:       "10.9.9.9",
+			remoteAddr:    "10.0.0.1:12345",
+			want:          "10.5.5.5",
+		},
+		{
+			name:       "trusted peer uses x-real-ip",
+			trusted:    trustedLAN,
+			xRealIP:    "10.9.9.9",
+			remoteAddr: "10.0.0.1:12345",
+			want:       "10.9.9.9",
+		},
+		{
+			name:          "xff beats x-real-ip when trusted",
+			trusted:       trustedLAN,
+			xForwardedFor: "10.4.4.4",
+			xRealIP:       "10.8.8.8",
+			remoteAddr:    "10.0.0.1:9999",
+			want:          "10.4.4.4",
+		},
+		{
+			name:          "trusted peer garbage xff falls back to peer",
+			trusted:       trustedLAN,
+			xForwardedFor: "not-an-ip",
+			xRealIP:       "10.8.8.8",
+			remoteAddr:    "10.0.0.1:12345",
+			want:          "10.0.0.1",
+		},
+		{
+			name:       "remote-addr no port",
+			trusted:    nil,
+			remoteAddr: "192.168.1.1",
+			want:       "192.168.1.1",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -31,11 +92,8 @@ func TestClientIP(t *testing.T) {
 			if tt.xRealIP != "" {
 				h.Set("X-Real-IP", tt.xRealIP)
 			}
-			r := &http.Request{
-				Header:     h,
-				RemoteAddr: tt.remoteAddr,
-			}
-			if got := clientIP(r); got != tt.want {
+			r := &http.Request{Header: h, RemoteAddr: tt.remoteAddr}
+			if got := clientIP(r, tt.trusted); got != tt.want {
 				t.Errorf("clientIP = %q, want %q", got, tt.want)
 			}
 		})
@@ -206,6 +264,39 @@ func TestRateLimiterSeparatePerIP(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 	if rec.Code != 200 {
 		t.Errorf("IP B: got %d, want 200", rec.Code)
+	}
+}
+
+func TestRateLimiterMiddlewareUsesTrustedProxyClientIP(t *testing.T) {
+	rl := NewRateLimiter(RateLimitConfig{
+		Enabled:  true,
+		Requests: 1,
+		Period:   time.Hour,
+		Burst:    1,
+	})
+	rl.trusted = ParseTrustedProxies("192.168.1.0/24")
+	defer rl.Shutdown()
+
+	handler := rl.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}), MiddlewareSkip{})
+
+	req := httptest.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.168.1.1:12345"
+	req.Header.Set("X-Forwarded-For", "10.0.0.1")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("first client behind trusted proxy: got %d, want 200", rec.Code)
+	}
+
+	req = httptest.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.168.1.1:12345"
+	req.Header.Set("X-Forwarded-For", "10.0.0.2")
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("second client behind same trusted proxy: got %d, want 200", rec.Code)
 	}
 }
 

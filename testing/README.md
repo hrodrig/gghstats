@@ -5,7 +5,8 @@ Local and lab validation for **gghstats** (application repo).
 | Suite | Command | What it validates |
 |-------|---------|-------------------|
 | **Unit tests** | `make test` | Go packages (`go test -race ./...`) |
-| **Release gate** | `make release-check` | lint, tests, security, docker-scan (requires Docker) |
+| **Coverage** | `make cover` | Statement coverage **≥ 80%** (SPEC §6.1); writes `coverage.out` |
+| **Release gate** | `make release-check` | lint, test, cover, security, docker-scan (requires Docker) |
 | **Platform (native OS)** | `make test-platforms` | Install package/tarball, `/etc/gghstats/gghstats.env`, init system, HTTP `/api/v1/healthz`, uninstall — see [platforms/README.md](platforms/README.md) |
 
 **Out of scope here (see [gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)):**
