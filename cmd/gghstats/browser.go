@@ -6,7 +6,7 @@ import (
 	"runtime"
 )
 
-// serveDashboardURL returns a URL suitable for opening in a local browser.
+// serveDashboardURL returns the base HTTP URL for local bind/open helpers.
 func serveDashboardURL(host, port string) string {
 	switch host {
 	case "0.0.0.0", "::", "[::]", "":
@@ -14,6 +14,16 @@ func serveDashboardURL(host, port string) string {
 	default:
 		return "http://" + host + ":" + port
 	}
+}
+
+// serveOpenURL returns the URL opened by --open / GGHSTATS_OPEN_BROWSER.
+// API-only mode has no HTML at `/`, so open healthz instead.
+func serveOpenURL(host, port string, apiOnly bool) string {
+	base := serveDashboardURL(host, port)
+	if apiOnly {
+		return base + "/api/v1/healthz"
+	}
+	return base
 }
 
 func openBrowser(url string) {

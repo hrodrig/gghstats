@@ -372,7 +372,7 @@ func serveHTTP(ctx context.Context, srv *http.Server, cfg serveConfig, cancel co
 		if cfg.OpenBrowser {
 			go func() {
 				time.Sleep(300 * time.Millisecond)
-				openBrowser(logURL)
+				openBrowser(serveOpenURL(cfg.Host, cfg.Port, cfg.APIOnly))
 			}()
 		}
 		err := srv.ListenAndServe()

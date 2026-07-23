@@ -18,3 +18,13 @@ func TestServeDashboardURL(t *testing.T) {
 		}
 	}
 }
+
+func TestServeOpenURL(t *testing.T) {
+	t.Parallel()
+	if got := serveOpenURL("127.0.0.1", "8080", false); got != "http://127.0.0.1:8080" {
+		t.Errorf("dashboard open = %q", got)
+	}
+	if got := serveOpenURL("0.0.0.0", "8080", true); got != "http://127.0.0.1:8080/api/v1/healthz" {
+		t.Errorf("api-only open = %q", got)
+	}
+}

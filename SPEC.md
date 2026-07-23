@@ -52,7 +52,7 @@ There is **no** generic REST CRUD layer.
 
 **Security headers** on all HTTP responses: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera/mic/geolocation disabled), plus **CSP** (default Report-Only; see §2.1).
 
-**CORS** on authenticated JSON success responses: `GGHSTATS_CORS_ORIGINS` (comma list). Empty → `Access-Control-Allow-Origin: *`. When `GGHSTATS_API_ONLY` and CORS is open (`*`), serve logs a startup warn — do not embed the API token in a public SPA (use a BFF/proxy).
+**CORS** on authenticated JSON success responses: `GGHSTATS_CORS_ORIGINS` (comma list). Empty → `Access-Control-Allow-Origin: *`. Allow list: echo matching `Origin`; omit on mismatch; if the request has no `Origin`, use the first configured origin. When `GGHSTATS_API_ONLY` and CORS is open (`*`), serve logs a startup warn — do not embed the API token in a public SPA (use a BFF/proxy).
 
 ### 2.1 CSP (SEC3)
 

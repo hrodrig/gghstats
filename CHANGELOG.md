@@ -25,6 +25,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - **SPEC / README / man / env.example:** document API-only, new routes, CORS, CSP; ROADMAP and `docs/plan-v0.11.x.md` updated (SEC1/SEC2 remain in **0.10.2**; webhooks/leaderboard deferred).
 - **SYNC+:** post-sync referrer/path delta updates are date-scoped (`UpdateDeltasSince` with one-day lookback) instead of full-table every cycle.
 - **PATH:** confirm 0.10 soft-land closed; binary default remains `./data/gghstats.db` until v1.0.0 XDG/platform default.
+- **`--open` / `GGHSTATS_OPEN_BROWSER`:** under `GGHSTATS_API_ONLY`, open `/api/v1/healthz` instead of `/` (no HTML dashboard).
+- **docs/api.md CORS:** document allow-list behavior when the request has no `Origin` (first configured origin).
 
 ## [0.10.2] - 2026-07-22
 

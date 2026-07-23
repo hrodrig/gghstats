@@ -41,6 +41,13 @@ func TestSetAPICORSAllowList(t *testing.T) {
 	if w2.Header().Get("Access-Control-Allow-Origin") != "" {
 		t.Fatal("should not echo disallowed origin")
 	}
+
+	// No Origin (non-browser): use first configured origin.
+	w3 := httptest.NewRecorder()
+	setAPICORS(w3, httptest.NewRequest(http.MethodGet, "/", nil), []string{"https://a.example", "https://b.example"})
+	if w3.Header().Get("Access-Control-Allow-Origin") != "https://a.example" {
+		t.Fatalf("no Origin = %q, want first allow-list entry", w3.Header().Get("Access-Control-Allow-Origin"))
+	}
 }
 
 func TestCORSIsOpen(t *testing.T) {

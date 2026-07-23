@@ -62,7 +62,7 @@ A matching `x-api-token` also **bypasses the IP whitelist** on protected paths (
 | Env | Meaning |
 |-----|---------|
 | `GGHSTATS_CORS_ORIGINS` empty | `Access-Control-Allow-Origin: *` on authenticated JSON success (compat) |
-| Comma-separated list | Echo `Origin` when it matches; otherwise omit the header |
+| Comma-separated list | Echo `Origin` when it matches; omit the header on a mismatched `Origin`; if the request has **no** `Origin` (curl / server-to-server), set the header to the **first** configured origin |
 
 Applies to authenticated JSON handlers (repos, traffic, dogfood, sync, …), not to healthz/badges.
 
