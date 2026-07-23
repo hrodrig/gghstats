@@ -624,9 +624,9 @@ func TestUpdateDeltasSince_ParityWithFull(t *testing.T) {
 	s.UpsertReferrer("r", "2026-03-20", "google.com", 40, 10)
 	s.UpsertReferrer("r", "2026-03-21", "google.com", 50, 15)
 	s.UpsertReferrer("r", "2026-03-22", "google.com", 55, 16)
-	s.UpsertPath("r", "2026-03-20", "/doc", 40, 10)
-	s.UpsertPath("r", "2026-03-21", "/doc", 50, 15)
-	s.UpsertPath("r", "2026-03-22", "/doc", 55, 16)
+	s.UpsertPath("r", "2026-03-20", "/doc", "Doc", 40, 10)
+	s.UpsertPath("r", "2026-03-21", "/doc", "Doc", 50, 15)
+	s.UpsertPath("r", "2026-03-22", "/doc", "Doc", 55, 16)
 
 	if err := s.UpdateDeltas(); err != nil {
 		t.Fatal(err)
