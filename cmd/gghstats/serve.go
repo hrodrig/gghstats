@@ -335,8 +335,12 @@ func runServe(args []string) error {
 
 	addr := cfg.Host + ":" + cfg.Port
 	srv := &http.Server{
-		Addr:    addr,
-		Handler: handler,
+		Addr:              addr,
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	return serveHTTP(ctx, srv, cfg, cancel)
