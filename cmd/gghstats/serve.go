@@ -254,7 +254,9 @@ func runServe(args []string) error {
 		defer rateLimiter.Shutdown()
 	}
 
+	trusted := server.ParseTrustedProxies(os.Getenv("GGHSTATS_TRUSTED_PROXIES"))
 	whitelist := server.NewWhitelist(server.ParseWhitelistEnv(), cfg.APIToken)
+	server.WarnTrustedProxiesIfNeeded(trusted, rateLimiter != nil, whitelist != nil)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -323,6 +325,7 @@ func runServe(args []string) error {
 		DefaultLocale:     i18n.EnvDefaultLocale(),
 		EnabledLocales:    i18n.EnvEnabledLocales(),
 		RateLimiter:       rateLimiter,
+		TrustedProxies:    trusted,
 		Whitelist:         whitelist,
 		HeadHTML:          template.HTML(cfg.HeadHTML),
 		ReverseProxyRules: server.ParseReverseProxyRules(cfg.ReverseProxyRules),

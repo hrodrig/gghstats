@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log/slog"
 	"net"
 	"strings"
 )
@@ -51,4 +52,22 @@ func (t *TrustedProxies) ContainsIP(ip net.IP) bool {
 
 func (t *TrustedProxies) empty() bool {
 	return t == nil || len(t.nets) == 0
+}
+
+// ShouldWarnTrustedProxies reports whether startup should warn that client IP
+// headers are ignored because no trusted proxies were configured.
+func ShouldWarnTrustedProxies(trusted *TrustedProxies, rateLimitEnabled, whitelistActive bool) bool {
+	if !rateLimitEnabled && !whitelistActive {
+		return false
+	}
+	return trusted.empty()
+}
+
+// WarnTrustedProxiesIfNeeded emits a startup warning when middleware depends on
+// client IP headers but GGHSTATS_TRUSTED_PROXIES is empty.
+func WarnTrustedProxiesIfNeeded(trusted *TrustedProxies, rateLimitEnabled, whitelistActive bool) {
+	if !ShouldWarnTrustedProxies(trusted, rateLimitEnabled, whitelistActive) {
+		return
+	}
+	slog.Warn("Client IP headers (X-Forwarded-For / X-Real-IP) are ignored because GGHSTATS_TRUSTED_PROXIES is empty. Behind a reverse proxy, set GGHSTATS_TRUSTED_PROXIES to the proxy IP or CIDR so rate-limit and whitelist see the real client")
 }

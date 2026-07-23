@@ -54,3 +54,57 @@ func TestTrustedProxiesContains(t *testing.T) {
 		t.Fatal("did not expect 8.8.8.8")
 	}
 }
+
+func TestShouldWarnTrustedProxies(t *testing.T) {
+	tests := []struct {
+		name             string
+		trusted          *TrustedProxies
+		rateLimitEnabled bool
+		whitelistActive  bool
+		want             bool
+	}{
+		{
+			name:             "no middleware no warning",
+			trusted:          nil,
+			rateLimitEnabled: false,
+			whitelistActive:  false,
+			want:             false,
+		},
+		{
+			name:             "rate limit enabled without trusted proxies warns",
+			trusted:          nil,
+			rateLimitEnabled: true,
+			whitelistActive:  false,
+			want:             true,
+		},
+		{
+			name:             "whitelist active without trusted proxies warns",
+			trusted:          ParseTrustedProxies(""),
+			rateLimitEnabled: false,
+			whitelistActive:  true,
+			want:             true,
+		},
+		{
+			name:             "both enabled without trusted proxies warns",
+			trusted:          ParseTrustedProxies(""),
+			rateLimitEnabled: true,
+			whitelistActive:  true,
+			want:             true,
+		},
+		{
+			name:             "trusted proxies configured suppress warning",
+			trusted:          ParseTrustedProxies("10.0.0.0/8"),
+			rateLimitEnabled: true,
+			whitelistActive:  true,
+			want:             false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ShouldWarnTrustedProxies(tt.trusted, tt.rateLimitEnabled, tt.whitelistActive); got != tt.want {
+				t.Fatalf("ShouldWarnTrustedProxies() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

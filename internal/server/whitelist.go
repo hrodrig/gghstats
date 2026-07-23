@@ -15,6 +15,7 @@ type Whitelist struct {
 	paths        []string // empty = all paths
 	apiToken     string   // when set, valid x-api-token bypasses the whitelist
 	whitelistReq *prometheus.CounterVec
+	trusted      *TrustedProxies
 }
 
 // SetWhitelistMetrics attaches Prometheus counters for whitelist decisions.
@@ -95,7 +96,7 @@ func (w *Whitelist) Middleware(next http.Handler, exempt MiddlewareSkip) http.Ha
 			next.ServeHTTP(wr, r)
 			return
 		}
-		ip := clientIP(r, nil)
+		ip := clientIP(r, w.trusted)
 		if !w.allowed(ip) {
 			if w.whitelistReq != nil {
 				w.whitelistReq.WithLabelValues("blocked").Inc()

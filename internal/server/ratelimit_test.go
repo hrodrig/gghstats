@@ -25,11 +25,11 @@ func TestClientIP(t *testing.T) {
 			want:          "198.51.100.9",
 		},
 		{
-			name:          "empty trusted ignores x-real-ip",
-			trusted:       ParseTrustedProxies(""),
-			xRealIP:       "203.0.113.1",
-			remoteAddr:    "198.51.100.9:12345",
-			want:          "198.51.100.9",
+			name:       "empty trusted ignores x-real-ip",
+			trusted:    ParseTrustedProxies(""),
+			xRealIP:    "203.0.113.1",
+			remoteAddr: "198.51.100.9:12345",
+			want:       "198.51.100.9",
 		},
 		{
 			name:          "untrusted peer ignores xff",
@@ -255,6 +255,39 @@ func TestRateLimiterSeparatePerIP(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 	if rec.Code != 200 {
 		t.Errorf("IP B: got %d, want 200", rec.Code)
+	}
+}
+
+func TestRateLimiterMiddlewareUsesTrustedProxyClientIP(t *testing.T) {
+	rl := NewRateLimiter(RateLimitConfig{
+		Enabled:  true,
+		Requests: 1,
+		Period:   time.Hour,
+		Burst:    1,
+	})
+	rl.trusted = ParseTrustedProxies("192.168.1.0/24")
+	defer rl.Shutdown()
+
+	handler := rl.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}), MiddlewareSkip{})
+
+	req := httptest.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.168.1.1:12345"
+	req.Header.Set("X-Forwarded-For", "10.0.0.1")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("first client behind trusted proxy: got %d, want 200", rec.Code)
+	}
+
+	req = httptest.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.168.1.1:12345"
+	req.Header.Set("X-Forwarded-For", "10.0.0.2")
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("second client behind same trusted proxy: got %d, want 200", rec.Code)
 	}
 }
 

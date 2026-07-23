@@ -22,6 +22,7 @@ type RateLimiter struct {
 	maxIdle        time.Duration
 	done           chan struct{}
 	rateLimitedReq *prometheus.CounterVec
+	trusted        *TrustedProxies
 }
 
 type rateLimiterEntry struct {
@@ -85,7 +86,7 @@ func (rl *RateLimiter) Middleware(next http.Handler, skip MiddlewareSkip) http.H
 			next.ServeHTTP(w, r)
 			return
 		}
-		ip := clientIP(r, nil)
+		ip := clientIP(r, rl.trusted)
 		entry := rl.getOrCreate(ip)
 		if !entry.limiter.Allow() {
 			if rl.rateLimitedReq != nil {
