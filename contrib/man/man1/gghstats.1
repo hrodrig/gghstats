@@ -1,5 +1,5 @@
 .\" Man page for gghstats(1)
-.TH GGHSTATS 1 "July 2026" "gghstats v0.10.2" "User Commands"
+.TH GGHSTATS 1 "July 2026" "gghstats v0.11.0" "User Commands"
 .SH NAME
 gghstats \- self-hosted GitHub repository traffic dashboard and CLI
 .SH SYNOPSIS
@@ -145,6 +145,22 @@ Open the default browser on startup (default: \fBfalse\fR; same as \fB\-\-open\f
 .TP
 .B GGHSTATS_API_TOKEN
 Protect JSON API routes; optional for manual sync from the UI.
+.TP
+.B GGHSTATS_API_ONLY
+When \fBtrue\fR, skip the HTML dashboard and SEO routes
+(\fB/robots.txt\fR, \fB/sitemap.xml\fR). JSON API, healthz, badges, and
+metrics remain available as configured (default: \fBfalse\fR).
+.TP
+.B GGHSTATS_CORS_ORIGINS
+Comma-separated allowed browser \fBOrigin\fR values for authenticated JSON
+responses. Empty (default) sends \fBAccess-Control-Allow-Origin: *\fR.
+With \fBGGHSTATS_API_ONLY\fR and open CORS, serve logs a startup warning —
+do not embed the API token in a public SPA.
+.TP
+.B GGHSTATS_CSP
+Content-Security-Policy mode: empty/\fBreport-only\fR (default) sends
+Report-Only; \fBenforce\fR sends an enforcing CSP when
+\fBGGHSTATS_HEAD_HTML\fR is empty (otherwise warn and stay Report-Only).
 .TP
 .B GGHSTATS_BADGE_PUBLIC
 Allow public badge SVG URLs (default: \fBtrue\fR).

@@ -68,6 +68,14 @@ type Config struct {
 	HeadHTML template.HTML
 	// ReverseProxyRules configures reverse-proxy mappings (see ReverseProxyRule).
 	ReverseProxyRules []ReverseProxyRule
+	// APIOnly skips HTML dashboard and SEO routes (GGHSTATS_API_ONLY).
+	APIOnly bool
+	// CORSOrigins is the Access-Control-Allow-Origin value for authenticated JSON APIs.
+	// Empty means "*". Multiple origins are joined as a single allow-list check (see setAPICORS).
+	CORSOrigins []string
+	// CSPMode: "" or "report-only" (default) sends Content-Security-Policy-Report-Only;
+	// "enforce" sends Content-Security-Policy when HeadHTML is empty.
+	CSPMode string
 }
 
 func withCacheControl(directive string, next http.Handler) http.Handler {
@@ -98,12 +106,14 @@ func New(cfg Config) http.Handler {
 		cfg.ServerMetrics = initMiddlewareMetrics(reg)
 	}
 	mux := http.NewServeMux()
-	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-		"dict": templateDict,
-	}).ParseFS(web.TemplateFS, "templates/*.html"))
 	mountStaticRoutes(mux, mustFaviconFS(), cfg.CustomCSSAbsPath)
 	mountAPIRoutes(mux, cfg)
-	mountHTMLRoutes(mux, cfg, tmpl)
+	if !cfg.APIOnly {
+		tmpl := template.Must(template.New("").Funcs(template.FuncMap{
+			"dict": templateDict,
+		}).ParseFS(web.TemplateFS, "templates/*.html"))
+		mountHTMLRoutes(mux, cfg, tmpl)
+	}
 	if len(cfg.ReverseProxyRules) > 0 {
 		mountReverseProxyRoutes(mux, cfg.ReverseProxyRules)
 	}
@@ -158,11 +168,16 @@ func mountStaticRoutes(mux *http.ServeMux, favFS fs.FS, customCSSPath string) {
 
 func mountAPIRoutes(mux *http.ServeMux, cfg Config) {
 	mux.HandleFunc("GET "+HealthzPath, handleHealthz)
-	mux.HandleFunc("GET /api/repos", apiMiddleware(cfg.APIToken, handleAPIRepos(cfg.Store)))
-	mux.HandleFunc("GET /api/v1/repos/{owner}/{repo}/traffic", apiMiddleware(cfg.APIToken, handleAPIRepoTraffic(cfg.Store)))
+	mux.HandleFunc("GET /api/repos", apiMiddleware(cfg.APIToken, handleAPIRepos(cfg)))
+	mux.HandleFunc("GET /api/v1/repos/{owner}/{repo}", apiMiddleware(cfg.APIToken, handleAPIRepo(cfg)))
+	mux.HandleFunc("GET /api/v1/repos/{owner}/{repo}/traffic", apiMiddleware(cfg.APIToken, handleAPIRepoTraffic(cfg)))
+	mux.HandleFunc("GET /api/v1/repos/{owner}/{repo}/stars", apiMiddleware(cfg.APIToken, handleAPIRepoStars(cfg)))
+	mux.HandleFunc("GET /api/v1/repos/{owner}/{repo}/popular", apiMiddleware(cfg.APIToken, handleAPIRepoPopular(cfg)))
+	mux.HandleFunc("GET /api/v1/h2h", apiMiddleware(cfg.APIToken, handleAPIH2H(cfg)))
+	mux.HandleFunc("GET /api/v1/charts/index-clones", apiMiddleware(cfg.APIToken, handleAPIIndexClonesChart(cfg)))
 	if cfg.SyncCoordinator != nil && cfg.APIToken != "" {
-		mux.HandleFunc("GET /api/v1/sync", apiMiddleware(cfg.APIToken, handleAPISyncStatus(cfg.SyncCoordinator)))
-		mux.HandleFunc("POST /api/v1/sync", apiMiddleware(cfg.APIToken, handleAPISyncStart(cfg.SyncCoordinator)))
+		mux.HandleFunc("GET /api/v1/sync", apiMiddleware(cfg.APIToken, handleAPISyncStatus(cfg)))
+		mux.HandleFunc("POST /api/v1/sync", apiMiddleware(cfg.APIToken, handleAPISyncStart(cfg)))
 	}
 	badgeHandler := badgeMiddleware(cfg, handleBadge(cfg, cfg.Store))
 	if sm := cfg.ServerMetrics; sm != nil {
@@ -229,7 +244,7 @@ func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 	if cfg.RateLimiter != nil {
 		h = cfg.RateLimiter.Middleware(h, skip)
 	}
-	h = securityHeadersMiddleware(h)
+	h = securityHeadersMiddleware(cfg, h)
 	return h
 }
 
@@ -285,35 +300,72 @@ func handleHealthz(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `{"status":"ok"}`)
 }
 
-func handleAPIRepos(db *store.Store) http.HandlerFunc {
+func handleAPIRepos(cfg Config) http.HandlerFunc {
+	db := cfg.Store
 	return func(w http.ResponseWriter, r *http.Request) {
-		repos, err := db.ListRepos("total_views", "desc")
+		sort, dir, query, page, perPage, paginate := parseAPIReposQuery(r)
+		repos, err := loadFilteredIndexRepos(db, sort, dir, query)
 		if err != nil {
-			http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err), http.StatusInternalServerError)
+			writeJSONError(w, http.StatusInternalServerError, "database error")
 			return
 		}
 
-		totalStars, totalForks, totalViews, totalClones := 0, 0, 0, 0
-		for _, repo := range repos {
-			totalStars += repo.Stars
-			totalForks += repo.Forks
-			totalViews += repo.TotalViews
-			totalClones += repo.TotalClones
-		}
-
+		totalStars, totalForks, totalClones, totalViews := sumIndexKPIs(repos)
+		items := repos
 		resp := map[string]interface{}{
 			"total_count":  len(repos),
 			"total_stars":  totalStars,
 			"total_forks":  totalForks,
 			"total_views":  totalViews,
 			"total_clones": totalClones,
-			"items":        repos,
+			"sort":         sort,
+			"dir":          dir,
+			"q":            query,
 		}
+		if paginate {
+			totalPages := indexTotalPages(len(repos), perPage)
+			page = clampIndexPage(page, totalPages)
+			_, _, items = indexReposPageSlice(repos, page, perPage)
+			resp["page"] = page
+			resp["per_page"] = perPage
+			resp["total_pages"] = totalPages
+		}
+		resp["items"] = items
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		json.NewEncoder(w).Encode(resp)
+		setAPICORS(w, r, cfg.CORSOrigins)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			slog.Error("encode api repos", "error", err)
+		}
 	}
+}
+
+// parseAPIReposQuery mirrors index filters. Default sort stays total_views/desc (pre-0.11 API).
+// Pagination applies only when page or per_page is present (compat: omit → return all items).
+func parseAPIReposQuery(r *http.Request) (sort, dir, query string, page, perPage int, paginate bool) {
+	q := r.URL.Query()
+	sort = q.Get("sort")
+	if sort == "" {
+		sort = "total_views"
+	}
+	dir = q.Get("dir")
+	if dir == "" {
+		dir = "desc"
+	}
+	query = strings.TrimSpace(q.Get("q"))
+	if !validIndexSorts[sort] {
+		sort = "total_views"
+	}
+	if !validIndexDirs[dir] {
+		dir = "desc"
+	}
+	paginate = q.Has("page") || q.Has("per_page")
+	page = parsePositiveInt(q.Get("page"), 1)
+	perPage = parsePositiveInt(q.Get("per_page"), defaultPerPage)
+	if perPage > maxPerPage {
+		perPage = maxPerPage
+	}
+	return sort, dir, query, page, perPage, paginate
 }
 
 type breadcrumb struct {

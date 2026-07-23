@@ -1,7 +1,8 @@
 # Spec — HTTP API and sync
 
-Normative operator contracts for **gghstats** as of **v0.10.2**.
-Narrative examples and env tables: **[README.md](README.md)**. Product direction: **[ROADMAP.md](ROADMAP.md)**.
+Normative operator contracts for **gghstats** as of **v0.11.0**.
+**Client how-to (examples, auth, dogfood map):** **[docs/api.md](docs/api.md)**.  
+Narrative install/env: **[README.md](README.md)**. Product direction: **[ROADMAP.md](ROADMAP.md)**.
 
 This document describes **current** behavior. Changes that break clients must bump SemVer appropriately and update this file + CHANGELOG.
 
@@ -17,6 +18,7 @@ This document describes **current** behavior. Changes that break clients must bu
 | Auth to GitHub | Personal access token (`GGHSTATS_GITHUB_TOKEN`) only — no GitHub App / OAuth in-tree |
 | Demo | `--demo` / `GGHSTATS_DEMO=true`: sample data, no token, sync/update-check off |
 | Container | Distroless `static-debian13:nonroot`; default in-image DB `/data/gghstats.db` |
+| API-only | `GGHSTATS_API_ONLY=true`: no HTML UI; no `/robots.txt` / `/sitemap.xml`; JSON + probes as configured |
 
 ---
 
@@ -26,11 +28,17 @@ This document describes **current** behavior. Changes that break clients must bu
 |-------|------|--------|
 | `GET /api/v1/healthz` | Public | Liveness JSON |
 | `GET /api/v1/badge/{owner}/{repo}` | Public by default | SVG; optional `GGHSTATS_BADGE_PUBLIC=false` |
-| `GET /api/repos` | `x-api-token` | Disabled (**404**) if `GGHSTATS_API_TOKEN` unset |
-| `GET /api/v1/repos/{owner}/{repo}/traffic` | `x-api-token` | Same gate as `/api/repos` |
-| `GET` / `POST /api/v1/sync` | `x-api-token` | Same gate; requires sync coordinator |
+| `GET /api/repos` | `x-api-token` | List + KPIs; optional `sort`/`dir`/`q`/`page`/`per_page` |
+| `GET /api/v1/repos/{owner}/{repo}` | `x-api-token` | Summary + momentum |
+| `GET /api/v1/repos/{owner}/{repo}/traffic` | `x-api-token` | Clones/views series |
+| `GET /api/v1/repos/{owner}/{repo}/stars` | `x-api-token` | Star history series |
+| `GET /api/v1/repos/{owner}/{repo}/popular` | `x-api-token` | Referrers + paths (~14d) |
+| `GET /api/v1/h2h` | `x-api-token` | Compare `a`/`b`/`w` + chart payload |
+| `GET /api/v1/charts/index-clones` | `x-api-token` | Aggregated index clones chart |
+| `GET` / `POST /api/v1/sync` | `x-api-token` | Sync coordinator |
 | `GET /metrics` | Public by default | Off with `GGHSTATS_METRICS=false` |
-| HTML UI (`/`, `/{owner}/{repo}`, `/h2h`, …) | Optional IP whitelist / rate limit | Not a JSON API |
+| HTML UI (`/`, `/{owner}/{repo}`, `/h2h`, …) | Optional IP whitelist / rate limit | Omitted when `GGHSTATS_API_ONLY=true` |
+| `/robots.txt`, `/sitemap.xml` | — | Omitted (404) when API-only |
 
 **Always exempt** from IP rate limit and IP whitelist: `/metrics`, `/api/v1/healthz`, `/api/v1/badge/*`, and each `local` prefix from `GGHSTATS_REVERSE_PROXY_RULES`.
 
@@ -42,7 +50,20 @@ Otherwise the peer `RemoteAddr` is authoritative.
 
 There is **no** generic REST CRUD layer.
 
-**Security headers** on all HTTP responses: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera/mic/geolocation disabled).
+**Security headers** on all HTTP responses: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera/mic/geolocation disabled), plus **CSP** (default Report-Only; see §2.1).
+
+**CORS** on authenticated JSON success responses: `GGHSTATS_CORS_ORIGINS` (comma list). Empty → `Access-Control-Allow-Origin: *`. Allow list: echo matching `Origin`; omit on mismatch; if the request has no `Origin`, use the first configured origin. When `GGHSTATS_API_ONLY` and CORS is open (`*`), serve logs a startup warn — do not embed the API token in a public SPA (use a BFF/proxy).
+
+### 2.1 CSP (SEC3)
+
+| Mode | Behavior |
+|------|----------|
+| Default / unset | `Content-Security-Policy-Report-Only` baseline (self + unpkg/jsDelivr Chart.js/Bootstrap + Google Fonts; `'unsafe-inline'` for dashboard scripts) |
+| `GGHSTATS_CSP=enforce` | Sends enforcing `Content-Security-Policy` **only** when `GGHSTATS_HEAD_HTML` is empty; otherwise warn and stay Report-Only |
+
+### 2.2 Dogfood contract (API5)
+
+With API-only + token + seeded store, an HTTP client must rebuild **index**, **repo detail**, and **H2H** using only documented JSON routes (covered by `TestDogfoodContract_APIOnly`). Checklist: `/api/repos` (+ optional chart), `/api/v1/repos/{o}/{r}` + traffic + stars + popular, `/api/v1/h2h`.
 
 ---
 
@@ -61,9 +82,9 @@ There is **no** generic REST CRUD layer.
 ### 3.3 `GET /api/repos`
 
 - Requires `GGHSTATS_API_TOKEN` + header `x-api-token`. Wrong/missing → **401** `{"error":"unauthorized"}`. Token unset → **404**.
-- CORS on success: `Access-Control-Allow-Origin: *`.
-- Sort: always `total_views` descending (independent of HTML index `sort=`).
-- Body: `total_count`, `total_stars`, `total_forks`, `total_views`, `total_clones`, `items[]` (`RepoSummary` JSON tags — see README).
+- CORS per §2 (`GGHSTATS_CORS_ORIGINS` / `*`).
+- Query: `sort`, `dir`, `q` (name substring). Defaults without sort: **`total_views` / `desc`** (pre-0.11 compat). Pagination when `page` and/or `per_page` present; otherwise all matching items.
+- Body: `total_count`, KPI totals, `sort`, `dir`, `q`, `items[]`; when paginating also `page`, `per_page`, `total_pages`.
 
 ### 3.4 `GET /api/v1/repos/{owner}/{repo}/traffic`
 
@@ -79,7 +100,26 @@ There is **no** generic REST CRUD layer.
 - Already running → **409** with `sync_in_progress` (maps from `sync.ErrInProgress`).
 - **GET**: snapshot of `sync.Status` — `running`, `scope`, `repo`, `last_started_at`, `last_finished_at`, `last_error` (RFC3339 UTC when set).
 
----
+### 3.6 `GET /api/v1/repos/{owner}/{repo}`
+
+- Same auth. **200**: `repo` (`RepoSummary`), `momentum_7d` / `momentum_30d` (float), `momentum_*_pct` (display strings). **404** if unknown.
+
+### 3.7 `GET /api/v1/repos/{owner}/{repo}/stars`
+
+- Same auth. **200**: `name`, `stars[]` (cumulative star history rows).
+
+### 3.8 `GET /api/v1/repos/{owner}/{repo}/popular`
+
+- Same auth. **200**: `name`, `days` (14), `referrers[]`, `paths[]`.
+
+### 3.9 `GET /api/v1/h2h`
+
+- Same auth. Query: `a`, `b` (required `owner/repo`), `w` interval (`7d` default, `30d`, `total`).
+- **200**: `a`, `b`, `interval`, `result` (`h2h.Result` with snake_case JSON: `repo_a`, `score_a`, `rows[]`, `suggest`, …), optional `charts` (aligned series). Examples: [docs/api.md](docs/api.md).
+
+### 3.10 `GET /api/v1/charts/index-clones`
+
+- Same auth. Honors same `sort`/`dir`/`q` filter as `/api/repos` (no pagination). **200**: `count`, `series`, echo of filter fields.
 
 ## 4. Sync contracts
 
@@ -98,7 +138,7 @@ There is **no** generic REST CRUD layer.
 
 - Worker pool size: `--sync-workers` / `GGHSTATS_SYNC_WORKERS` (default **4**). Values `< 1` collapse to **1** (serial).
 - Per-repo failures are logged and counted; they **do not** abort the whole cycle.
-- After workers finish, deltas are updated (`UpdateDeltas`).
+- After workers finish, referrer/path deltas for the sync day are updated (`UpdateDeltasSince` with one-day lookback for LAG). Full-history `UpdateDeltas` remains for seed/repair.
 
 ### 4.4 Per-repo steps (kinds for metrics)
 

@@ -48,6 +48,9 @@ type serveConfig struct {
 	EnableCollector   bool
 	EnableUpdateCheck bool
 	Demo              bool
+	APIOnly           bool
+	CORSOrigins       string
+	CSPMode           string
 }
 
 func loadServeConfig() serveConfig {
@@ -91,6 +94,9 @@ func loadServeConfig() serveConfig {
 	cfg.ReverseProxyRules = os.Getenv("GGHSTATS_REVERSE_PROXY_RULES")
 	cfg.EnableCollector = envBool("GGHSTATS_ENABLE_COLLECTOR", false)
 	cfg.EnableUpdateCheck = envBool("GGHSTATS_ENABLE_UPDATE_CHECK", true)
+	cfg.APIOnly = envBool("GGHSTATS_API_ONLY", false)
+	cfg.CORSOrigins = os.Getenv("GGHSTATS_CORS_ORIGINS")
+	cfg.CSPMode = strings.TrimSpace(os.Getenv("GGHSTATS_CSP"))
 
 	return cfg
 }
@@ -257,6 +263,9 @@ func runServe(args []string) error {
 	trusted := server.ParseTrustedProxies(os.Getenv("GGHSTATS_TRUSTED_PROXIES"))
 	whitelist := server.NewWhitelist(server.ParseWhitelistEnv(), cfg.APIToken)
 	server.WarnTrustedProxiesIfNeeded(trusted, rateLimiter != nil, whitelist != nil)
+	corsOrigins := server.ParseCORSOrigins(cfg.CORSOrigins)
+	warnAPIOnlyOpenCORS(cfg.APIOnly, corsOrigins)
+	warnCSPEnforceWithHeadHTML(cfg.CSPMode, cfg.HeadHTML)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -329,6 +338,9 @@ func runServe(args []string) error {
 		Whitelist:         whitelist,
 		HeadHTML:          template.HTML(cfg.HeadHTML),
 		ReverseProxyRules: server.ParseReverseProxyRules(cfg.ReverseProxyRules),
+		APIOnly:           cfg.APIOnly,
+		CORSOrigins:       corsOrigins,
+		CSPMode:           cfg.CSPMode,
 	})
 
 	startCollector(cfg)
@@ -360,7 +372,7 @@ func serveHTTP(ctx context.Context, srv *http.Server, cfg serveConfig, cancel co
 		if cfg.OpenBrowser {
 			go func() {
 				time.Sleep(300 * time.Millisecond)
-				openBrowser(logURL)
+				openBrowser(serveOpenURL(cfg.Host, cfg.Port, cfg.APIOnly))
 			}()
 		}
 		err := srv.ListenAndServe()
@@ -446,4 +458,16 @@ func setupRateLimiter() *server.RateLimiter {
 		"burst", rlCfg.Burst,
 	)
 	return rl
+}
+
+func warnAPIOnlyOpenCORS(apiOnly bool, origins []string) {
+	if apiOnly && server.CORSIsOpen(origins) {
+		slog.Warn("API-only mode with open CORS (*): browser clients can call the API from any origin; do not embed GGHSTATS_API_TOKEN in a public SPA — use a BFF/proxy or set GGHSTATS_CORS_ORIGINS")
+	}
+}
+
+func warnCSPEnforceWithHeadHTML(cspMode, headHTML string) {
+	if strings.EqualFold(strings.TrimSpace(cspMode), "enforce") && strings.TrimSpace(headHTML) != "" {
+		slog.Warn("GGHSTATS_CSP=enforce ignored while GGHSTATS_HEAD_HTML is set; using Content-Security-Policy-Report-Only")
+	}
 }

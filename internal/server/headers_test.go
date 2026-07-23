@@ -11,7 +11,7 @@ func TestSecurityHeadersMiddleware(t *testing.T) {
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
-	h := securityHeadersMiddleware(inner)
+	h := securityHeadersMiddleware(Config{}, inner)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
@@ -23,6 +23,42 @@ func TestSecurityHeadersMiddleware(t *testing.T) {
 	}
 	if got := w.Header().Get("Referrer-Policy"); got == "" {
 		t.Error("missing Referrer-Policy")
+	}
+	if got := w.Header().Get("Content-Security-Policy-Report-Only"); got == "" {
+		t.Error("missing CSP Report-Only")
+	}
+	if got := w.Header().Get("Content-Security-Policy"); got != "" {
+		t.Errorf("unexpected enforce CSP = %q", got)
+	}
+}
+
+func TestSecurityHeadersCSPEnforce(t *testing.T) {
+	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	h := securityHeadersMiddleware(Config{CSPMode: "enforce"}, inner)
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/", nil))
+	if w.Header().Get("Content-Security-Policy") == "" {
+		t.Fatal("expected Content-Security-Policy")
+	}
+	if w.Header().Get("Content-Security-Policy-Report-Only") != "" {
+		t.Fatal("did not expect Report-Only when enforce")
+	}
+}
+
+func TestSecurityHeadersCSPEnforceWithHeadHTML(t *testing.T) {
+	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	h := securityHeadersMiddleware(Config{CSPMode: "enforce", HeadHTML: "<script></script>"}, inner)
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/", nil))
+	if w.Header().Get("Content-Security-Policy-Report-Only") == "" {
+		t.Fatal("expected Report-Only when HeadHTML set")
+	}
+	if w.Header().Get("Content-Security-Policy") != "" {
+		t.Fatal("enforce must not apply with HeadHTML")
 	}
 }
 

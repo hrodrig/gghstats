@@ -8,32 +8,32 @@ import (
 
 // MetricRow is one row in the comparison table.
 type MetricRow struct {
-	Key       string
-	Label     string
-	WeightPct int
-	ValueA    int
-	ValueB    int
-	LeadsA    bool
+	Key       string `json:"key"`
+	Label     string `json:"label"`
+	WeightPct int    `json:"weight_pct"`
+	ValueA    int    `json:"value_a"`
+	ValueB    int    `json:"value_b"`
+	LeadsA    bool   `json:"leads_a"`
 }
 
 // Suggestion is an optional, content-agnostic summary of who leads (subdued in UI).
 type Suggestion struct {
-	Confidence string // high, medium, low
-	Rationale  string
-	Show       bool
+	Confidence string `json:"confidence"` // high, medium, low
+	Rationale  string `json:"rationale"`
+	Show       bool   `json:"show"`
 }
 
 // Result is the outcome of comparing two repos.
 type Result struct {
-	Interval Interval
-	RepoA    string
-	RepoB    string
-	ScoreA   int
-	ScoreB   int
-	DeltaPct float64 // relative gap between scores (0–100)
-	LeadsA   bool
-	Rows     []MetricRow
-	Suggest  Suggestion
+	Interval Interval    `json:"interval"`
+	RepoA    string      `json:"repo_a"`
+	RepoB    string      `json:"repo_b"`
+	ScoreA   int         `json:"score_a"`
+	ScoreB   int         `json:"score_b"`
+	DeltaPct float64     `json:"delta_pct"` // relative gap between scores (0–100)
+	LeadsA   bool        `json:"leads_a"`
+	Rows     []MetricRow `json:"rows"`
+	Suggest  Suggestion  `json:"suggest"`
 }
 
 // Compare scores repo A vs B for the selected interval.
