@@ -108,3 +108,10 @@ func TestShouldWarnTrustedProxies(t *testing.T) {
 		})
 	}
 }
+
+func TestWarnTrustedProxiesIfNeeded(t *testing.T) {
+	// Exercise both branches (warn + no-op); slog destination is irrelevant.
+	WarnTrustedProxiesIfNeeded(nil, true, false)
+	WarnTrustedProxiesIfNeeded(ParseTrustedProxies("10.0.0.0/8"), true, true)
+	WarnTrustedProxiesIfNeeded(nil, false, false)
+}

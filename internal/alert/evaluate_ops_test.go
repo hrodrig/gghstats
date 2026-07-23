@@ -121,3 +121,15 @@ func TestRunOpsRules_RateLimit(t *testing.T) {
 		t.Fatalf("want 1, got %d", n)
 	}
 }
+
+func TestDefaultOpsLevel(t *testing.T) {
+	if got := defaultOpsLevel("sync_failed"); got != "crit" {
+		t.Fatalf("sync_failed=%q", got)
+	}
+	if got := defaultOpsLevel("github_unreachable"); got != "crit" {
+		t.Fatalf("github_unreachable=%q", got)
+	}
+	if got := defaultOpsLevel("rate_limit"); got != "warn" {
+		t.Fatalf("rate_limit=%q", got)
+	}
+}

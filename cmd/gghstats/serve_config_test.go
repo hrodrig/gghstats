@@ -182,3 +182,59 @@ func TestParseServeFlagsDemoEnv(t *testing.T) {
 		t.Fatal("Demo want true from env")
 	}
 }
+
+func TestCollectFeatures(t *testing.T) {
+	t.Setenv("GGHSTATS_METRICS", "false")
+	t.Setenv("GGHSTATS_METRICS_PER_REPO", "true")
+	t.Setenv("GGHSTATS_CUSTOM_CSS", "/tmp/no-such-gghstats.css")
+	t.Setenv("GGHSTATS_RATE_LIMIT_ENABLED", "false")
+
+	f := collectFeatures(serveConfig{
+		BadgePublic:   true,
+		SyncOnStartup: true,
+		APIToken:      "tok",
+		PublicURL:     "https://stats.example.com",
+		Port:          "9090",
+		Host:          "0.0.0.0",
+	})
+	if !f.BadgePublic || f.MetricsEnabled || !f.MetricsPerRepo {
+		t.Fatalf("flags: %+v", f)
+	}
+	if !f.HasAPIToken || !f.HasPublicURL || !f.HasCustomCSS {
+		t.Fatalf("has-*: %+v", f)
+	}
+	if f.RateLimitEnabled {
+		t.Fatal("RateLimitEnabled want false")
+	}
+	if f.Port != "9090" || f.Host != "0.0.0.0" {
+		t.Fatalf("port/host: %+v", f)
+	}
+}
+
+func TestSetupRateLimiter(t *testing.T) {
+	t.Setenv("GGHSTATS_RATE_LIMIT_ENABLED", "false")
+	if rl := setupRateLimiter(); rl != nil {
+		t.Fatal("want nil when disabled")
+	}
+	t.Setenv("GGHSTATS_RATE_LIMIT_ENABLED", "true")
+	t.Setenv("GGHSTATS_RATE_LIMIT_REQUESTS", "10")
+	t.Setenv("GGHSTATS_RATE_LIMIT_PERIOD", "1m")
+	t.Setenv("GGHSTATS_RATE_LIMIT_BURST", "2")
+	rl := setupRateLimiter()
+	if rl == nil {
+		t.Fatal("want rate limiter when enabled")
+	}
+}
+
+func TestResolveCSSPath(t *testing.T) {
+	t.Setenv("GGHSTATS_CUSTOM_CSS", "")
+	abs, q := resolveCSSPath()
+	if abs != "" || q != "" {
+		t.Fatalf("empty env: abs=%q q=%q", abs, q)
+	}
+	t.Setenv("GGHSTATS_CUSTOM_CSS", "/tmp/definitely-missing-gghstats-theme.css")
+	abs, q = resolveCSSPath()
+	if abs != "" {
+		t.Fatalf("missing file should yield empty abs, got %q q=%q", abs, q)
+	}
+}

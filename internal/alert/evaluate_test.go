@@ -25,6 +25,22 @@ func TestParseRulesJSON_Traffic(t *testing.T) {
 	}
 }
 
+func TestRulesFromEnv(t *testing.T) {
+	rules, err := RulesFromEnv(func(k string) string {
+		if k == "GGHSTATS_ALERT_RULES" {
+			return `[{"repo":"a/b","metric":"views","window":"7d","op":"gte","value":1}]`
+		}
+		return ""
+	})
+	if err != nil || len(rules) != 1 || rules[0].Metric != "views" {
+		t.Fatalf("got %+v err=%v", rules, err)
+	}
+	empty, err := RulesFromEnv(func(string) string { return "" })
+	if err != nil || len(empty) != 0 {
+		t.Fatalf("empty: %+v err=%v", empty, err)
+	}
+}
+
 func TestRunTrafficRules_AbsoluteHighAndDebounce(t *testing.T) {
 	dir := t.TempDir()
 	db, err := store.Open(filepath.Join(dir, "t.db"))

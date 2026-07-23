@@ -654,3 +654,66 @@ func TestIsolationBetweenRepos(t *testing.T) {
 		t.Errorf("repo-a: got count=%d, want 10", rows[0].Count)
 	}
 }
+
+func TestAlertDebounceAndFleetSums(t *testing.T) {
+	s := tempDB(t)
+
+	stamp, err := s.AlertDebounceGet("missing")
+	if err != nil || stamp != "" {
+		t.Fatalf("empty get: stamp=%q err=%v", stamp, err)
+	}
+	if err := s.AlertDebounceSet("rule-a", "2026-07-22"); err != nil {
+		t.Fatal(err)
+	}
+	stamp, err = s.AlertDebounceGet("rule-a")
+	if err != nil || stamp != "2026-07-22" {
+		t.Fatalf("after set: stamp=%q err=%v", stamp, err)
+	}
+	if err := s.AlertDebounceSet("rule-a", "fired"); err != nil {
+		t.Fatal(err)
+	}
+	stamp, err = s.AlertDebounceGet("rule-a")
+	if err != nil || stamp != "fired" {
+		t.Fatalf("upsert: stamp=%q err=%v", stamp, err)
+	}
+
+	clones, err := s.SumClonesAll()
+	if err != nil || clones != 0 {
+		t.Fatalf("empty SumClonesAll = %d err=%v", clones, err)
+	}
+	views, err := s.SumViewsAll()
+	if err != nil || views != 0 {
+		t.Fatalf("empty SumViewsAll = %d err=%v", views, err)
+	}
+
+	if err := s.UpsertClone("o/r", "2026-07-01", 10, 2); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertClone("o/r", "2026-07-02", 5, 1); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertView("o/r", "2026-07-01", 20, 4); err != nil {
+		t.Fatal(err)
+	}
+
+	clones, err = s.SumClonesAll()
+	if err != nil || clones != 15 {
+		t.Fatalf("SumClonesAll = %d err=%v, want 15", clones, err)
+	}
+	views, err = s.SumViewsAll()
+	if err != nil || views != 20 {
+		t.Fatalf("SumViewsAll = %d err=%v, want 20", views, err)
+	}
+
+	n, err := s.DayCount("clones", "o/r", "2026-07-01")
+	if err != nil || n != 10 {
+		t.Fatalf("DayCount clones = %d err=%v", n, err)
+	}
+	n, err = s.DayCount("views", "o/r", "2026-07-99")
+	if err != nil || n != 0 {
+		t.Fatalf("missing day = %d err=%v", n, err)
+	}
+	if _, err := s.DayCount("stars", "o/r", "2026-07-01"); err == nil {
+		t.Fatal("want error for unsupported table")
+	}
+}
