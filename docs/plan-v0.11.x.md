@@ -32,12 +32,12 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior: [plan-v0.10.x.md](plan-v0.10.x.md)
 
 ## Security hardening (from post-0.10.1 review)
 
-Triage of external review (Kimi S1-*): **do not** reopen **v0.10.1**. Prefer small, testable fixes in this band **alongside** API work — **SEC1–SEC2** first if capacity; CSP/HSTS later or at the edge.
+Triage of external review (Kimi S1-*): **do not** reopen **v0.10.1**. The first two items ship as the **v0.10.2** security patch so **0.11.x** can stay focused on API-only work; CSP/HSTS remain later or at the edge.
 
 | ID | Item | Priority | Notes |
 |----|------|----------|--------|
-| SEC1 | **Trusted proxies** | High | `GGHSTATS_TRUSTED_PROXIES` (CIDRs). Only then trust `X-Forwarded-For` / `X-Real-IP` for rate-limit + whitelist (`clientIP`). Direct internet exposure today can forge XFF (S1-002 / S1-040). |
-| SEC2 | **`http.Server` timeouts** | High | Set `ReadHeaderTimeout` (+ sensible `ReadTimeout` / `WriteTimeout` / `IdleTimeout`) in `serve` — easy win, no API surface change. |
+| SEC1 | **Trusted proxies** | High | Shipped in **v0.10.2** via `GGHSTATS_TRUSTED_PROXIES` (CIDRs). Forwarded headers are now trusted only for configured proxy peers. |
+| SEC2 | **`http.Server` timeouts** | High | Shipped in **v0.10.2** with fixed `ReadHeaderTimeout`, `ReadTimeout`, `WriteTimeout`, and `IdleTimeout`. |
 | SEC3 | **CSP (phased)** | Medium | Baseline headers already omit CSP on purpose (CDN + optional `HeadHTML`). Options: report-only first, or strict CSP when `HeadHTML` empty + document operator tradeoff. Chart.js / Bootstrap **JS** already use SRI; reverse-proxy strip of backend CSP is intentional for proxied UIs. |
 | SEC4 | **HSTS** | Low (app) / edge | Prefer Traefik/Caddy in [gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted). App often HTTP behind TLS terminator — HSTS on the binary can be wrong. Optional `GGHSTATS_HSTS=…` only when TLS terminates in-process. |
 | SEC5 | **Reverse-proxy SSRF guardrails** | Medium | Operator-configured URLs (trust boundary). Optional blocklist `localhost` / link-local / cloud metadata; document risk in SPEC/README. |
@@ -67,7 +67,7 @@ Triage of external review (Kimi S1-*): **do not** reopen **v0.10.1**. Prefer sma
 2. External client can rebuild **core** dashboard views from documented endpoints alone (checklist in SPEC or README) — **dogfood contract test** green.
 3. CORS + auth documented; tests for API-only routing (HTML → 404/disabled); startup warn when CORS is dangerously open with API-only.
 4. CHANGELOG + SPEC updated (incl. sitemap/robots under API-only). Webhooks **not** required for band exit.
-5. **Security (soft):** SEC1 and SEC2 done **or** explicitly deferred to **0.10.2** / **0.12** with a note in ROADMAP — do not block API-only on CSP/HSTS.
+5. **Security (soft):** SEC1 and SEC2 shipped in **0.10.2**; do not block API-only on CSP/HSTS.
 
 ## Checklist
 
@@ -79,6 +79,6 @@ Triage of external review (Kimi S1-*): **do not** reopen **v0.10.1**. Prefer sma
 - [ ] CHANGELOG
 - [ ] (Stretch) Webhooks / delta — or explicit defer note to 1.1
 - [ ] (Stretch) Thin leaderboard (C?) — or keep parked under ROADMAP Line C
-- [ ] SEC1 Trusted proxies + tests
-- [ ] SEC2 http.Server timeouts
+- [x] SEC1 Trusted proxies + tests (**0.10.2**)
+- [x] SEC2 http.Server timeouts (**0.10.2**)
 - [ ] (Stretch) SEC3 CSP phased / SEC4 HSTS edge-or-opt-in / SEC5 proxy SSRF guards

@@ -1,6 +1,6 @@
 # Plan — v0.10.x
 
-**Status:** **v0.10.1** closed the 0.10.x band (2026-07-18) — core **v0.10.0** + milestones + SMTP. Next: [plan-v0.11.x.md](plan-v0.11.x.md).
+**Status:** **v0.10.1** closed the 0.10.x band (2026-07-18) — core **v0.10.0** + milestones + SMTP. Patch **v0.10.2** ships the post-review security slice: trusted proxies (SEC1) and HTTP server timeouts (SEC2). Next: [plan-v0.11.x.md](plan-v0.11.x.md).
 
 **Band goal:** cheaper sync for star-heavy repos, and **opt-in** operator signals (traffic + ops) when rules fire.
 

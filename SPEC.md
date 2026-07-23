@@ -36,6 +36,10 @@ This document describes **current** behavior. Changes that break clients must bu
 
 When `GGHSTATS_API_TOKEN` is set, a matching **`x-api-token`** header bypasses the IP whitelist on protected paths (token still validated by the API handler).
 
+For rate limit and IP whitelist identity, `X-Forwarded-For` / `X-Real-IP`
+are trusted only when the TCP peer is in `GGHSTATS_TRUSTED_PROXIES`.
+Otherwise the peer `RemoteAddr` is authoritative.
+
 There is **no** generic REST CRUD layer.
 
 **Security headers** on all HTTP responses: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera/mic/geolocation disabled).

@@ -168,6 +168,13 @@ Time window for rate limiting as a Go duration (default: \fB1m\fR).
 Maximum burst of requests before smoothing (default: \fB20\fR).
 Exempt paths: \fB/metrics\fR, \fB/api/v1/healthz\fR, \fB/api/v1/badge/*\fR (README embeds).
 .TP
+.B GGHSTATS_TRUSTED_PROXIES
+Comma-separated proxy IPs and/or CIDRs allowed to supply
+\fBX-Forwarded-For\fR or \fBX-Real-IP\fR for client IP resolution.
+Empty by default, which means those headers are ignored and the TCP peer
+address is used for rate limiting and IP whitelist checks.
+Set only to your reverse proxy IP or network; do not use \fB0.0.0.0/0\fR.
+.TP
 .B GGHSTATS_ALERTS_ENABLED
 When \fBtrue\fR, evaluate alert rules after sync (default \fBfalse\fR).
 Requires at least one valid entry in \fBGGHSTATS_ALERT_SINKS\fR.

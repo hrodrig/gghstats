@@ -7,6 +7,16 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- **Trusted proxies (SEC1):** `GGHSTATS_TRUSTED_PROXIES` now gates trust of `X-Forwarded-For` / `X-Real-IP`; when the list is empty (default), gghstats ignores those headers and uses the TCP peer for rate limiting and IP whitelist decisions. `gghstats serve` warns at startup when rate limiting or IP whitelist is active without trusted proxies configured.
+- **HTTP server timeouts (SEC2):** `http.Server` now sets `ReadHeaderTimeout=10s`, `ReadTimeout=30s`, `WriteTimeout=60s`, and `IdleTimeout=120s`.
+
+### Changed
+
+- **Breaking:** unconditional trust of `X-Forwarded-For` / `X-Real-IP` has been removed. Deployments behind a reverse proxy must set `GGHSTATS_TRUSTED_PROXIES` to the proxy IP or CIDR so rate limiting and IP whitelist see the real client.
+- **Docs:** README, sample env, man page, SPEC, and release plans now explain the trusted-proxy problem, operator setup situations, and the new timeout defaults.
+
 ## [0.10.1] - 2026-07-18
 
 ### Added
