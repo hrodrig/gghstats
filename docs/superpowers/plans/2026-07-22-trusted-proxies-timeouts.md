@@ -17,7 +17,7 @@
 - Work on branch `develop`; do not commit to `main` until release merge.
 - Do not delete files without explicit user approval.
 - Before each `git commit`, show the full message and wait for user approval (project rule).
-- Keep `golang.org/x/net v0.55.0 // indirect` pin; do not run `go mod tidy` in a way that drops it without re-pinning.
+- Keep `golang.org/x/net v0.57.0 // indirect` pin; do not run `go mod tidy` in a way that drops it without re-pinning.
 - Breaking change: empty `GGHSTATS_TRUSTED_PROXIES` ignores XFF/XRI (was unconditional trust).
 - No new timeout env knobs in 0.10.2.
 - Thin leaderboard / API-only / SEC3–SEC5 out of scope.
