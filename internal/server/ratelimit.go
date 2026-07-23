@@ -149,11 +149,17 @@ func clientIP(r *http.Request, trusted *TrustedProxies) string {
 	if trusted.empty() || peerParsed == nil || !trusted.ContainsIP(peerParsed) {
 		return peer
 	}
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		ip := strings.TrimSpace(strings.Split(xff, ",")[0])
-		if ip != "" && net.ParseIP(ip) != nil {
-			return ip
+	if xff := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); xff != "" {
+		for _, hop := range strings.Split(xff, ",") {
+			ip := strings.TrimSpace(hop)
+			if ip == "" {
+				continue
+			}
+			if net.ParseIP(ip) != nil {
+				return ip
+			}
 		}
+		return peer
 	}
 	if xri := strings.TrimSpace(r.Header.Get("X-Real-IP")); xri != "" {
 		if net.ParseIP(xri) != nil {

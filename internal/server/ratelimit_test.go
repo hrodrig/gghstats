@@ -46,6 +46,14 @@ func TestClientIP(t *testing.T) {
 			want:          "10.5.5.5",
 		},
 		{
+			name:          "trusted peer skips empty xff hop",
+			trusted:       trustedLAN,
+			xForwardedFor: ", 10.5.5.5",
+			xRealIP:       "10.9.9.9",
+			remoteAddr:    "10.0.0.1:12345",
+			want:          "10.5.5.5",
+		},
+		{
 			name:       "trusted peer uses x-real-ip",
 			trusted:    trustedLAN,
 			xRealIP:    "10.9.9.9",
@@ -64,6 +72,7 @@ func TestClientIP(t *testing.T) {
 			name:          "trusted peer garbage xff falls back to peer",
 			trusted:       trustedLAN,
 			xForwardedFor: "not-an-ip",
+			xRealIP:       "10.8.8.8",
 			remoteAddr:    "10.0.0.1:12345",
 			want:          "10.0.0.1",
 		},
