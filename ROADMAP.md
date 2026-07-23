@@ -38,7 +38,7 @@ Detailed band plans (scope, exit criteria, checklist):
 | Item | Notes |
 |------|--------|
 | **Incremental star history** | Full stargazer re-fetch is **O(n)** pages per sync. Add a cursor / `last_seen_star_count` (or equivalent). **Shipped in 0.10 work:** skip when count unchanged; incremental pages on growth; full rebuild on drop (SPEC §4.7). |
-| **UpdateDeltas / other sync cost** | See [plan-v0.10.x.md](docs/plan-v0.10.x.md) (pair with SYNC; avoid cargo-cult pool bumps). |
+| **UpdateDeltas / other sync cost** | **UpdateDeltas efficiency shipped in v0.11.0** — `sync.Run` uses date-scoped `UpdateDeltasSince(today)`; see [plan-v0.11.x.md](docs/plan-v0.11.x.md). PATH soft-land is docs-only; binary default still `./data/gghstats.db` until v1.0.0. |
 
 ## Release bands (path to 1.x)
 
@@ -61,7 +61,7 @@ Detailed band plans (scope, exit criteria, checklist):
 
 ## Next (after 0.10)
 
-**0.10.x closed** (core **v0.10.1**; security patch **v0.10.2** SEC1/SEC2). Active band: [plan-v0.11.x.md](docs/plan-v0.11.x.md) — API-only + JSON dogfood + SEC3 CSP.
+**0.10.x closed** (core **v0.10.1**; security patch **v0.10.2** SEC1/SEC2). Active band: [plan-v0.11.x.md](docs/plan-v0.11.x.md) — API-only + JSON dogfood + SEC3 CSP, plus SYNC+/PATH debt close.
 
 ## Explicit non-goals (this repo)
 

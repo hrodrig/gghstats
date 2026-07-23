@@ -63,7 +63,7 @@ func Run(gh *github.Client, db *store.Store, opts Options, rec ErrRecorder) (Run
 		result.RateLimitRemaining = gh.LastRateLimitRemaining()
 	}
 
-	if err := db.UpdateDeltas(); err != nil {
+	if err := db.UpdateDeltasSince(today); err != nil {
 		slog.Error("update deltas failed", "error", err)
 	}
 

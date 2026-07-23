@@ -1,6 +1,6 @@
 # Plan — v0.10.x
 
-**Status:** **v0.10.1** closed the 0.10.x band (2026-07-18) — core **v0.10.0** + milestones + SMTP. Patch **v0.10.2** ships the post-review security slice: trusted proxies (SEC1) and HTTP server timeouts (SEC2). Next: [plan-v0.11.x.md](plan-v0.11.x.md).
+**Status:** **v0.10.1** closed the 0.10.x band (2026-07-18) — core **v0.10.0** + milestones + SMTP. Patch **v0.10.2** ships the post-review security slice: trusted proxies (SEC1) and HTTP server timeouts (SEC2). SYNC+ date-scoped deltas and PATH docs close in **v0.11.0**. Next: [plan-v0.11.x.md](plan-v0.11.x.md).
 
 **Band goal:** cheaper sync for star-heavy repos, and **opt-in** operator signals (traffic + ops) when rules fire.
 
@@ -25,7 +25,7 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.
 | A2+sink | **Email / SMTP sink** | **Implemented** (groot-style STARTTLS / TLS). [SPEC §8.5](../SPEC.md). |
 | PATH | **XDG / default path prep** | **Implemented** (docs soft-land). Binary default still `./data/gghstats.db`; recommended absolute paths in README / env / launchd / systemd. Code default → [v1.0.0](plan-v1.0.0.md). |
 | QW | Remaining quick wins | **Implemented.** `getPaginatedCtx` dead `*[]Star` branch removed; access-log level by status (4xx warn / 5xx error). |
-| SYNC+ | **UpdateDeltas efficiency** | Incremental / less frequent with star-sync work — not cargo-cult pool bumps. |
+| SYNC+ | **UpdateDeltas efficiency** | **Implemented in v0.11.0** (date-scoped). |
 
 ## Implementation order (A2)
 
@@ -64,6 +64,7 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior band: [plan-v0.9.x.md](plan-v0.9.x.
 - [x] XDG / default path prep docs (soft-land; no binary default change)
 - [x] QW leftovers — `getPaginatedCtx` cleanup; access-log level by status
 - [x] Demo/docs note: collector / update-check off in demo (README Features)
+- [x] SYNC+ UpdateDeltas efficiency (shipped in 0.11.0)
 - [x] CHANGELOG notes for shipped SYNC work
 - [x] `make test` / lint green (current tree)
 - [x] *(0.10.1+)* Growth milestones (A2+) — `metric=stars`, `milestones:[…]`, fire-once

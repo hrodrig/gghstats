@@ -1,6 +1,6 @@
 # Plan — v0.11.x
 
-**Status:** **Active** — target **v0.11.0** (API1–API5 + SEC3). SEC1/SEC2 shipped in **v0.10.2**.
+**Status:** **Active** — target **v0.11.0** (API1–API5 + SEC3 + SYNC+/PATH debt close). SEC1/SEC2 shipped in **v0.10.2**.
 
 **Band goal:** ship an **API-only mode** so operators can run gghstats as JSON backend for their own UI (React, Svelte, …), exposing **what the official UI already needs** — not a generic CRUD platform. Name stays **gghstats**.
 
@@ -25,6 +25,8 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior: [plan-v0.10.x.md](plan-v0.10.x.md)
 | API4 | **SPEC update** | List new routes/fields; API-only SEO policy. Feeds 1.0 freeze. |
 | API5 | **Dogfood contract test** | External client rebuilds **index**, **repo**, **H2H** from documented endpoints alone. |
 | SEC3 | **CSP (phased)** | Default Report-Only; `GGHSTATS_CSP=enforce` only when HeadHTML empty. |
+| SYNC+ | **Date-scoped deltas** | `UpdateDeltasSince(today)` post-sync; full `UpdateDeltas()` remains for demo / repair. |
+| PATH | **Docs close** | Soft-land confirmed; binary default stays `./data/gghstats.db` until v1.0.0. |
 
 ## Deferred (not this band)
 
@@ -64,4 +66,5 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Prior: [plan-v0.10.x.md](plan-v0.10.x.md)
 - [x] CHANGELOG + VERSION 0.11.0
 - [x] SEC1 Trusted proxies (**0.10.2**)
 - [x] SEC2 http.Server timeouts (**0.10.2**)
+- [x] SYNC+ date-scoped deltas + PATH docs close
 - [x] Explicit defer note: B / C / SEC4 / SEC5 → 1.1+ / ROADMAP

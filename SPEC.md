@@ -138,7 +138,7 @@ With API-only + token + seeded store, an HTTP client must rebuild **index**, **r
 
 - Worker pool size: `--sync-workers` / `GGHSTATS_SYNC_WORKERS` (default **4**). Values `< 1` collapse to **1** (serial).
 - Per-repo failures are logged and counted; they **do not** abort the whole cycle.
-- After workers finish, deltas are updated (`UpdateDeltas`).
+- After workers finish, referrer/path deltas for the sync day are updated (`UpdateDeltasSince` with one-day lookback for LAG). Full-history `UpdateDeltas` remains for seed/repair.
 
 ### 4.4 Per-repo steps (kinds for metrics)
 
