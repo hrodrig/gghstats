@@ -440,15 +440,26 @@ function renderIndexClonesOverTime(canvasId, data) {
     type: 'line',
     data: {
       labels: data.map(d => d.date),
-      datasets: [{
-        label: uiT('chart.legend_clones_count'),
-        data: data.map(d => d.count),
-        borderColor: c.primary,
-        backgroundColor: 'transparent',
-        pointStyle: false,
-        tension: 0.1,
-        borderWidth: 2
-      }]
+      datasets: [
+        {
+          label: uiT('chart.legend_clones_count'),
+          data: data.map(d => d.count),
+          borderColor: c.primary,
+          backgroundColor: 'transparent',
+          pointStyle: false,
+          tension: 0.1,
+          borderWidth: 2
+        },
+        {
+          label: uiT('chart.legend_unique'),
+          data: data.map(d => d.uniques),
+          borderColor: c.info,
+          backgroundColor: 'transparent',
+          pointStyle: false,
+          tension: 0.1,
+          borderWidth: 2
+        }
+      ]
     },
     options: {
       responsive: true,
@@ -475,7 +486,16 @@ function renderIndexClonesOverTime(canvasId, data) {
         }
       },
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: {
+            color: c.fg,
+            boxWidth: 12,
+            padding: 14,
+            font: { size: 11, family: "'JetBrains Mono', monospace" }
+          }
+        },
         tooltip: chartTooltipOptions()
       }
     },
@@ -492,6 +512,26 @@ function initIndexListCharts() {
 function refreshIndexListCharts() {
   destroyIndexListCharts();
   initIndexListCharts();
+}
+
+function initCloneStatisticsSelector() {
+  const buttons = document.querySelectorAll('[data-gghstats-stats-selector]');
+  const panels = document.querySelectorAll('[data-gghstats-stats-panel]');
+  if (buttons.length === 0 || panels.length === 0) return;
+
+  for (const button of buttons) {
+    button.addEventListener('click', () => {
+      const selected = button.dataset.gghstatsStatsSelector;
+      for (const panel of panels) {
+        panel.hidden = panel.dataset.gghstatsStatsPanel !== selected;
+      }
+      for (const candidate of buttons) {
+        const active = candidate === button;
+        candidate.classList.toggle('active', active);
+        candidate.setAttribute('aria-pressed', String(active));
+      }
+    });
+  }
 }
 
 function initBadgeEmbed() {
@@ -777,6 +817,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initThemeToggle();
   initRepoCharts();
   initIndexListCharts();
+  initCloneStatisticsSelector();
   initH2HCharts();
   initBadgeEmbed();
   initSyncControl();

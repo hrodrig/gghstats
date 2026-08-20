@@ -76,7 +76,15 @@
     "showing": "{{from}}–{{to}} von {{total}} Repositorien",
     "chart_title": "Klone im Zeitverlauf",
     "chart_blurb": "Tägliche Klone (GitHub-Traffic), summiert über alle Repos in aktueller Liste und Suchfilter — nicht nur diese Seite. Fenster: bis zu 120 Tage mit Daten.",
-    "chart_empty": "Noch keine Klon-Historie für diese Liste. gghstats fetch ausführen, um Traffic zu sammeln."
+    "chart_empty": "Noch keine Klon-Historie für diese Liste. gghstats fetch ausführen, um Traffic zu sammeln.",
+    "stats_title": "Tägliche Klonstatistik",
+    "stats_mean": "Mittelwert",
+    "stats_median": "Median",
+    "stats_variance": "Varianz",
+    "stats_stddev": "Standardabweichung",
+    "stats_min": "Minimum",
+    "stats_max": "Maximum",
+    "stats_p95": "P95"
   },
   "h2h": {
     "title": "Direktvergleich (H2H)",

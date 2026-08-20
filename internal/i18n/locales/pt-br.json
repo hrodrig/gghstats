@@ -76,7 +76,15 @@
     "showing": "Mostrando {{from}}–{{to}} de {{total}} repositórios",
     "chart_title": "Clones ao longo do tempo",
     "chart_blurb": "Clones diários (tráfego do GitHub) somados em todos os repositórios da lista e filtro atual — não apenas desta página. Janela: até os últimos 120 dias com dados.",
-    "chart_empty": "Sem histórico de clones para esta lista ainda. Execute gghstats fetch para coletar tráfego."
+    "chart_empty": "Sem histórico de clones para esta lista ainda. Execute gghstats fetch para coletar tráfego.",
+    "stats_title": "Estatísticas diárias de clones",
+    "stats_mean": "Média",
+    "stats_median": "Mediana",
+    "stats_variance": "Variância",
+    "stats_stddev": "Desvio padrão",
+    "stats_min": "Mínimo",
+    "stats_max": "Máximo",
+    "stats_p95": "P95"
   },
   "h2h": {
     "title": "Cara a Cara (H2H)",

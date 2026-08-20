@@ -245,6 +245,31 @@ func TestIndexPageClonesChart(t *testing.T) {
 	}
 }
 
+func TestIndexPageCloneStatistics(t *testing.T) {
+	body := indexPageBody(t, indexPageFixture(t))
+	for _, want := range []string{
+		"Daily clone statistics",
+		`data-gghstats-stats-selector="total"`,
+		`data-gghstats-stats-selector="unique"`,
+		`data-gghstats-stats-panel="unique" hidden`,
+		"Mean",
+		"Median",
+		"Variance",
+		"Standard deviation",
+		"Minimum",
+		"Maximum",
+		"P95",
+		">8.50<",
+		">12.25<",
+		">3.00<",
+		">1.00<",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("expected clone statistics content %q", want)
+		}
+	}
+}
+
 func TestIndexPageCloneWindowColumns(t *testing.T) {
 	body := indexPageBody(t, indexPageFixture(t))
 	if !strings.Contains(body, ">(1d)<") || !strings.Contains(body, ">(7d)<") || !strings.Contains(body, ">(30d)<") {
