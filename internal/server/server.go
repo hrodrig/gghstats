@@ -194,6 +194,7 @@ func mountHTMLRoutes(mux *http.ServeMux, cfg Config, tmpl *template.Template) {
 	mountSEORoutes(mux, cfg)
 	repoHandler := handleRepoPage(cfg, cfg.Store, tmpl)
 	indexHandler := handleIndex(cfg, cfg.Store, tmpl)
+	mux.HandleFunc("GET /export.jsonl", handleIndexJSONLExport(cfg.Store))
 	mux.HandleFunc("GET /h2h", handleH2HPage(cfg, cfg.Store, tmpl))
 	mux.HandleFunc("GET /featured", handleFeaturedPage(cfg, cfg.Store, tmpl))
 	htmlNotFound := func(w http.ResponseWriter, r *http.Request) {
@@ -388,6 +389,7 @@ type layoutData struct {
 	Breadcrumbs      []breadcrumb
 	Content          template.HTML
 	PageID           string // index, h2h, repo, not_found — sidebar active state
+	Query            string // current index search query, used by the matching JSONL export
 	LocaleLinks      []localeLink
 	JSI18n           template.JS
 	// CustomStylesheetURL is set when GGHSTATS_CUSTOM_CSS points to a valid file (safe for href).
@@ -587,7 +589,7 @@ func clampIndexPage(page, totalPages int) int {
 type indexTemplatePayload struct {
 	localeBinder
 	ShowingLine          string
-	Repos                []store.RepoSummary
+	Repos                []indexRepoRow
 	Sort                 string
 	Dir                  string
 	Query                string
@@ -617,7 +619,7 @@ type indexTemplatePayload struct {
 }
 
 func buildIndexTemplatePayload(
-	reposPage []store.RepoSummary,
+	reposPage []indexRepoRow,
 	sort, dir, query string,
 	page, perPage, total, start, end, totalPages int,
 	kpiStars, kpiForks, kpiClones, kpiViews int,
@@ -687,8 +689,9 @@ func handleIndex(cfg Config, db *store.Store, tmpl *template.Template) http.Hand
 			return
 		}
 		kpiStars, kpiForks, kpiClones, kpiViews := sumIndexKPIs(repos)
+		rankedRepos := rankIndexReposByTotalClones(repos)
 		total := len(repos)
-		start, end, reposPage := indexReposPageSlice(repos, page, perPage)
+		start, end, reposPage := indexRepoRowsPageSlice(rankedRepos, page, perPage)
 		totalPages := indexTotalPages(total, perPage)
 		page = clampIndexPage(page, totalPages)
 
@@ -708,6 +711,7 @@ func handleIndex(cfg Config, db *store.Store, tmpl *template.Template) http.Hand
 		renderLayout(w, r, tmpl, cfg, layoutData{
 			Title:   lb.T("index.title"),
 			PageID:  "index",
+			Query:   query,
 			Version: version.Version,
 			Content: content,
 		})

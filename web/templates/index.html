@@ -80,6 +80,7 @@
         <table class="table table-hover table-striped table-bordered mb-0 align-middle">
           <thead class="table-light">
             <tr>
+              <th scope="col" class="text-end fw-semibold text-body">{{call .T "index.col_clone_rank_share"}}</th>
               <th scope="col" class="fw-semibold"><a href="{{.SortNameURL}}" class="text-decoration-none text-body">{{call .T "index.col_name"}}{{if eq .Sort "name"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
               <th scope="col" class="text-end fw-semibold"><a href="{{.SortStarsURL}}" class="text-decoration-none text-body">{{call .T "index.col_stars"}}{{if eq .Sort "stars"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
               <th scope="col" class="text-end fw-semibold"><a href="{{.SortForksURL}}" class="text-decoration-none text-body">{{call .T "index.col_forks"}}{{if eq .Sort "forks"}} {{if eq .Dir "desc"}}↓{{else}}↑{{end}}{{end}}</a></th>
@@ -93,6 +94,7 @@
           <tbody>
             {{range .Repos}}
             <tr>
+              <td class="text-end text-nowrap">{{.CloneRankOrdinal}} · {{printf "%.2f" .CloneSharePercent}}%</td>
               <td><a href="/{{.Name}}" class="fw-medium" title="{{.Name}}">{{.Name}}</a></td>
               <td class="text-end">{{call $.Num .Stars}}</td>
               <td class="text-end">{{call $.Num .Forks}}</td>
@@ -104,7 +106,7 @@
             </tr>
             {{else}}
             <tr>
-              <td colspan="8" class="text-center text-muted py-5">
+              <td colspan="9" class="text-center text-muted py-5">
                 <p class="mb-2">{{call .T "index.empty_title"}}</p>
                 <p class="small mb-0">{{call .T "index.empty_hint"}}</p>
                 <code class="d-inline-block mt-2 p-2 bg-body-secondary rounded small text-start">gghstats fetch --repo owner/repo --db ./data/gghstats.db --token $GGHSTATS_GITHUB_TOKEN</code>

@@ -277,6 +277,62 @@ func TestIndexPageCloneWindowColumns(t *testing.T) {
 	}
 }
 
+func TestIndexPageCloneRankAndShare(t *testing.T) {
+	db := testStore(t)
+	_ = db.UpsertRepo("owner/first", "", 0, 0, 0, 0, 0, false, false, "")
+	_ = db.UpsertRepo("owner/second", "", 0, 0, 0, 0, 0, false, false, "")
+	_ = db.UpsertClone("owner/first", "2026-03-20", 80, 8)
+	_ = db.UpsertClone("owner/second", "2026-03-20", 20, 2)
+
+	body := indexPageBody(t, New(Config{Store: db}))
+	for _, want := range []string{
+		"# - %",
+		"1st · 80.00%",
+		"2nd · 20.00%",
+		`href="/export.jsonl"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("expected rank/share or export control %q", want)
+		}
+	}
+}
+
+func TestIndexJSONLExport(t *testing.T) {
+	db := testStore(t)
+	_ = db.UpsertRepo("owner/repo", "export fixture", 2, 1, 0, 0, 0, false, false, "")
+	_ = db.UpsertClone("owner/repo", "2026-03-20", 3, 2)
+	_ = db.UpsertView("owner/repo", "2026-03-20", 5, 4)
+	_ = db.UpsertReferrer("owner/repo", "2026-03-20", "example.com", 2, 1)
+	_ = db.UpsertPath("owner/repo", "2026-03-20", "/docs", "Docs", 4, 3)
+	_ = db.UpsertStar("owner/repo", "2026-03-20", 2)
+
+	handler := New(Config{Store: db})
+	req := httptest.NewRequest(http.MethodGet, "/export.jsonl?q=owner", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", w.Code)
+	}
+	if got := w.Header().Get("Content-Type"); !strings.HasPrefix(got, "application/x-ndjson") {
+		t.Fatalf("Content-Type = %q, want JSONL", got)
+	}
+	if got := w.Header().Get("Content-Disposition"); !strings.Contains(got, "gghstats-export.jsonl") {
+		t.Fatalf("Content-Disposition = %q, want attachment filename", got)
+	}
+
+	var row indexJSONLExportRow
+	if err := json.NewDecoder(w.Body).Decode(&row); err != nil {
+		t.Fatalf("decode JSONL row: %v", err)
+	}
+	if row.Repo.Name != "owner/repo" || row.CloneRank != 1 || row.CloneSharePercent != 100 {
+		t.Fatalf("unexpected export summary: %#v", row)
+	}
+	if len(row.Clones) != 1 || len(row.Views) != 1 || len(row.Referrers) != 1 || len(row.Paths) != 1 || len(row.Stars) != 1 {
+		t.Fatalf("expected all stored data in export: %#v", row)
+	}
+}
+
 func TestIndexHidesPaginationWhenOnePage(t *testing.T) {
 	db := testStore(t)
 	_ = db.UpsertRepo("a/b", "x", 1, 0, 1, 0, 0, false, false, "")

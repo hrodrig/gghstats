@@ -75,6 +75,9 @@
           <button id="sync-now-btn" type="button" class="btn app-brutal-btn btn-sm w-100 mb-2 text-uppercase fw-bold"{{if .SyncScopeRepo}} data-sync-repo="{{.SyncScopeRepo}}" aria-label="{{call .Tfmt "common.sync_repo_aria" (dict "repo" .SyncScopeRepo)}}"{{else}} aria-label="{{call .T "common.sync_all_aria"}}"{{end}}>{{if .SyncScopeRepo}}{{call .T "common.sync_repo"}}{{else}}{{call .T "common.sync_all"}}{{end}}</button>
           <p id="sync-status" class="small app-brutal-muted mb-2" aria-live="polite"></p>
           {{end}}
+          {{if eq .PageID "index"}}
+          <a href="/export.jsonl{{if .Query}}?q={{urlquery .Query}}{{end}}" class="btn app-brutal-btn btn-sm w-100 mb-2 text-uppercase fw-bold">{{call .T "common.export_jsonl"}}</a>
+          {{end}}
           <button id="theme-toggle" type="button" class="btn app-brutal-btn btn-sm w-100 mb-2 text-uppercase fw-bold" aria-label="{{call .T "common.theme"}}">{{call .T "common.theme"}}</button>
           <div class="small app-brutal-muted">v{{.Version}}</div>
         </div>
