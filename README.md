@@ -93,7 +93,7 @@ Same repository ([`hrodrig/gghstats`](https://github.com/hrodrig/gghstats)):
 - **Head to Head (H2H)** at `/h2h` — compare two repos with weighted share scores (0–100, sum to 100); open *How the H2H score is calculated* on that page for the formula
 - **SVG badges** — embed clones/views/stars in READMEs (`/api/v1/badge/…`); copy Markdown from the repo page
 - **Web UI languages (i18n):** English (default), Spanish, German, French, Brazilian Portuguese, Bulgarian, and Russian — sidebar language selector, cookie `gghstats_locale`, env defaults (see [Web UI languages](#web-ui-languages-i18n))
-- **Light/dark/midnight themes** in the sidebar, plus optional **custom CSS** (`GGHSTATS_CUSTOM_CSS` / [contrib/themes](contrib/themes/)) when you want to customize the dashboard further
+- **Light/dark/midnight themes** in the sidebar, plus optional **custom CSS** (`GGHSTATS_CUSTOM_CSS` / [contrib/themes](contrib/themes/)) when you want to customize the dashboard further — built-in palettes and token reference in [docs/themes.md](docs/themes.md)
 - **JSON API** for scripts and external UIs — start with **[docs/api.md](docs/api.md)** (examples + dogfood map); contracts in [SPEC.md](SPEC.md); optional **`GGHSTATS_API_ONLY`**
 - **CLI** for one-shot `fetch` / `report` / `export` without running the full dashboard
 - **Prometheus metrics** at `GET /metrics` — scrape sync health and HTTP traffic from Grafana/Alloy
