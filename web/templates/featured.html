@@ -59,13 +59,13 @@
       <div class="card-body d-flex flex-column">
         <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
           <a href="https://github.com/{{if .UpstreamFullName}}{{.UpstreamFullName}}{{else}}{{.Name}}{{end}}" target="_blank" rel="noopener noreferrer" class="fw-semibold text-decoration-none fs-5 text-body" data-gghstats-role="featured-name">{{if .UpstreamFullName}}{{.UpstreamFullName}}{{else}}{{.Name}}{{end}}</a>
-          {{if .Fork}}{{if .ParentFullName}}<span class="badge bg-secondary-subtle text-secondary text-uppercase small" title="{{call $.T "featured.parent_label"}} {{.ParentFullName}}" data-gghstats-role="featured-fork-badge">{{call $.T "featured.parent_label"}} {{.ParentFullName}}</span>{{else}}<span class="badge bg-secondary-subtle text-secondary text-uppercase small" data-gghstats-role="featured-fork-badge">{{call $.T "repo.fork_of"}}</span>{{end}}{{end}}
+          {{if .Fork}}{{if .ParentFullName}}<span class="badge app-featured-fork-badge text-uppercase small" title="{{call $.T "featured.parent_label"}} {{.ParentFullName}}" data-gghstats-role="featured-fork-badge">{{call $.T "featured.parent_label"}} {{.ParentFullName}}</span>{{else}}<span class="badge app-featured-fork-badge text-uppercase small" data-gghstats-role="featured-fork-badge">{{call $.T "repo.fork_of"}}</span>{{end}}{{end}}
         </div>
         {{if .UpstreamDescription}}
         <p class="text-muted small mb-3" data-gghstats-role="featured-description">{{.UpstreamDescription}}</p>
         {{end}}
         <div class="mt-auto d-flex align-items-center gap-3">
-          <span class="badge bg-body-secondary text-body" data-gghstats-role="featured-stars">{{call $.Tfmt "featured.stars" (dict "count" (call $.Num .UpstreamStars))}}</span>
+          <span class="badge app-featured-stars" data-gghstats-role="featured-stars">{{call $.Tfmt "featured.stars" (dict "count" (call $.Num .UpstreamStars))}}</span>
         </div>
         <div class="mt-3 d-flex align-items-center justify-content-between gap-2">
           <a class="btn btn-outline-primary btn-sm text-uppercase small" href="https://github.com/{{if .UpstreamFullName}}{{.UpstreamFullName}}{{else}}{{.Name}}{{end}}" target="_blank" rel="noopener noreferrer">{{call $.T "featured.view_on_github"}}</a>
@@ -102,7 +102,7 @@
 <div class="card shadow-sm border-0">
   <div class="card-body text-center text-muted py-5" data-gghstats-role="featured-empty">
     <p class="mb-2" data-gghstats-role="featured-empty-title">{{call .T "featured.empty"}}</p>
-    <code class="d-inline-block mt-2 p-2 bg-body-secondary rounded small text-start" data-gghstats-role="featured-empty-cmd">{{call .T "featured.empty_cmd"}}</code>
+    <code class="d-inline-block mt-2 p-2 app-featured-empty-cmd rounded small text-start" data-gghstats-role="featured-empty-cmd">{{call .T "featured.empty_cmd"}}</code>
   </div>
 </div>
 {{end}}
