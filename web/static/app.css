@@ -368,6 +368,8 @@ html[data-bs-theme="dark"] .app-brutalist .app-brutal-chart-well {
 
 .app-brutalist .table-light {
   --bs-table-bg: var(--brutal-paper);
+  --bs-table-color: var(--brutal-text);
+  --bs-table-color-state: var(--brutal-text);
   color: var(--brutal-text);
 }
 
