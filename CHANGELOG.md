@@ -5,11 +5,16 @@ All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.6.1] - 2026-09-12
 
 ### Fixed
 
 - **Featured card chips readable in Midnight/Dark (#60):** the stars badge, fork badge, and empty-state command chip now use theme-aware classes (`app-featured-stars` / `app-featured-fork-badge` / `app-featured-empty-cmd`) styled from `--brutal-*` tokens instead of Bootstrap subtle/body-secondary utilities that did not flip with `data-bs-theme`.
+- **Dark theme table header contrast (#62):** `.app-brutalist .table-light` now anchors `--bs-table-color` and `--bs-table-color-state` to `--brutal-text` so dark-mode table headers stay readable (thanks @AcTePuKc).
+
+### Changed
+
+- **Dependencies:** `golang.org/x/time` v0.15.0 → v0.16.0; `modernc.org/sqlite` v1.57.0 → v1.58.0 (SQLite 3.53.4 — includes the journal-rollback data-integrity fix). `golang.org/x/net` pin retained at v0.57.0.
 
 ### Documentation
 
@@ -656,7 +661,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.1...HEAD
+[1.6.1]: https://github.com/hrodrig/gghstats/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/hrodrig/gghstats/compare/v1.5.2...v1.6.0
 [1.5.2]: https://github.com/hrodrig/gghstats/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/hrodrig/gghstats/compare/v1.5.0...v1.5.1
