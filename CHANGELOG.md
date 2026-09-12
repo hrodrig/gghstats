@@ -7,6 +7,14 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Featured card chips readable in Midnight/Dark (#60):** the stars badge, fork badge, and empty-state command chip now use theme-aware classes (`app-featured-stars` / `app-featured-fork-badge` / `app-featured-empty-cmd`) styled from `--brutal-*` tokens instead of Bootstrap subtle/body-secondary utilities that did not flip with `data-bs-theme`.
+
+### Documentation
+
+- **Built-in theme palettes (#61):** new `docs/themes.md` documents the light/dark/midnight token→hex tables with visible swatches and the component contract; linked from the root README and `contrib/themes/README.md`.
+
 ## [1.6.0] - 2026-09-09
 
 ### Added

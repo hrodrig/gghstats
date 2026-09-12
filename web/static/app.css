@@ -1008,6 +1008,17 @@ html[data-bs-theme="midnight"] .app-brutalist .app-brutal-muted {
   color: var(--brutal-muted) !important;
 }
 
+/* Featured card chips: theme-aware via --brutal-* tokens instead of raw
+ * Bootstrap subtle/body-secondary utilities, which do not flip with
+ * data-bs-theme and break contrast under Midnight/Dark (#60). */
+.app-brutalist .app-featured-stars,
+.app-brutalist .app-featured-fork-badge,
+.app-brutalist .app-featured-empty-cmd {
+  border: 2px solid var(--brutal-border-ink) !important;
+  background: var(--brutal-chart-well) !important;
+  color: var(--brutal-text) !important;
+}
+
 html[data-bs-theme="midnight"] .app-brutalist .text-body,
 html[data-bs-theme="midnight"] .app-brutalist .table > :not(caption) > * > *,
 html[data-bs-theme="midnight"] .app-brutalist .table-light,

@@ -33,4 +33,5 @@ Pick one file as a base, duplicate it under a new name, and adjust until it matc
 ## References
 
 - Built-in tokens: `web/static/app.css`
+- Built-in theme palettes (light / dark / midnight) with swatches: [`docs/themes.md`](../docs/themes.md)
 - Configuration: root `README.md` (environment variables), `.env.example`
