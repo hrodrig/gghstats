@@ -44,7 +44,7 @@ contract.
 | **DOC-auth** | Docs | Stronger operator note: `GET /{owner}/{repo}/traffic.json` is **public when `GGHSTATS_API_TOKEN` is unset** (option 3); always report-scoped | S | SPEC/CHANGELOG already state it; add line next to `GGHSTATS_API_TOKEN` in `contrib/gghstats.env.example` (+ short README/`docs/api.md` cross-link if thin) |
 | **DOC-idx** | Docs | Keep `docs/README.md` index in sync with files on disk (`api`, `themes`, band plans) | S | Include this plan in the docs index |
 | **DOC-faq** | Docs | Public FAQ note: aggregate index chart has **no per-repo coverage matrix** (1.5.0 known limitation) | S | README FAQ or `docs/api.md` one-liner |
-| **OPS-1d** | Ops | Recheck production dogfood when unique cloners look frozen and `(1d)` is all zeros | S | Sync All + export; compare to prior capture; code change only if store/SQL bug confirmed |
+| **OPS-1d** | Ops | Recheck production dogfood when unique cloners look frozen and `(1d)` is all zeros | S | **Done 2026-09-19:** unique cloners moved (≈10.5k → ≈11.0k); page-1 `(1d)` no longer all zeros on active repos → GitHub/sync lag at prior capture, not a `(1d)` calc bug |
 | **DX-check** | CLI | `gghstats config check` — validate env (token present/demo, filter regex, DB path writable, API-only+CORS warn, port) | M | Prefer **1.7.0** if first new CLI |
 | **DX-doctor** | CLI | `gghstats doctor` — last sync, DB size, rate_limit peek, repos without traffic, filter vs DB divergence | M | Builds on DX-check; **1.7.0** |
 | **META-rel** | Tooling | Pre-release drift checker: VERSION vs README badge vs man `.TH` vs BSD `PORTVERSION` / OpenBSD PKGNAME; print delta (optional `--fix` later) | M | Defends the VERSION-bump checklist; `make` target OK |
@@ -104,8 +104,8 @@ Work lands on `develop` via pull requests (repo gitflow).
 ## Exit criteria
 
 1. DOC-auth + DOC-idx (+ DOC-faq) on `develop`.
-2. OPS-1d recorded (pass/fail vs GitHub lag) in CHANGELOG/notes, **or** closed as
-   “lag confirmed / bug filed”.
+2. OPS-1d recorded (pass/fail vs GitHub lag) — **done 2026-09-19:** lag confirmed;
+   `(1d)` and unique-cloner KPI advanced on production dogfood; no store bug filed.
 3. At least one of UX-h2h or UX-keys on `develop`, **or** explicitly deferred in
    CHANGELOG with user OK.
 4. If DX-check/doctor land: man page + `--help` + tests; VERSION minor bump.
@@ -119,7 +119,7 @@ Work lands on `develop` via pull requests (repo gitflow).
 - [x] DOC-auth (`gghstats.env.example` + thin README/api cross-link)
 - [x] DOC-idx (`docs/README.md` lists api/themes/1.x plans + this file)
 - [x] DOC-faq (index coverage matrix known limitation)
-- [ ] OPS-1d dogfood recheck note
+- [x] OPS-1d dogfood recheck note
 - [ ] UX-h2h index → H2H prefill
 - [ ] UX-keys shortcuts
 - [ ] META-rel pre-release drift checker
