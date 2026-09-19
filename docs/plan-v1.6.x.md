@@ -116,7 +116,7 @@ Work lands on `develop` via pull requests (repo gitflow).
 ## Checklist
 
 - [x] Finalize this plan + docs index / ROADMAP link → `develop` (gitflow)
-- [ ] DOC-auth (`gghstats.env.example` + thin README/api cross-link)
+- [x] DOC-auth (`gghstats.env.example` + thin README/api cross-link)
 - [x] DOC-idx (`docs/README.md` lists api/themes/1.x plans + this file)
 - [ ] DOC-faq (index coverage matrix known limitation)
 - [ ] OPS-1d dogfood recheck note

@@ -572,7 +572,7 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_SYNC_WORKERS` | `4` | Concurrent repos per sync cycle (same as `gghstats serve --sync-workers`) |
 | `GGHSTATS_DEMO` | `false` | Sample-data UI; no GitHub token, sync, or update check (same as `gghstats serve --demo`) |
 | `GGHSTATS_OPEN_BROWSER` | `false` | Open the default browser when the server is ready (same as `gghstats serve --open`) |
-| `GGHSTATS_API_TOKEN` | (none) | If set, JSON API routes require matching `x-api-token` header (see [HTTP API (JSON)](#http-api-json)) |
+| `GGHSTATS_API_TOKEN` | (none) | If set, JSON API routes **and** HTML `GET /{owner}/{repo}/traffic.json` require matching `x-api-token`. If unset, authenticated JSON returns **404**, but `traffic.json` stays public like other HTML report surfaces (still report-scoped). See [HTTP API (JSON)](#http-api-json) and [docs/api.md](docs/api.md). |
 | `GGHSTATS_API_ONLY` | `false` | When true, skip HTML dashboard and SEO (`/robots.txt`, `/sitemap.xml`); JSON/probes still work |
 | `GGHSTATS_CORS_ORIGINS` | `*` (empty) | Comma-separated allowed `Origin` values for authenticated JSON; empty = `*`. Warns at startup if API-only + `*` |
 | `GGHSTATS_CSP` | report-only | Set `enforce` for enforcing CSP when `GGHSTATS_HEAD_HTML` is empty |
