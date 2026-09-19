@@ -118,7 +118,7 @@ Work lands on `develop` via pull requests (repo gitflow).
 - [x] Finalize this plan + docs index / ROADMAP link → `develop` (gitflow)
 - [x] DOC-auth (`gghstats.env.example` + thin README/api cross-link)
 - [x] DOC-idx (`docs/README.md` lists api/themes/1.x plans + this file)
-- [ ] DOC-faq (index coverage matrix known limitation)
+- [x] DOC-faq (index coverage matrix known limitation)
 - [ ] OPS-1d dogfood recheck note
 - [ ] UX-h2h index → H2H prefill
 - [ ] UX-keys shortcuts

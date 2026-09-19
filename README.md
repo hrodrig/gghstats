@@ -239,13 +239,14 @@ completed days**, **Fetch failed**, or **Never synced**.
   sibling data remains stored, the failed metric exposes its error state, and
   the repo/run is not reported as fully successful.
 
+### Why doesn’t the index chart show per-repo coverage?
+
 The index aggregate chart is intentionally narrower: it can show totals from
-repositories with different coverage and does not currently expose a
-per-repository coverage matrix. Use an individual repository traffic chart and
-its freshness state when completeness matters. Some established calculations
-(H2H momentum and rolling aggregate counters) intentionally treat absent days
-as zero; that is calculation semantics, not a statement that GitHub reported
-zero traffic.
+repositories with different coverage and does **not** expose a per-repository
+coverage matrix. Use an individual repository traffic chart and its freshness
+state when completeness matters. Some established calculations (H2H momentum and
+rolling aggregate counters) intentionally treat absent days as zero; that is
+calculation semantics, not a statement that GitHub reported zero traffic.
 
 [Back to top](#gghstats)
 
