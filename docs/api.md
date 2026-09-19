@@ -49,7 +49,11 @@ Send the token on every protected call:
 x-api-token: your-api-token
 ```
 
-**Public without token:** `GET /api/v1/healthz`, `GET /metrics` (unless disabled), and badges when `GGHSTATS_BADGE_PUBLIC=true` (default).
+**Public without token:** `GET /api/v1/healthz`, `GET /metrics` (unless disabled),
+badges when `GGHSTATS_BADGE_PUBLIC=true` (default), and HTML
+`GET /{owner}/{repo}/traffic.json` when `GGHSTATS_API_TOKEN` is **unset**
+(report-scoped like other HTML surfaces). When the token **is** set, that
+download requires `x-api-token` like other protected routes.
 
 ## Report visibility applies to every reporting route
 
@@ -203,9 +207,11 @@ curl -sS -H "x-api-token: $TOKEN" \
 ### `GET /api/v1/charts/index-clones`
 
 Aggregated daily clones across the **same report scope and filter** as
-`/api/repos` (`sort`/`dir`/`q`). No pagination. It is an aggregate, not a
-coverage audit: use a repository traffic response when a partial GitHub window
-would matter.
+`/api/repos` (`sort`/`dir`/`q`). No pagination. It is an aggregate, **not** a
+per-repository coverage matrix: repos may have different freshness/coverage, and
+this series does not attribute gaps to individual names. Use a repository
+traffic response (and freshness on the HTML repo page) when a partial GitHub
+window would matter.
 
 ```bash
 curl -sS -H "x-api-token: $TOKEN" \

@@ -18,6 +18,7 @@ Detailed band plans (scope, exit criteria, checklist):
 | **1.2.0 / 1.3.0** | No separate band plan file — scope in [CHANGELOG.md](CHANGELOG.md) |
 | **1.4.0** | [docs/plan-v1.4.0.md](docs/plan-v1.4.0.md) (closed) |
 | **1.5.0** | [docs/plan-v1.5.0.md](docs/plan-v1.5.0.md) (closed) |
+| **1.6.x** | [docs/plan-v1.6.x.md](docs/plan-v1.6.x.md) (open) |
 
 ## Principles
 
@@ -59,6 +60,8 @@ Detailed band plans (scope, exit criteria, checklist):
 1.3.0  → index unique cloners + rank/share + JSONL export (CHANGELOG)
 1.4.0  → uniques UX + Featured JSON + sitemap /featured → docs/plan-v1.4.0.md
 1.5.0  → traffic freshness + report visibility (+ chart JSON / legend / report ls --json) → docs/plan-v1.5.0.md
+1.6.0  → dashboard UX / Settings / locales (#46) → docs/plan-v1.6.x.md
+1.6.x  → operator DX + docs debt + small UX (post-1.6.1) → docs/plan-v1.6.x.md
 2.0.0  → Line B (webhooks / serious ROADMAP) — not Featured
 ```
 
@@ -74,7 +77,7 @@ Detailed band plans (scope, exit criteria, checklist):
 
 ## Versioning (SemVer)
 
-Current release **1.6.0**. Patch = third digit of the **current** minor.
+Current release: see **`VERSION`**. Patch = third digit of the **current** minor.
 
 | Form | Examples | Meaning |
 |------|----------|---------|
@@ -86,11 +89,12 @@ Once **1.1.0** is tagged, patches of that line are `1.1.1`, `1.1.2` (`1.1.x`). D
 
 ## Next
 
-Band plans through **1.5.0** are **closed**. Current tagged release: **`VERSION`** / [CHANGELOG.md](CHANGELOG.md).
+Band plan **[docs/plan-v1.6.x.md](docs/plan-v1.6.x.md)** is **open** (post-**1.6.1**). Current tagged release: **`VERSION`** / [CHANGELOG.md](CHANGELOG.md).
 
-**Shipped after 1.1.0:** **1.2.0** (compact numbers, Featured pagination/search/sort), **1.3.0** (index unique-cloners visibility, rank/share column, JSONL export), **1.4.0** (uniques UX, Featured JSON, sitemap `/featured`, Carlok #22–#25), **1.5.0** (traffic freshness, report visibility fail-closed, chart JSON / legend / `repo report ls --json`), **1.5.1** (Featured catalog not report-scoped, #47), **1.6.0** (responsive dashboard UX, gated Settings, bg/ru locales, soft theme starter, #46/#56).
+**Shipped after 1.1.0:** **1.2.0** (compact numbers, Featured pagination/search/sort), **1.3.0** (index unique-cloners visibility, rank/share column, JSONL export), **1.4.0** (uniques UX, Featured JSON, sitemap `/featured`, Carlok #22–#25), **1.5.0** (traffic freshness, report visibility fail-closed, chart JSON / legend / `repo report ls --json`), **1.5.1** (Featured catalog not report-scoped, #47), **1.6.0** (responsive dashboard UX, gated Settings, bg/ru locales, soft theme starter, #46/#56), **1.6.1** (Featured Midnight/Dark chip contrast + `docs/themes.md`, #60/#61).
 
-**After 1.5.0:** patches on **1.5.x** as needed. Line B (webhooks / delta sync) waits for **2.0.0**. Keep **plan ↔ ROADMAP ↔ SPEC ↔ CHANGELOG** in lockstep.
+**1.6.x next:** operator DX (`config check` / `doctor` → often **1.7.0**), docs auth note, dogfood `(1d)` recheck, small UX (H2H prefill, shortcuts), pre-release drift checker — see the band plan. Line B (webhooks / delta sync) waits for **2.0.0**. Keep **plan ↔ ROADMAP ↔ SPEC ↔ CHANGELOG** in lockstep.
+
 ## Explicit non-goals (this repo)
 
 - Multi-instance writers on one SQLite file.
