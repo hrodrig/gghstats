@@ -49,6 +49,7 @@ contract.
 | **DX-doctor** | CLI | `gghstats doctor` — last sync, DB size, rate_limit peek, repos without traffic, filter vs DB divergence | M | Builds on DX-check; **1.7.0** |
 | **META-rel** | Tooling | Pre-release drift checker: VERSION vs README badge vs man `.TH` vs BSD `PORTVERSION` / OpenBSD PKGNAME; print delta (optional `--fix` later) | M | Defends the VERSION-bump checklist; `make` target OK |
 | **UX-h2h** | UI | Index row link → `/h2h` with repo A (or B) prefilled | S | Additive query params only |
+| **UX-search-empty** | UI | Index **and Featured**: distinct empty-state when `?q=` has no matches vs truly empty catalog/showcase — i18n; no `fetch` / `featured add` hint on filter miss | S | [#73](https://github.com/hrodrig/gghstats/issues/73) index; [#75](https://github.com/hrodrig/gghstats/issues/75) Featured; dogfood `q=pepe` / `q=sfdsdf` |
 | **UX-keys** | UI | Keyboard shortcuts: `/` focus search, `?` help, `Esc` close modal, optional `t` theme | S–M | Frontend-only |
 | **UX-url** | UI | Shareable index/repo query state (`range`, `metric`, `theme`, selected repos where cheap) | M | `history.replaceState`; no backend |
 | **A-uniques** | Alerts | Optional alert rule `metric` for GitHub **uniques** (not only `count`) | M | Parked from [plan-v1.5.0.md](plan-v1.5.0.md); SPEC §8 explicit |
@@ -59,7 +60,7 @@ contract.
 
 1. **DOC-auth + DOC-idx + DOC-faq** (docs-only; ship as **1.6.2** candidate).
 2. **OPS-1d** (operator session; may close without code).
-3. **UX-h2h** then **UX-keys** (small UI; patch or early 1.7.0).
+3. **UX-search-empty** then **UX-h2h** then **UX-keys** (small UI; patch or early 1.7.0).
 4. **META-rel** (tooling; can land anytime; no VERSION bump required until used in release).
 5. **DX-check → DX-doctor** (**1.7.0**).
 6. **UX-url** / **A-uniques** when capacity allows.
@@ -120,6 +121,7 @@ Work lands on `develop` via pull requests (repo gitflow).
 - [x] DOC-idx (`docs/README.md` lists api/themes/1.x plans + this file)
 - [x] DOC-faq (index coverage matrix known limitation)
 - [x] OPS-1d dogfood recheck note
+- [ ] UX-search-empty filtered `q` vs empty catalog (index [#73](https://github.com/hrodrig/gghstats/issues/73) + Featured [#75](https://github.com/hrodrig/gghstats/issues/75))
 - [ ] UX-h2h index → H2H prefill
 - [ ] UX-keys shortcuts
 - [ ] META-rel pre-release drift checker
