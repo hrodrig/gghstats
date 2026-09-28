@@ -1,6 +1,6 @@
 # Plan — v1.6.x
 
-**Status:** **Open** — **1.6.0** / **1.6.1** shipped; remaining slices land as
+**Status:** **Open** — **1.6.0** / **1.6.1** / **1.6.2** shipped; remaining slices land as
 **1.6.2+** patches when they are docs/ops/tiny UX, or as a **1.7.0** minor when a
 slice adds a new CLI surface or non-trivial API/UI contract. Prefer patches until
 a slice clearly needs a minor bump (see Versioning).
@@ -19,6 +19,7 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Spec: [SPEC.md](../SPEC.md) · Themes:
 |-----|---------|
 | **1.6.0** | Shipped — responsive UX, gated Settings, bg/ru, soft theme starter (#46/#56) |
 | **1.6.1** | Shipped — Featured chip contrast (#60) + `docs/themes.md` (#61) |
+| **1.6.2** | Shipped — UX-search-empty (#73/#75) + sqlite 1.59.0 + plan/docs band |
 | **1.6.2+** | DOC / OPS / tiny UX below; no new CLI subcommands unless agreed as patch |
 | **1.7.0** | New CLI (`config check` / `doctor`), non-trivial keyboard/shareable-URL
 | or badge extensions — bump minor when first of those lands |
@@ -35,7 +36,8 @@ contract.
 | **UX-46** | Dashboard Settings / soft theme / locales / #56 offcanvas | 1.6.0 |
 | **UI-60** | Featured stars/chips readable under Midnight/Dark | 1.6.1 |
 | **DOC-61** | Built-in theme palettes + swatches + component contract | 1.6.1 |
-| **DEP-sqlite** | `modernc.org/sqlite` 1.59.0 + keep `golang.org/x/net` pin | develop (post-1.6.1) |
+| **DEP-sqlite** | `modernc.org/sqlite` 1.59.0 + keep `golang.org/x/net` pin | 1.6.2 |
+| **UX-search-empty** | Index + Featured distinct empty-state for filter miss | 1.6.2 |
 
 ## In scope
 
@@ -49,7 +51,6 @@ contract.
 | **DX-doctor** | CLI | `gghstats doctor` — last sync, DB size, rate_limit peek, repos without traffic, filter vs DB divergence | M | Builds on DX-check; **1.7.0** |
 | **META-rel** | Tooling | Pre-release drift checker: VERSION vs README badge vs man `.TH` vs BSD `PORTVERSION` / OpenBSD PKGNAME; print delta (optional `--fix` later) | M | Defends the VERSION-bump checklist; `make` target OK |
 | **UX-h2h** | UI | Index row link → `/h2h` with repo A (or B) prefilled | S | Additive query params only |
-| **UX-search-empty** | UI | Index **and Featured**: distinct empty-state when `?q=` has no matches vs truly empty catalog/showcase — i18n; no `fetch` / `featured add` hint on filter miss | S | [#73](https://github.com/hrodrig/gghstats/issues/73) index; [#75](https://github.com/hrodrig/gghstats/issues/75) Featured; dogfood `q=pepe` / `q=sfdsdf` |
 | **UX-keys** | UI | Keyboard shortcuts: `/` focus search, `?` help, `Esc` close modal, optional `t` theme | S–M | Frontend-only |
 | **UX-url** | UI | Shareable index/repo query state (`range`, `metric`, `theme`, selected repos where cheap) | M | `history.replaceState`; no backend |
 | **A-uniques** | Alerts | Optional alert rule `metric` for GitHub **uniques** (not only `count`) | M | Parked from [plan-v1.5.0.md](plan-v1.5.0.md); SPEC §8 explicit |
@@ -60,7 +61,7 @@ contract.
 
 1. **DOC-auth + DOC-idx + DOC-faq** (docs-only; ship as **1.6.2** candidate).
 2. **OPS-1d** (operator session; may close without code).
-3. **UX-search-empty** then **UX-h2h** then **UX-keys** (small UI; patch or early 1.7.0).
+3. **UX-h2h** then **UX-keys** (small UI; patch or early 1.7.0).
 4. **META-rel** (tooling; can land anytime; no VERSION bump required until used in release).
 5. **DX-check → DX-doctor** (**1.7.0**).
 6. **UX-url** / **A-uniques** when capacity allows.
