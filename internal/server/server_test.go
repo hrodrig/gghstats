@@ -448,6 +448,33 @@ func TestIndexPageSearch(t *testing.T) {
 	}
 }
 
+// #73: filtered search with zero matches must not reuse the empty-catalog fetch hint.
+func TestIndexPageSearchEmpty(t *testing.T) {
+	db := testStore(t)
+	_ = db.UpsertRepo("hrodrig/gghstats", "main repo", 10, 0, 10, 0, 0, false, false, "")
+	handler := New(Config{Store: db})
+
+	req := httptest.NewRequest("GET", "/?q=pepe", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Fatalf("status = %d, want 200", w.Code)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `data-gghstats-role="index-search-empty-title"`) {
+		t.Fatal("expected index search-empty marker")
+	}
+	if strings.Contains(body, `data-gghstats-role="index-empty-cmd"`) {
+		t.Fatal("filter miss must not show empty-catalog fetch command")
+	}
+	if strings.Contains(body, "No repositories yet") {
+		t.Fatal("filter miss must not reuse empty-catalog title")
+	}
+	if !strings.Contains(body, "No repositories match this search") {
+		t.Fatal("expected search-empty title copy")
+	}
+}
+
 func TestRepoPage(t *testing.T) {
 	db := testStore(t)
 	db.UpsertRepo("owner/repo", "desc", 5, 1, 5, 0, 0, false, false, "")

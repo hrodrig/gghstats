@@ -121,7 +121,7 @@ Work lands on `develop` via pull requests (repo gitflow).
 - [x] DOC-idx (`docs/README.md` lists api/themes/1.x plans + this file)
 - [x] DOC-faq (index coverage matrix known limitation)
 - [x] OPS-1d dogfood recheck note
-- [ ] UX-search-empty filtered `q` vs empty catalog (index [#73](https://github.com/hrodrig/gghstats/issues/73) + Featured [#75](https://github.com/hrodrig/gghstats/issues/75))
+- [x] UX-search-empty filtered `q` vs empty catalog (index [#73](https://github.com/hrodrig/gghstats/issues/73) + Featured [#75](https://github.com/hrodrig/gghstats/issues/75))
 - [ ] UX-h2h index → H2H prefill
 - [ ] UX-keys shortcuts
 - [ ] META-rel pre-release drift checker
