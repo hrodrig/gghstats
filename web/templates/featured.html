@@ -100,9 +100,14 @@
 {{end}}
 {{else}}
 <div class="card shadow-sm border-0">
-  <div class="card-body text-center text-muted py-5" data-gghstats-role="featured-empty">
+  <div class="card-body text-center text-muted py-5" data-gghstats-role="{{if .Query}}featured-search-empty{{else}}featured-empty{{end}}">
+    {{if .Query}}
+    <p class="mb-2" data-gghstats-role="featured-search-empty-title">{{call .T "featured.search_empty"}}</p>
+    <p class="small mb-0" data-gghstats-role="featured-search-empty-hint">{{call .T "featured.search_empty_hint"}}</p>
+    {{else}}
     <p class="mb-2" data-gghstats-role="featured-empty-title">{{call .T "featured.empty"}}</p>
     <code class="d-inline-block mt-2 p-2 app-featured-empty-cmd rounded small text-start" data-gghstats-role="featured-empty-cmd">{{call .T "featured.empty_cmd"}}</code>
+    {{end}}
   </div>
 </div>
 {{end}}

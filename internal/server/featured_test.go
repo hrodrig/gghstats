@@ -112,8 +112,50 @@ func TestFeaturedPageEmpty(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d", w.Code)
 	}
-	if !strings.Contains(w.Body.String(), `data-gghstats-role="featured-empty"`) {
+	body := w.Body.String()
+	if !strings.Contains(body, `data-gghstats-role="featured-empty"`) {
 		t.Errorf("expected empty-state marker in featured page body")
+	}
+	if !strings.Contains(body, `data-gghstats-role="featured-empty-cmd"`) {
+		t.Errorf("expected featured-add command on true empty showcase")
+	}
+}
+
+// #75: filtered Featured search with zero matches must not reuse featured-add hint.
+func TestFeaturedPageSearchEmpty(t *testing.T) {
+	db := testStore(t)
+	if err := db.AddFeatured("hrodrig/awesome-readme"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpsertFeaturedMeta(
+		"hrodrig/awesome-readme",
+		"matiassingers/awesome-readme",
+		"matiassingers/awesome-readme",
+		"A curated list of awesome readmes",
+		15000,
+		true,
+	); err != nil {
+		t.Fatal(err)
+	}
+	h := New(Config{Store: db})
+	req := httptest.NewRequest(http.MethodGet, "/featured?q=sfdsdf", nil)
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d", w.Code)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, `data-gghstats-role="featured-search-empty"`) {
+		t.Fatal("expected featured search-empty marker")
+	}
+	if strings.Contains(body, `data-gghstats-role="featured-empty-cmd"`) {
+		t.Fatal("filter miss must not show featured-add command")
+	}
+	if strings.Contains(body, "No featured repositories yet") {
+		t.Fatal("filter miss must not reuse empty-showcase title")
+	}
+	if !strings.Contains(body, "No featured repositories match this search") {
+		t.Fatal("expected featured search-empty title copy")
 	}
 }
 

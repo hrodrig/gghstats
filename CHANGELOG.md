@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- **Search empty-state vs empty catalog (#73, #75):** index and Featured show distinct copy when `?q=` has no matches instead of the empty-catalog / empty-showcase operator hints (`gghstats fetch` / `featured add`).
+
 ## [1.6.1] - 2026-09-12
 
 ### Fixed
