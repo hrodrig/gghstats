@@ -129,10 +129,13 @@
                   <p class="mb-2 fw-semibold">{{call .T "index.initial_sync_failed_title"}}</p>
                   <p class="small mb-0">{{call .T "index.initial_sync_failed_help"}}</p>
                 </div>
+                {{else if .Query}}
+                <p class="mb-2" data-gghstats-role="index-search-empty-title">{{call .T "index.search_empty_title"}}</p>
+                <p class="small mb-0" data-gghstats-role="index-search-empty-hint">{{call .T "index.search_empty_hint"}}</p>
                 {{else}}
-                <p class="mb-2">{{call .T "index.empty_title"}}</p>
-                <p class="small mb-0">{{call .T "index.empty_hint"}}</p>
-                <code class="d-inline-block mt-2 p-2 bg-body-secondary rounded small text-start">gghstats fetch --repo owner/repo --db ./data/gghstats.db --token $GGHSTATS_GITHUB_TOKEN</code>
+                <p class="mb-2" data-gghstats-role="index-empty-title">{{call .T "index.empty_title"}}</p>
+                <p class="small mb-0" data-gghstats-role="index-empty-hint">{{call .T "index.empty_hint"}}</p>
+                <code class="d-inline-block mt-2 p-2 bg-body-secondary rounded small text-start" data-gghstats-role="index-empty-cmd">gghstats fetch --repo owner/repo --db ./data/gghstats.db --token $GGHSTATS_GITHUB_TOKEN</code>
                 {{end}}
               </td>
             </tr>

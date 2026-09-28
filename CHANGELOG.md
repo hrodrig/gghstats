@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+## [1.6.2] - 2026-09-27
+
+### Fixed
+
+- **Search empty-state vs empty catalog (#73, #75):** index and Featured show distinct copy when `?q=` has no matches instead of the empty-catalog / empty-showcase operator hints (`gghstats fetch` / `featured add`).
+
+### Changed
+
+- **Dependencies:** `modernc.org/sqlite` v1.58.0 → v1.59.0. `golang.org/x/net` pin retained at v0.57.0.
+
+### Documentation
+
+- **plan-v1.6.x:** band plan + ROADMAP / docs index; DOC-auth / DOC-idx / DOC-faq (index chart coverage matrix); OPS-1d dogfood recheck (GitHub/sync lag, not a store bug).
+
 ## [1.6.1] - 2026-09-12
 
 ### Fixed
@@ -661,7 +677,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.1...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.2...HEAD
+[1.6.2]: https://github.com/hrodrig/gghstats/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/hrodrig/gghstats/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/hrodrig/gghstats/compare/v1.5.2...v1.6.0
 [1.5.2]: https://github.com/hrodrig/gghstats/compare/v1.5.1...v1.5.2
