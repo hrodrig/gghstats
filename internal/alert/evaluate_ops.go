@@ -134,60 +134,14 @@ func evaluateOpsRule(rule RuleSpec, snap SyncSnapshot, consecutive int, now time
 	if level == "" {
 		level = defaultOpsLevel(rule.Event)
 	}
-	var count float64
-	var detail string
 	window := rule.Window
 	if window == "" {
 		window = "this_sync"
 	}
 
-	switch rule.Event {
-	case "repo_fetch_failed":
-		count = float64(snap.ReposFailed)
-		detail = fmt.Sprintf("%d/%d repos failed", snap.ReposFailed, snap.ReposAttempted)
-		if len(snap.FailedRepos) > 0 {
-			detail += " sample=[" + strings.Join(snap.FailedRepos, ", ") + "]"
-		}
-		if window != "this_sync" {
-			return Payload{}, false, fmt.Errorf("repo_fetch_failed window must be this_sync")
-		}
-	case "sync_failed":
-		if window == "consecutive_runs" {
-			count = float64(consecutive)
-			detail = fmt.Sprintf("consecutive_failed_runs=%d", consecutive)
-		} else {
-			if snap.Success {
-				return Payload{}, false, nil
-			}
-			count = 1
-			detail = "this sync failed"
-			window = "this_sync"
-		}
-	case "github_unreachable":
-		if !snap.Unreachable {
-			return Payload{}, false, nil
-		}
-		count = 1
-		detail = "github unreachable (resolve/network)"
-		window = "this_sync"
-	case "rate_limit":
-		if snap.RateLimitRemaining < 0 {
-			return Payload{}, false, nil
-		}
-		count = float64(snap.RateLimitRemaining)
-		detail = fmt.Sprintf("remaining=%d", snap.RateLimitRemaining)
-	case "upstream_stale":
-		if !snap.UpstreamStale {
-			return Payload{}, false, nil
-		}
-		count = 1
-		detail = "fleet upstream traffic stuck"
-		if snap.UpstreamStaleSince != "" {
-			detail = fmt.Sprintf("fleet upstream traffic stuck since %s", snap.UpstreamStaleSince)
-		}
-		window = "this_sync"
-	default:
-		return Payload{}, false, fmt.Errorf("unknown ops event %q", rule.Event)
+	count, detail, window, skip, err := opsEventMetrics(rule.Event, snap, consecutive, window)
+	if err != nil || skip {
+		return Payload{}, false, err
 	}
 
 	fire, display := compare(rule.Op, count, rule.Value)
@@ -195,7 +149,7 @@ func evaluateOpsRule(rule RuleSpec, snap SyncSnapshot, consecutive int, now time
 		return Payload{}, false, nil
 	}
 
-	p := Payload{
+	return Payload{
 		Kind:      KindOps,
 		Version:   version.Version,
 		When:      now,
@@ -205,8 +159,60 @@ func evaluateOpsRule(rule RuleSpec, snap SyncSnapshot, consecutive int, now time
 		Threshold: fmt.Sprintf("%s %g", rule.Op, rule.Value),
 		Window:    window,
 		Detail:    detail,
+	}, true, nil
+}
+
+func opsEventMetrics(event string, snap SyncSnapshot, consecutive int, window string) (count float64, detail string, outWindow string, skip bool, err error) {
+	outWindow = window
+	switch event {
+	case "repo_fetch_failed":
+		count = float64(snap.ReposFailed)
+		detail = fmt.Sprintf("%d/%d repos failed", snap.ReposFailed, snap.ReposAttempted)
+		if len(snap.FailedRepos) > 0 {
+			detail += " sample=[" + strings.Join(snap.FailedRepos, ", ") + "]"
+		}
+		if window != "this_sync" {
+			return 0, "", "", false, fmt.Errorf("repo_fetch_failed window must be this_sync")
+		}
+	case "sync_failed":
+		if window == "consecutive_runs" {
+			count = float64(consecutive)
+			detail = fmt.Sprintf("consecutive_failed_runs=%d", consecutive)
+		} else {
+			if snap.Success {
+				return 0, "", "", true, nil
+			}
+			count = 1
+			detail = "this sync failed"
+			outWindow = "this_sync"
+		}
+	case "github_unreachable":
+		if !snap.Unreachable {
+			return 0, "", "", true, nil
+		}
+		count = 1
+		detail = "github unreachable (resolve/network)"
+		outWindow = "this_sync"
+	case "rate_limit":
+		if snap.RateLimitRemaining < 0 {
+			return 0, "", "", true, nil
+		}
+		count = float64(snap.RateLimitRemaining)
+		detail = fmt.Sprintf("remaining=%d", snap.RateLimitRemaining)
+	case "upstream_stale":
+		if !snap.UpstreamStale {
+			return 0, "", "", true, nil
+		}
+		count = 1
+		detail = "fleet upstream traffic stuck"
+		if snap.UpstreamStaleSince != "" {
+			detail = fmt.Sprintf("fleet upstream traffic stuck since %s", snap.UpstreamStaleSince)
+		}
+		outWindow = "this_sync"
+	default:
+		return 0, "", "", false, fmt.Errorf("unknown ops event %q", event)
 	}
-	return p, true, nil
+	return count, detail, outWindow, false, nil
 }
 
 func defaultOpsLevel(event string) string {

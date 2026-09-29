@@ -40,39 +40,9 @@ func DetectFleetUpstreamStale(db *Store, scope ReportVisibility, k int, now time
 		return out, err
 	}
 
-	var (
-		stuckCount    int
-		eligibleCount int
-		sinceMax      string
-	)
-	for _, repo := range repos {
-		eligible, err := repoHasNonZeroTrafficInWindow(db, repo.Name, windowStart, windowEnd)
-		if err != nil {
-			return out, err
-		}
-		if !eligible {
-			continue
-		}
-		eligibleCount++
-
-		clonesStale, clonesObs, err := metricIsUpstreamStale(db, repo.Name, "clones", staleCutoff)
-		if err != nil {
-			return out, err
-		}
-		viewsStale, viewsObs, err := metricIsUpstreamStale(db, repo.Name, "views", staleCutoff)
-		if err != nil {
-			return out, err
-		}
-		if !clonesStale && !viewsStale {
-			continue
-		}
-		stuckCount++
-		if clonesStale && clonesObs != "" && clonesObs > sinceMax {
-			sinceMax = clonesObs
-		}
-		if viewsStale && viewsObs != "" && viewsObs > sinceMax {
-			sinceMax = viewsObs
-		}
+	stuckCount, eligibleCount, sinceMax, err := tallyFleetUpstreamStale(db, repos, windowStart, windowEnd, staleCutoff)
+	if err != nil {
+		return out, err
 	}
 
 	out.StuckRepos = stuckCount
@@ -83,18 +53,70 @@ func DetectFleetUpstreamStale(db *Store, scope ReportVisibility, k int, now time
 
 	out.Active = true
 	out.Since = sinceMax
-	if sinceMax != "" {
-		sinceDay, err := time.ParseInLocation("2006-01-02", sinceMax, time.UTC)
-		if err == nil {
-			// Completed UTC days from watermark through latest completed day.
-			days := int(completed.Sub(sinceDay).Hours() / 24)
-			if days < 0 {
-				days = 0
-			}
-			out.DaysStuck = days
+	out.DaysStuck = daysStuckFromSince(completed, sinceMax)
+	return out, nil
+}
+
+func tallyFleetUpstreamStale(db *Store, repos []RepoSummary, windowStart, windowEnd, staleCutoff string) (stuck, eligible int, sinceMax string, err error) {
+	for _, repo := range repos {
+		ok, err := repoHasNonZeroTrafficInWindow(db, repo.Name, windowStart, windowEnd)
+		if err != nil {
+			return 0, 0, "", err
+		}
+		if !ok {
+			continue
+		}
+		eligible++
+
+		repoStuck, obs, err := repoUpstreamStaleObs(db, repo.Name, staleCutoff)
+		if err != nil {
+			return 0, 0, "", err
+		}
+		if !repoStuck {
+			continue
+		}
+		stuck++
+		if obs != "" && obs > sinceMax {
+			sinceMax = obs
 		}
 	}
-	return out, nil
+	return stuck, eligible, sinceMax, nil
+}
+
+func repoUpstreamStaleObs(db *Store, repo, staleCutoff string) (stuck bool, sinceObs string, err error) {
+	clonesStale, clonesObs, err := metricIsUpstreamStale(db, repo, "clones", staleCutoff)
+	if err != nil {
+		return false, "", err
+	}
+	viewsStale, viewsObs, err := metricIsUpstreamStale(db, repo, "views", staleCutoff)
+	if err != nil {
+		return false, "", err
+	}
+	if !clonesStale && !viewsStale {
+		return false, "", nil
+	}
+	if clonesStale && clonesObs != "" {
+		sinceObs = clonesObs
+	}
+	if viewsStale && viewsObs != "" && viewsObs > sinceObs {
+		sinceObs = viewsObs
+	}
+	return true, sinceObs, nil
+}
+
+func daysStuckFromSince(completed time.Time, sinceMax string) int {
+	if sinceMax == "" {
+		return 0
+	}
+	sinceDay, err := time.ParseInLocation("2006-01-02", sinceMax, time.UTC)
+	if err != nil {
+		return 0
+	}
+	days := int(completed.Sub(sinceDay).Hours() / 24)
+	if days < 0 {
+		return 0
+	}
+	return days
 }
 
 func metricIsUpstreamStale(db *Store, repo, metric, staleCutoff string) (stale bool, latestObserved string, err error) {
