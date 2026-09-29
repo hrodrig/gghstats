@@ -183,7 +183,10 @@
     "stats_help_min": "Niedrigster beobachteter Wert. {{value}} {{unit}} am schwächsten Tag{{date}}.",
     "stats_help_max": "Höchster beobachteter Wert. {{value}} {{unit}} am Spitzentag{{date}}.",
     "stats_help_p95_one": "95. Perzentil (nearest-rank): 95% der Tage hatten einen Wert ≤ diesem. {{value}} — nur ~{{days}} Tag (5%) überschritt diesen Schwellenwert.",
-    "stats_help_p95_other": "95. Perzentil (nearest-rank): 95% der Tage hatten einen Wert ≤ diesem. {{value}} — nur ~{{days}} Tage (5%) überschritten diesen Schwellenwert."
+    "stats_help_p95_other": "95. Perzentil (nearest-rank): 95% der Tage hatten einen Wert ≤ diesem. {{value}} — nur ~{{days}} Tage (5%) überschritten diesen Schwellenwert.",
+    "upstream_stale_title": "GitHub-Traffic scheint festzustecken",
+    "upstream_stale_body": "Der Fleet-Insights-Traffic hat sich seit {{since}} nicht weiterbewegt ({{days_stuck}} abgeschlossene UTC-Tage). Die gghstats-Synchronisation ist gesund; das deutet meist auf einen Freeze auf GitHub-Seite hin.",
+    "upstream_stale_help_link": "GitHub Community"
   },
   "h2h": {
     "title": "Direktvergleich (H2H)",
@@ -283,7 +286,9 @@
     "no_paths": "Noch keine Pfad-Daten.",
     "trends_blurb": "Clone-Momentum gegenüber dem vorherigen Fenster gleicher Länge (gleiche Formel wie H2H).",
     "momentum_7d": "Momentum (7d)",
-    "momentum_30d": "Momentum (30d)"
+    "momentum_30d": "Momentum (30d)",
+    "upstream_stale_cue": "Fleet-Traffic feststeckend seit {{since}} ({{days_stuck}} Tage).",
+    "upstream_stale_help_link": "GitHub Community"
   },
   "not_found": {
     "title": "Nicht gefunden",
