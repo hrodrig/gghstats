@@ -1,7 +1,7 @@
 # Plan — v1.6.x
 
-**Status:** **Open** — **1.6.0** / **1.6.1** / **1.6.2** shipped; remaining slices land as
-**1.6.2+** patches when they are docs/ops/tiny UX, or as a **1.7.0** minor when a
+**Status:** **Open** — **1.6.0** / **1.6.1** / **1.6.2** / **1.6.3** shipped; remaining slices land as
+**1.6.3+** patches when they are docs/ops/tiny UX, or as a **1.7.0** minor when a
 slice adds a new CLI surface or non-trivial API/UI contract. Prefer patches until
 a slice clearly needs a minor bump (see Versioning).
 
@@ -20,7 +20,8 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Spec: [SPEC.md](../SPEC.md) · Themes:
 | **1.6.0** | Shipped — responsive UX, gated Settings, bg/ru, soft theme starter (#46/#56) |
 | **1.6.1** | Shipped — Featured chip contrast (#60) + `docs/themes.md` (#61) |
 | **1.6.2** | Shipped — UX-search-empty (#73/#75) + sqlite 1.59.0 + plan/docs band |
-| **1.6.2+** | DOC / OPS / tiny UX below; no new CLI subcommands unless agreed as patch |
+| **1.6.3** | Shipped — OPS-upstream-stale (#80): detect, banner, alert, dogfood |
+| **1.6.3+** | DOC / OPS / tiny UX below; no new CLI subcommands unless agreed as patch |
 | **1.7.0** | New CLI (`config check` / `doctor`), non-trivial keyboard/shareable-URL
 | or badge extensions — bump minor when first of those lands |
 | **2.0.0** | Line B — not this band |
@@ -38,6 +39,7 @@ contract.
 | **DOC-61** | Built-in theme palettes + swatches + component contract | 1.6.1 |
 | **DEP-sqlite** | `modernc.org/sqlite` 1.59.0 + keep `golang.org/x/net` pin | 1.6.2 |
 | **UX-search-empty** | Index + Featured distinct empty-state for filter miss | 1.6.2 |
+| **OPS-upstream-stale** | Fleet `upstream_stale` detect + banner + once/episode alert (#80) | 1.6.3 |
 
 ## In scope
 
@@ -47,7 +49,6 @@ contract.
 | **DOC-idx** | Docs | Keep `docs/README.md` index in sync with files on disk (`api`, `themes`, band plans) | S | Include this plan in the docs index |
 | **DOC-faq** | Docs | Public FAQ note: aggregate index chart has **no per-repo coverage matrix** (1.5.0 known limitation) | S | README FAQ or `docs/api.md` one-liner |
 | **OPS-1d** | Ops | Recheck production dogfood when unique cloners look frozen and `(1d)` is all zeros | S | **Done 2026-09-19:** unique cloners moved (≈10.5k → ≈11.0k); page-1 `(1d)` no longer all zeros on active repos → GitHub/sync lag at prior capture, not a `(1d)` calc bug |
-| **OPS-upstream-stale** | Ops+UI | Detect **GitHub traffic stuck** after successful sync (API 200, window not advancing ≥ K days); status `upstream_stale` + **configurable visual banner (default on)** via `GGHSTATS_UPSTREAM_STALE_BANNER` (index + repo) + optional ops alert once per episode | M | [#80](https://github.com/hrodrig/gghstats/issues/80); historical freeze evidence ~2026-09-23 ([community #208852](https://github.com/orgs/community/discussions/208852) — docs only; banner help uses Community discussions search); **not** the same as freshness `delayed`/`missing`; multi-repo correlation to avoid quiet-repo false positives; target **1.6.3** |
 | **DX-check** | CLI | `gghstats config check` — validate env (token present/demo, filter regex, DB path writable, API-only+CORS warn, port) | M | Prefer **1.7.0** if first new CLI |
 | **DX-doctor** | CLI | `gghstats doctor` — last sync, DB size, rate_limit peek, repos without traffic, filter vs DB divergence | M | Builds on DX-check; **1.7.0** |
 | **META-rel** | Tooling | Pre-release drift checker: VERSION vs README badge vs man `.TH` vs BSD `PORTVERSION` / OpenBSD PKGNAME; print delta (optional `--fix` later) | M | Defends the VERSION-bump checklist; `make` target OK |
@@ -62,7 +63,7 @@ contract.
 
 1. **DOC-auth + DOC-idx + DOC-faq** — **done** (shipped with **1.6.2**).
 2. **OPS-1d** — **done** (2026-09-19 note).
-3. **OPS-upstream-stale** ([#80](https://github.com/hrodrig/gghstats/issues/80)) — detect stuck upstream + **dashboard visual banner** (ships default-on; operators may opt out with `GGHSTATS_UPSTREAM_STALE_BANNER=false`); then optional alert dedupe. Candidate **1.6.3**.
+3. **OPS-upstream-stale** ([#80](https://github.com/hrodrig/gghstats/issues/80)) — **done** (shipped with **1.6.3**).
 4. **UX-h2h** then **UX-keys** (small UI; patch or early 1.7.0).
 5. **META-rel** (tooling; can land anytime; no VERSION bump required until used in release).
 6. **DX-check → DX-doctor** (**1.7.0**).
@@ -121,9 +122,8 @@ Work lands on `develop` via pull requests (repo gitflow).
 1. DOC-auth + DOC-idx (+ DOC-faq) on `develop`.
 2. OPS-1d recorded (pass/fail vs GitHub lag) — **done 2026-09-19:** lag confirmed;
    `(1d)` and unique-cloner KPI advanced on production dogfood; no store bug filed.
-3. **OPS-upstream-stale (#80)** on `develop` with a **stuck banner default-on**
-   (opt-out via `GGHSTATS_UPSTREAM_STALE_BANNER`) and optional alert, **or**
-   explicitly deferred in CHANGELOG with user OK.
+3. **OPS-upstream-stale (#80)** — **done** (shipped **1.6.3**: stuck banner default-on,
+   opt-out via `GGHSTATS_UPSTREAM_STALE_BANNER`, optional once/episode alert).
 4. At least one of UX-h2h or UX-keys on `develop`, **or** explicitly deferred in
    CHANGELOG with user OK.
 5. If DX-check/doctor land: man page + `--help` + tests; VERSION minor bump.

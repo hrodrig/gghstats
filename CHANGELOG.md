@@ -7,6 +7,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.3] - 2026-09-28
+
 ### Added
 
 - **OPS-upstream-stale (#80):** fleet freeze detect → `upstream_stale` (`since`, `days_stuck`) on healthz/JSON; optional banner (`GGHSTATS_UPSTREAM_STALE_BANNER`); ops alert `upstream_stale` debounce once/episode. [#208852](https://github.com/orgs/community/discussions/208852) = docs evidence only.
@@ -686,7 +688,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.2...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.3...HEAD
+[1.6.3]: https://github.com/hrodrig/gghstats/compare/v1.6.2...v1.6.3
 [1.6.2]: https://github.com/hrodrig/gghstats/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/hrodrig/gghstats/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/hrodrig/gghstats/compare/v1.5.2...v1.6.0
