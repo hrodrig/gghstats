@@ -22,6 +22,10 @@ type SyncSnapshot struct {
 	FailedRepos        []string
 	Unreachable        bool
 	RateLimitRemaining int
+	// UpstreamStale is the fleet stuck signal (independent of HTML banner).
+	UpstreamStale bool
+	// UpstreamStaleSince is the watermark date when traffic last advanced.
+	UpstreamStaleSince string
 }
 
 // RunOpsRules evaluates kind=ops rules against a sync snapshot (SPEC §8.7).
@@ -38,6 +42,12 @@ func RunOpsRules(ctx context.Context, cfg EvalConfig, snap SyncSnapshot) {
 	consec, err := updateConsecutiveFailures(cfg.DB, snap.Success)
 	if err != nil {
 		slog.Error("alert: consecutive sync counter", "error", err)
+	}
+
+	// Clear once-per-episode stamps when the fleet is no longer stuck so a
+	// later freeze can fire again (milestones keep permanent once stamps).
+	if !snap.UpstreamStale {
+		clearUpstreamStaleDebounce(cfg)
 	}
 
 	for _, rule := range cfg.Rules {
@@ -72,9 +82,24 @@ func RunOpsRules(ctx context.Context, cfg EvalConfig, snap SyncSnapshot) {
 	}
 }
 
+func clearUpstreamStaleDebounce(cfg EvalConfig) {
+	for _, rule := range cfg.Rules {
+		if rule.Kind != KindOps || rule.Event != "upstream_stale" {
+			continue
+		}
+		key := rule.identityKey(rule.Event)
+		if err := cfg.DB.AlertDebounceDelete(key); err != nil {
+			slog.Error("alert: clear upstream_stale debounce", "error", err, "key", key)
+		}
+	}
+}
+
 func (r RuleSpec) opsDebounceMode() string {
 	if r.Debounce != "" {
 		return r.debounceMode()
+	}
+	if r.Event == "upstream_stale" {
+		return "once"
 	}
 	if r.Event == "sync_failed" && r.Level == "crit" {
 		return "every_sync"
@@ -151,6 +176,16 @@ func evaluateOpsRule(rule RuleSpec, snap SyncSnapshot, consecutive int, now time
 		}
 		count = float64(snap.RateLimitRemaining)
 		detail = fmt.Sprintf("remaining=%d", snap.RateLimitRemaining)
+	case "upstream_stale":
+		if !snap.UpstreamStale {
+			return Payload{}, false, nil
+		}
+		count = 1
+		detail = "fleet upstream traffic stuck"
+		if snap.UpstreamStaleSince != "" {
+			detail = fmt.Sprintf("fleet upstream traffic stuck since %s", snap.UpstreamStaleSince)
+		}
+		window = "this_sync"
 	default:
 		return Payload{}, false, fmt.Errorf("unknown ops event %q", rule.Event)
 	}
@@ -178,6 +213,8 @@ func defaultOpsLevel(event string) string {
 	switch event {
 	case "sync_failed", "github_unreachable":
 		return "crit"
+	case "upstream_stale":
+		return "warn"
 	default:
 		return "warn"
 	}

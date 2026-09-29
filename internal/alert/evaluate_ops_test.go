@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -131,5 +132,85 @@ func TestDefaultOpsLevel(t *testing.T) {
 	}
 	if got := defaultOpsLevel("rate_limit"); got != "warn" {
 		t.Fatalf("rate_limit=%q", got)
+	}
+	if got := defaultOpsLevel("upstream_stale"); got != "warn" {
+		t.Fatalf("upstream_stale=%q", got)
+	}
+}
+
+func TestRunOpsRules_UpstreamStaleOncePerEpisode(t *testing.T) {
+	dir := t.TempDir()
+	db, err := store.Open(filepath.Join(dir, "t.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	var n int
+	var lastBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n++
+		b, _ := io.ReadAll(r.Body)
+		lastBody = string(b)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+	ApplyRetryConfig(RetryConfig{MaxAttempts: 1, InitialBackoff: time.Millisecond, MaxBackoff: time.Millisecond})
+	t.Cleanup(func() { ApplyRetryConfig(DefaultRetryConfig) })
+
+	rule := RuleSpec{
+		Kind: KindOps, Event: "upstream_stale", Op: "gte", Value: 1,
+		// Empty Debounce → opsDebounceMode "once" (episode, not once_per_utc_day).
+	}
+	if got := rule.opsDebounceMode(); got != "once" {
+		t.Fatalf("opsDebounceMode = %q, want once", got)
+	}
+	// identityKey still uses debounceMode() (empty → once_per_utc_day) for the stamp key shape.
+	wantKey := rule.identityKey(rule.Event)
+	if wantKey != "ops|upstream_stale|||gte|1|once_per_utc_day" {
+		t.Fatalf("rule_key shape = %q", wantKey)
+	}
+
+	cfg := EvalConfig{
+		DB:      db,
+		Rules:   []RuleSpec{rule},
+		Senders: BuildSenders([]ResolvedSink{{Type: TypeSlack, URL: srv.URL}}, srv.Client()),
+		Now:     time.Date(2026, 9, 28, 12, 0, 0, 0, time.UTC),
+	}
+
+	stuck := SyncSnapshot{
+		Success: true, RateLimitRemaining: 5000,
+		UpstreamStale: true, UpstreamStaleSince: "2026-09-23",
+	}
+	RunOpsRules(context.Background(), cfg, stuck)
+	if n != 1 {
+		t.Fatalf("enter stuck: want 1 delivery, got %d", n)
+	}
+	if !strings.Contains(lastBody, "upstream_stale") || !strings.Contains(lastBody, "2026-09-23") {
+		t.Fatalf("payload missing event/since: %s", lastBody)
+	}
+	stamp, err := db.AlertDebounceGet(wantKey)
+	if err != nil || stamp != "fired" {
+		t.Fatalf("debounce stamp after fire: %q err=%v", stamp, err)
+	}
+
+	RunOpsRules(context.Background(), cfg, stuck)
+	if n != 1 {
+		t.Fatalf("still stuck: want no second delivery, got %d", n)
+	}
+
+	clear := SyncSnapshot{Success: true, RateLimitRemaining: 5000, UpstreamStale: false}
+	RunOpsRules(context.Background(), cfg, clear)
+	stamp, err = db.AlertDebounceGet(wantKey)
+	if err != nil || stamp != "" {
+		t.Fatalf("after recover stamp should clear: %q err=%v", stamp, err)
+	}
+	if n != 1 {
+		t.Fatalf("recover must not deliver: got %d", n)
+	}
+
+	RunOpsRules(context.Background(), cfg, stuck)
+	if n != 2 {
+		t.Fatalf("re-enter stuck: want 2nd delivery, got %d", n)
 	}
 }

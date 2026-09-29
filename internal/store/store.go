@@ -1150,6 +1150,13 @@ func (s *Store) AlertDebounceSet(ruleKey, stamp string) error {
 	return err
 }
 
+// AlertDebounceDelete removes the debounce stamp for a rule key.
+// Missing keys are a no-op success (idempotent).
+func (s *Store) AlertDebounceDelete(ruleKey string) error {
+	_, err := s.db.Exec(`DELETE FROM alert_debounce WHERE rule_key=?`, ruleKey)
+	return err
+}
+
 // SumClonesAll returns SUM(count) across all clones rows (fleet lifetime).
 func (s *Store) SumClonesAll() (int, error) {
 	var n sql.NullInt64
