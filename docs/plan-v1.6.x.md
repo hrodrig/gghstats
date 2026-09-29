@@ -1,7 +1,7 @@
 # Plan — v1.6.x
 
-**Status:** **Open** — **1.6.0** / **1.6.1** / **1.6.2** / **1.6.3** shipped; remaining slices land as
-**1.6.3+** patches when they are docs/ops/tiny UX, or as a **1.7.0** minor when a
+**Status:** **Open** — **1.6.0** / **1.6.1** / **1.6.2** / **1.6.3** / **1.6.4** shipped; remaining slices land as
+**1.6.4+** patches when they are docs/ops/tiny UX, or as a **1.7.0** minor when a
 slice adds a new CLI surface or non-trivial API/UI contract. Prefer patches until
 a slice clearly needs a minor bump (see Versioning).
 
@@ -21,7 +21,8 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Spec: [SPEC.md](../SPEC.md) · Themes:
 | **1.6.1** | Shipped — Featured chip contrast (#60) + `docs/themes.md` (#61) |
 | **1.6.2** | Shipped — UX-search-empty (#73/#75) + sqlite 1.59.0 + plan/docs band |
 | **1.6.3** | Shipped — OPS-upstream-stale (#80): detect, banner, alert, dogfood |
-| **1.6.3+** | DOC / OPS / tiny UX below; no new CLI subcommands unless agreed as patch |
+| **1.6.4** | Shipped — upstream_stale banner shows stuck/eligible (partial-thaw UX) |
+| **1.6.4+** | DOC / OPS / tiny UX below; no new CLI subcommands unless agreed as patch |
 | **1.7.0** | New CLI (`config check` / `doctor`), non-trivial keyboard/shareable-URL
 | or badge extensions — bump minor when first of those lands |
 | **2.0.0** | Line B — not this band |
@@ -39,7 +40,7 @@ contract.
 | **DOC-61** | Built-in theme palettes + swatches + component contract | 1.6.1 |
 | **DEP-sqlite** | `modernc.org/sqlite` 1.59.0 + keep `golang.org/x/net` pin | 1.6.2 |
 | **UX-search-empty** | Index + Featured distinct empty-state for filter miss | 1.6.2 |
-| **OPS-upstream-stale** | Fleet `upstream_stale` detect + banner + once/episode alert (#80) | 1.6.3 |
+| **OPS-upstream-stale (MVP)** | Fleet `upstream_stale` detect + banner + once/episode alert; partial-thaw stuck/eligible banner UX ([#80](https://github.com/hrodrig/gghstats/issues/80) **stays open** for further contributions) | 1.6.3 / 1.6.4 |
 
 ## In scope
 
@@ -63,7 +64,7 @@ contract.
 
 1. **DOC-auth + DOC-idx + DOC-faq** — **done** (shipped with **1.6.2**).
 2. **OPS-1d** — **done** (2026-09-19 note).
-3. **OPS-upstream-stale** ([#80](https://github.com/hrodrig/gghstats/issues/80)) — **done** (shipped with **1.6.3**).
+3. **OPS-upstream-stale** ([#80](https://github.com/hrodrig/gghstats/issues/80)) — **MVP shipped** (**1.6.3** detect/banner/alert; **1.6.4** stuck/eligible banner). **Issue stays open** for later contributions.
 4. **UX-h2h** then **UX-keys** (small UI; patch or early 1.7.0).
 5. **META-rel** (tooling; can land anytime; no VERSION bump required until used in release).
 6. **DX-check → DX-doctor** (**1.7.0**).
@@ -122,8 +123,10 @@ Work lands on `develop` via pull requests (repo gitflow).
 1. DOC-auth + DOC-idx (+ DOC-faq) on `develop`.
 2. OPS-1d recorded (pass/fail vs GitHub lag) — **done 2026-09-19:** lag confirmed;
    `(1d)` and unique-cloner KPI advanced on production dogfood; no store bug filed.
-3. **OPS-upstream-stale (#80)** — **done** (shipped **1.6.3**: stuck banner default-on,
-   opt-out via `GGHSTATS_UPSTREAM_STALE_BANNER`, optional once/episode alert).
+3. **OPS-upstream-stale (#80)** — **MVP shipped** (**1.6.3**: stuck banner default-on,
+   opt-out via `GGHSTATS_UPSTREAM_STALE_BANNER`, optional once/episode alert;
+   **1.6.4**: banner shows stuck/eligible). **Do not close #80** — further
+   contributions tracked on the issue.
 4. At least one of UX-h2h or UX-keys on `develop`, **or** explicitly deferred in
    CHANGELOG with user OK.
 5. If DX-check/doctor land: man page + `--help` + tests; VERSION minor bump.
@@ -139,7 +142,7 @@ Work lands on `develop` via pull requests (repo gitflow).
 - [x] DOC-faq (index coverage matrix known limitation)
 - [x] OPS-1d dogfood recheck note
 - [x] UX-search-empty filtered `q` vs empty catalog (index [#73](https://github.com/hrodrig/gghstats/issues/73) + Featured [#75](https://github.com/hrodrig/gghstats/issues/75))
-- [ ] OPS-upstream-stale detect stuck GitHub traffic + **UI banner default-on** ([#80](https://github.com/hrodrig/gghstats/issues/80); candidate 1.6.3)
+- [x] OPS-upstream-stale MVP: detect + **UI banner default-on** + stuck/eligible counts ([#80](https://github.com/hrodrig/gghstats/issues/80) remains open; **1.6.3** / **1.6.4**)
 - [ ] UX-h2h index → H2H prefill
 - [ ] UX-keys shortcuts
 - [ ] META-rel pre-release drift checker
