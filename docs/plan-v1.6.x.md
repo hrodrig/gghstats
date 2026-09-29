@@ -47,7 +47,7 @@ contract.
 | **DOC-idx** | Docs | Keep `docs/README.md` index in sync with files on disk (`api`, `themes`, band plans) | S | Include this plan in the docs index |
 | **DOC-faq** | Docs | Public FAQ note: aggregate index chart has **no per-repo coverage matrix** (1.5.0 known limitation) | S | README FAQ or `docs/api.md` one-liner |
 | **OPS-1d** | Ops | Recheck production dogfood when unique cloners look frozen and `(1d)` is all zeros | S | **Done 2026-09-19:** unique cloners moved (≈10.5k → ≈11.0k); page-1 `(1d)` no longer all zeros on active repos → GitHub/sync lag at prior capture, not a `(1d)` calc bug |
-| **OPS-upstream-stale** | Ops+UI | Detect **GitHub traffic stuck** after successful sync (API 200, window not advancing ≥ K days); status `upstream_stale` + **mandatory visual banner** (index + repo) + optional alert once | M | [#80](https://github.com/hrodrig/gghstats/issues/80); incident ~2026-09-23 ([community #208852](https://github.com/orgs/community/discussions/208852)); **not** the same as freshness `delayed`/`missing`; multi-repo correlation to avoid quiet-repo false positives; target **1.6.3** |
+| **OPS-upstream-stale** | Ops+UI | Detect **GitHub traffic stuck** after successful sync (API 200, window not advancing ≥ K days); status `upstream_stale` + **configurable visual banner (default on)** via `GGHSTATS_UPSTREAM_STALE_BANNER` (index + repo) + optional ops alert once per episode | M | [#80](https://github.com/hrodrig/gghstats/issues/80); historical freeze evidence ~2026-09-23 ([community #208852](https://github.com/orgs/community/discussions/208852) — docs only; banner help uses Community discussions search); **not** the same as freshness `delayed`/`missing`; multi-repo correlation to avoid quiet-repo false positives; target **1.6.3** |
 | **DX-check** | CLI | `gghstats config check` — validate env (token present/demo, filter regex, DB path writable, API-only+CORS warn, port) | M | Prefer **1.7.0** if first new CLI |
 | **DX-doctor** | CLI | `gghstats doctor` — last sync, DB size, rate_limit peek, repos without traffic, filter vs DB divergence | M | Builds on DX-check; **1.7.0** |
 | **META-rel** | Tooling | Pre-release drift checker: VERSION vs README badge vs man `.TH` vs BSD `PORTVERSION` / OpenBSD PKGNAME; print delta (optional `--fix` later) | M | Defends the VERSION-bump checklist; `make` target OK |
@@ -62,7 +62,7 @@ contract.
 
 1. **DOC-auth + DOC-idx + DOC-faq** — **done** (shipped with **1.6.2**).
 2. **OPS-1d** — **done** (2026-09-19 note).
-3. **OPS-upstream-stale** ([#80](https://github.com/hrodrig/gghstats/issues/80)) — detect stuck upstream + **dashboard visual banner** (must-ship with the slice); then optional alert dedupe. Candidate **1.6.3**.
+3. **OPS-upstream-stale** ([#80](https://github.com/hrodrig/gghstats/issues/80)) — detect stuck upstream + **dashboard visual banner** (ships default-on; operators may opt out with `GGHSTATS_UPSTREAM_STALE_BANNER=false`); then optional alert dedupe. Candidate **1.6.3**.
 4. **UX-h2h** then **UX-keys** (small UI; patch or early 1.7.0).
 5. **META-rel** (tooling; can land anytime; no VERSION bump required until used in release).
 6. **DX-check → DX-doctor** (**1.7.0**).
@@ -80,15 +80,20 @@ Work lands on `develop` via pull requests (repo gitflow).
    lag remaining the default explanation when sync `failed=0` but series stall.
    **OPS-upstream-stale (#80)** productizes that explanation: when the API
    succeeds but the traffic window stops advancing (fleet-wide), surface
-   `upstream_stale` with a **visible UI banner** — do not invent traffic points.
+   `upstream_stale` with a **configurable UI banner (default on)** — do not
+   invent traffic points. Banner help links to GitHub Community discussions
+   search (API/Insights); community [#208852](https://github.com/orgs/community/discussions/208852)
+   remains historical evidence in docs only.
 3. **CLI DX before OpenAPI / SSE / pprof.** Prefer introspection operators can
    run on the VPS over new HTTP surfaces.
 4. **Dependabot bumps must keep `golang.org/x/net` pin.** After any tidy, run
    `go get golang.org/x/net@v0.57.0` + `make check-x-net-pin` (AGENTS.md).
 5. **No Line B in 1.6.x.** Webhooks / delta sync wait for **2.0.0**.
-6. **Stuck traffic must be visual.** OPS-upstream-stale ships with a dashboard
-   banner (and repo-page cue) that operators cannot miss; alert/notify is
-   additive, not a substitute for the banner.
+6. **Stuck traffic ships visual by default.** OPS-upstream-stale includes a
+   dashboard banner (and repo-page cue) **on by default**
+   (`GGHSTATS_UPSTREAM_STALE_BANNER=true`); operators may set `false` to hide
+   HTML while keeping detect/status/alerts. Alert/notify is independent of the
+   banner (notify-only is supported).
 
 ## Out of scope
 
@@ -116,8 +121,9 @@ Work lands on `develop` via pull requests (repo gitflow).
 1. DOC-auth + DOC-idx (+ DOC-faq) on `develop`.
 2. OPS-1d recorded (pass/fail vs GitHub lag) — **done 2026-09-19:** lag confirmed;
    `(1d)` and unique-cloner KPI advanced on production dogfood; no store bug filed.
-3. **OPS-upstream-stale (#80)** on `develop` with a **visible stuck banner**
-   (and optional alert), **or** explicitly deferred in CHANGELOG with user OK.
+3. **OPS-upstream-stale (#80)** on `develop` with a **stuck banner default-on**
+   (opt-out via `GGHSTATS_UPSTREAM_STALE_BANNER`) and optional alert, **or**
+   explicitly deferred in CHANGELOG with user OK.
 4. At least one of UX-h2h or UX-keys on `develop`, **or** explicitly deferred in
    CHANGELOG with user OK.
 5. If DX-check/doctor land: man page + `--help` + tests; VERSION minor bump.
@@ -133,7 +139,7 @@ Work lands on `develop` via pull requests (repo gitflow).
 - [x] DOC-faq (index coverage matrix known limitation)
 - [x] OPS-1d dogfood recheck note
 - [x] UX-search-empty filtered `q` vs empty catalog (index [#73](https://github.com/hrodrig/gghstats/issues/73) + Featured [#75](https://github.com/hrodrig/gghstats/issues/75))
-- [ ] OPS-upstream-stale detect stuck GitHub traffic + **UI banner** ([#80](https://github.com/hrodrig/gghstats/issues/80); candidate 1.6.3)
+- [ ] OPS-upstream-stale detect stuck GitHub traffic + **UI banner default-on** ([#80](https://github.com/hrodrig/gghstats/issues/80); candidate 1.6.3)
 - [ ] UX-h2h index → H2H prefill
 - [ ] UX-keys shortcuts
 - [ ] META-rel pre-release drift checker

@@ -383,6 +383,20 @@ func (s *Store) RecordTrafficMetricFailure(repo, metric string, err error) error
 	return e
 }
 
+// UpsertTrafficMetricStateSuccess sets last_status=success and latest_observed_date
+// without rewriting daily traffic rows. Used for dogfood freeze simulation.
+func (s *Store) UpsertTrafficMetricStateSuccess(repo, metric, latestObserved string, fetchedAt time.Time) error {
+	if !validTrafficMetric(metric) {
+		return fmt.Errorf("unsupported traffic metric %q", metric)
+	}
+	fetched := fetchedAt.UTC().Format(time.RFC3339)
+	_, err := s.db.Exec(`INSERT INTO traffic_metric_state (repo, metric, last_success_at, latest_observed_date, coverage_from, coverage_to, last_status, last_error)
+		VALUES (?, ?, ?, ?, ?, ?, 'success', '')
+		ON CONFLICT (repo, metric) DO UPDATE SET last_success_at=excluded.last_success_at, latest_observed_date=excluded.latest_observed_date, coverage_from=excluded.coverage_from, coverage_to=excluded.coverage_to, last_status='success', last_error=''`,
+		repo, metric, fetched, latestObserved, latestObserved, latestObserved)
+	return err
+}
+
 func (s *Store) TrafficMetricState(repo, metric string) (TrafficMetricState, error) {
 	if !validTrafficMetric(metric) {
 		return TrafficMetricState{}, fmt.Errorf("unsupported traffic metric %q", metric)
@@ -1147,6 +1161,13 @@ func (s *Store) AlertDebounceSet(ruleKey, stamp string) error {
 		 ON CONFLICT(rule_key) DO UPDATE SET stamp=excluded.stamp`,
 		ruleKey, stamp,
 	)
+	return err
+}
+
+// AlertDebounceDelete removes the debounce stamp for a rule key.
+// Missing keys are a no-op success (idempotent).
+func (s *Store) AlertDebounceDelete(ruleKey string) error {
+	_, err := s.db.Exec(`DELETE FROM alert_debounce WHERE rule_key=?`, ruleKey)
 	return err
 }
 

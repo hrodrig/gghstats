@@ -1,8 +1,11 @@
 package main
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/hrodrig/gghstats/internal/store"
 )
 
 func TestLoadServeConfigDefaults(t *testing.T) {
@@ -249,5 +252,118 @@ func TestResolveCSSPath(t *testing.T) {
 	abs, q = resolveCSSPath()
 	if abs != "" {
 		t.Fatalf("missing file should yield empty abs, got %q q=%q", abs, q)
+	}
+}
+
+func TestLoadServeConfigUpstreamStaleDefaults(t *testing.T) {
+	t.Setenv("GGHSTATS_UPSTREAM_STALE_DAYS", "")
+	t.Setenv("GGHSTATS_UPSTREAM_STALE_BANNER", "")
+	t.Setenv("GGHSTATS_DEMO_UPSTREAM_STALE", "")
+	t.Setenv("GGHSTATS_UPSTREAM_STALE_FORCE", "")
+	cfg := loadServeConfig()
+	if cfg.UpstreamStaleDays != 3 {
+		t.Fatalf("UpstreamStaleDays = %d, want 3", cfg.UpstreamStaleDays)
+	}
+	if !cfg.UpstreamStaleBanner {
+		t.Fatal("UpstreamStaleBanner default want true")
+	}
+	if cfg.DemoUpstreamStale || cfg.UpstreamStaleForce {
+		t.Fatalf("dogfood flags must default off: demo=%v force=%v", cfg.DemoUpstreamStale, cfg.UpstreamStaleForce)
+	}
+}
+
+func TestLoadServeConfigUpstreamStaleDays(t *testing.T) {
+	cases := []struct {
+		env  string
+		want int
+	}{
+		{"0", 0},
+		{"5", 5},
+		{"-1", 3},
+		{"nope", 3},
+	}
+	for _, tc := range cases {
+		t.Run(tc.env, func(t *testing.T) {
+			t.Setenv("GGHSTATS_UPSTREAM_STALE_DAYS", tc.env)
+			cfg := loadServeConfig()
+			if cfg.UpstreamStaleDays != tc.want {
+				t.Fatalf("days=%d want %d", cfg.UpstreamStaleDays, tc.want)
+			}
+		})
+	}
+}
+
+func TestLoadServeConfigUpstreamStaleBanner(t *testing.T) {
+	for _, off := range []string{"false", "0", "off"} {
+		t.Run(off, func(t *testing.T) {
+			t.Setenv("GGHSTATS_UPSTREAM_STALE_BANNER", off)
+			cfg := loadServeConfig()
+			if cfg.UpstreamStaleBanner {
+				t.Fatalf("BANNER=%q want false", off)
+			}
+		})
+	}
+}
+
+func TestLoadServeConfigDemoUpstreamStaleAndForce(t *testing.T) {
+	t.Setenv("GGHSTATS_DEMO_UPSTREAM_STALE", "true")
+	t.Setenv("GGHSTATS_UPSTREAM_STALE_FORCE", "true")
+	cfg := loadServeConfig()
+	if !cfg.DemoUpstreamStale || !cfg.UpstreamStaleForce {
+		t.Fatalf("%+v", cfg)
+	}
+}
+
+func TestParseServeFlagsDemoUpstreamStaleAndForce(t *testing.T) {
+	t.Setenv("GGHSTATS_GITHUB_TOKEN", "")
+	t.Setenv("GGHSTATS_DEMO", "")
+	cfg := loadServeConfig()
+	if err := parseServeFlags(&cfg, []string{"--demo", "--demo-upstream-stale", "--upstream-stale-force"}); err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.Demo || !cfg.DemoUpstreamStale || !cfg.UpstreamStaleForce {
+		t.Fatalf("%+v", cfg)
+	}
+}
+
+func TestSeedDemoIfEnabled(t *testing.T) {
+	dir := t.TempDir()
+	db, err := store.Open(filepath.Join(dir, "demo.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	if err := seedDemoIfEnabled(db, serveConfig{Demo: false}); err != nil {
+		t.Fatal(err)
+	}
+	n, _ := db.RepoCount()
+	if n != 0 {
+		t.Fatalf("demo off should not seed, got %d", n)
+	}
+
+	if err := seedDemoIfEnabled(db, serveConfig{Demo: true}); err != nil {
+		t.Fatal(err)
+	}
+	n, _ = db.RepoCount()
+	if n != 3 {
+		t.Fatalf("seed repos=%d", n)
+	}
+
+	if err := seedDemoIfEnabled(db, serveConfig{Demo: true, DemoUpstreamStale: true}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := store.DetectFleetUpstreamStale(db, store.ReportVisibility{}, 3, time.Now().UTC(), true)
+	if err != nil || !got.Active {
+		t.Fatalf("after freeze: %+v err=%v", got, err)
+	}
+
+	closed, err := store.Open(filepath.Join(dir, "closed.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = closed.Close()
+	if err := seedDemoIfEnabled(closed, serveConfig{Demo: true}); err == nil {
+		t.Fatal("want error seeding closed db")
 	}
 }

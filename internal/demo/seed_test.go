@@ -3,6 +3,7 @@ package demo
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/hrodrig/gghstats/internal/store"
 )
@@ -42,5 +43,41 @@ func TestSeedIfEmpty(t *testing.T) {
 	}
 	if sum.TotalClones < 1 {
 		t.Fatalf("expected clone totals after deltas, got %d", sum.TotalClones)
+	}
+}
+
+func TestApplyUpstreamStaleFreeze(t *testing.T) {
+	s, err := store.Open(filepath.Join(t.TempDir(), "demo-stale.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.Close() })
+	if err := Seed(s); err != nil {
+		t.Fatal(err)
+	}
+	if err := ApplyUpstreamStaleFreeze(s); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	got, err := store.DetectFleetUpstreamStale(s, store.ReportVisibility{}, 3, now, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.Active || got.Since == "" || got.DaysStuck < 1 {
+		t.Fatalf("want active fleet stale, got %+v", got)
+	}
+}
+
+func TestApplyUpstreamStaleFreeze_NilAndEmpty(t *testing.T) {
+	if err := ApplyUpstreamStaleFreeze(nil); err == nil {
+		t.Fatal("nil store")
+	}
+	s, err := store.Open(filepath.Join(t.TempDir(), "empty.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.Close() })
+	if err := ApplyUpstreamStaleFreeze(s); err == nil {
+		t.Fatal("empty repos")
 	}
 }

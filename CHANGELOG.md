@@ -7,6 +7,15 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **OPS-upstream-stale (#80):** fleet freeze detect → `upstream_stale` (`since`, `days_stuck`) on healthz/JSON; optional banner (`GGHSTATS_UPSTREAM_STALE_BANNER`); ops alert `upstream_stale` debounce once/episode. [#208852](https://github.com/orgs/community/discussions/208852) = docs evidence only.
+- **Dogfood:** `--demo-upstream-stale` / `--upstream-stale-force` (and matching env).
+
+### Documentation
+
+- Short env/man/SPEC pointers; operator runbooks belong in **gghstats-selfhosted**.
+
 ## [1.6.2] - 2026-09-27
 
 ### Fixed

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -57,6 +58,20 @@ func envBool(key string, defaultVal bool) bool {
 	default:
 		return defaultVal
 	}
+}
+
+// envUpstreamStaleDays parses GGHSTATS_UPSTREAM_STALE_DAYS (default 3; 0 disables).
+// Invalid or negative values fall back to 3.
+func envUpstreamStaleDays() int {
+	v := strings.TrimSpace(os.Getenv("GGHSTATS_UPSTREAM_STALE_DAYS"))
+	if v == "" {
+		return 3
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 0 {
+		return 3
+	}
+	return n
 }
 
 func defaultDBPath() string {

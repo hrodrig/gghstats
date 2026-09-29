@@ -885,6 +885,16 @@ func TestAlertDebounce(t *testing.T) {
 	if err != nil || stamp != "fired" {
 		t.Fatalf("upsert: stamp=%q err=%v", stamp, err)
 	}
+	if err := s.AlertDebounceDelete("rule-a"); err != nil {
+		t.Fatal(err)
+	}
+	stamp, err = s.AlertDebounceGet("rule-a")
+	if err != nil || stamp != "" {
+		t.Fatalf("after delete: stamp=%q err=%v", stamp, err)
+	}
+	if err := s.AlertDebounceDelete("never-set"); err != nil {
+		t.Fatalf("delete missing key should be idempotent: %v", err)
+	}
 }
 
 func TestFleetSums(t *testing.T) {

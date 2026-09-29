@@ -238,6 +238,11 @@ GitHub returns stargazer pages **newest-first**; gghstats always sorts ascending
   until the next sync refreshes metadata or an operator uses explicit include;
   migrations do not delete historical data. Operator upgrade steps:
   README “Upgrading to 1.5.0”.
+- **Fleet `upstream_stale` (≠ freshness):** after successful sync, if the fleet
+  observed window stalls ≥ `GGHSTATS_UPSTREAM_STALE_DAYS` (default **3**; **0** =
+  off), expose `upstream_stale` (`since`, `days_stuck`) on healthz / index JSON.
+  Optional HTML banner via `GGHSTATS_UPSTREAM_STALE_BANNER` (default **true**),
+  independent of ops alerts (§8.7). Operator examples: **gghstats-selfhosted**.
 
 ---
 
@@ -760,6 +765,7 @@ Prometheus gauges (`gghstats_last_sync_*`, `gghstats_github_rate_limit_*`) remai
 | **`repo_fetch_failed`** | One or more repos failed their traffic/star fetch **after retries** in a single run. | Failed repo count in **this sync** (e.g. `count ≥ 3`). |
 | **`github_unreachable`** | Transport / DNS / dial failures dominate (no usable GitHub HTTP). | Failures in this sync or consecutive runs — document which. |
 | **`rate_limit`** | Core REST remaining below a floor, **or** sustained 429 after retries exhausted. | Remaining ≤ `value`, and/or consecutive rate-limit outcomes ≥ `value`. |
+| **`upstream_stale`** | Fleet traffic freeze after a **successful** sync: observed window not advancing (≥ K days; see §4.8). Distinct from freshness `delayed`/`missing`/`failed`. | Active when fleet stuck (`op=gte`, `value=1`). Debounce **`once` per freeze episode** (fire on enter stuck; silence until traffic advances, then re-stuck). Do **not** use `once_per_utc_day` (multi-week freezes would spam). |
 
 Partial success is normal on large accounts: **do not** alert on every single-repo blip. Rules must use **thresholds** (counts / consecutive / remaining).
 
@@ -804,6 +810,7 @@ Docs (README / env.example) must show **human sentence → what gghstats checks*
 | “Page me if **two scheduled syncs in a row** die completely — I got no metrics at all.” | `sync_failed` / **crit** | Consecutive full-run failures **≥ 2** | `kind=ops`, `event=sync_failed`, `window=consecutive_runs`, `op=gte`, `value=2`, `level=crit` |
 | “Warn me when GitHub REST remaining drops **below 100** after a sync — we are about to burn the quota.” | `rate_limit` / **warn** | `X-RateLimit-Remaining` **&lt; 100** (core REST) | `kind=ops`, `event=rate_limit`, `op=lt`, `value=100`, `level=warn`, `debounce=once_per_utc_day` |
 | “Crit if **this sync** cannot reach GitHub at all (DNS/dial/TLS) — not a single API call succeeded.” | `github_unreachable` / **crit** | Unreachable outcome **≥ 1** in this sync | `kind=ops`, `event=github_unreachable`, `window=this_sync`, `op=gte`, `value=1`, `level=crit` |
+| “Warn me when GitHub traffic looks **frozen fleet-wide** after successful syncs (API OK, window not advancing).” | `upstream_stale` / **warn** | Fleet `upstream_stale` active | `kind=ops`, `event=upstream_stale`, `op=gte`, `value=1`, `level=warn`, `debounce=once` |
 | “Warn if **half or more** of the fleet failed fetch in one run (large account).” | `repo_fetch_failed` / **warn** | Ratio form = later stretch; MVP uses a fixed high `value` | Prefer fixed `value` in MVP |
 | “Info only: note when **exactly one** repo fails (Loki), do not ping Slack.” | `repo_fetch_failed` / **info** | Failed count **≥ 1** | `level=info`; MVP may skip or use Loki-only sinks |
 
@@ -867,12 +874,14 @@ GGHSTATS_ALERTS_ENABLED=true
 #   - "Page me if two scheduled syncs in a row die completely."
 #   - "Warn me when GitHub REST remaining drops below 100 after a sync."
 #   - "Crit if this sync cannot reach GitHub at all."
+#   - "Warn me when fleet traffic is stuck after successful sync (once per freeze)."
 GGHSTATS_ALERT_RULES='[
   {"kind":"traffic","repo":"hrodrig/pgwd","metric":"clones","window":"1d","op":"gte","value":225,"debounce":"once_per_utc_day"},
   {"kind":"ops","event":"repo_fetch_failed","window":"this_sync","op":"gte","value":3,"level":"warn","debounce":"once_per_utc_day"},
   {"kind":"ops","event":"sync_failed","window":"consecutive_runs","op":"gte","value":2,"level":"crit"},
   {"kind":"ops","event":"rate_limit","op":"lt","value":100,"level":"warn","debounce":"once_per_utc_day"},
-  {"kind":"ops","event":"github_unreachable","window":"this_sync","op":"gte","value":1,"level":"crit"}
+  {"kind":"ops","event":"github_unreachable","window":"this_sync","op":"gte","value":1,"level":"crit"},
+  {"kind":"ops","event":"upstream_stale","op":"gte","value":1,"level":"warn","debounce":"once"}
 ]'
 ```
 
