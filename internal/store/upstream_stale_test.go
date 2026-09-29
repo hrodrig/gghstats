@@ -217,3 +217,108 @@ func TestDetectFleetUpstreamStale_AutoClearWhenObservedAdvances(t *testing.T) {
 		t.Fatalf("should auto-clear when latest_observed advances: %+v", got)
 	}
 }
+
+func TestDetectFleetUpstreamStale_NilStore(t *testing.T) {
+	_, err := DetectFleetUpstreamStale(nil, ReportVisibility{}, 3, time.Now().UTC(), true)
+	if err == nil {
+		t.Fatal("want error for nil store")
+	}
+}
+
+func TestDaysStuckFromSince(t *testing.T) {
+	completed := time.Date(2026, 9, 27, 0, 0, 0, 0, time.UTC)
+	if daysStuckFromSince(completed, "") != 0 {
+		t.Fatal("empty since")
+	}
+	if daysStuckFromSince(completed, "not-a-date") != 0 {
+		t.Fatal("invalid since")
+	}
+	if got := daysStuckFromSince(completed, "2026-09-23"); got != 4 {
+		t.Fatalf("days=%d want 4", got)
+	}
+	if daysStuckFromSince(completed, "2026-09-30") != 0 {
+		t.Fatal("future since should clamp to 0")
+	}
+}
+
+func TestRepoUpstreamStaleObs_ViewsOnly(t *testing.T) {
+	s := tempDB(t)
+	now := time.Date(2026, 9, 28, 15, 0, 0, 0, time.UTC)
+	completed := time.Date(2026, 9, 27, 0, 0, 0, 0, time.UTC)
+	staleCutoff := completed.AddDate(0, 0, -3).Format("2006-01-02")
+	name := "o/views"
+	if err := s.UpsertRepo(name, "", 1, 0, 0, 0, 0, false, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	fetched := now
+	// Fresh clones, stale views.
+	if err := s.RecordTrafficMetricSuccess(name, "clones", []DayRow{{Date: "2026-09-27", Count: 3, Uniques: 1}}, fetched, "2026-09-27", "2026-09-27"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.RecordTrafficMetricSuccess(name, "views", []DayRow{{Date: "2026-09-20", Count: 3, Uniques: 1}}, fetched, "2026-09-20", "2026-09-20"); err != nil {
+		t.Fatal(err)
+	}
+	stuck, obs, err := repoUpstreamStaleObs(s, name, staleCutoff)
+	if err != nil || !stuck || obs != "2026-09-20" {
+		t.Fatalf("stuck=%v obs=%q err=%v", stuck, obs, err)
+	}
+}
+
+func TestMetricIsUpstreamStale_NeverAndFresh(t *testing.T) {
+	s := tempDB(t)
+	name := "o/m"
+	if err := s.UpsertRepo(name, "", 1, 0, 0, 0, 0, false, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	stale, obs, err := metricIsUpstreamStale(s, name, "clones", "2026-09-20")
+	if err != nil || stale || obs != "" {
+		t.Fatalf("never: stale=%v obs=%q err=%v", stale, obs, err)
+	}
+	fetched := time.Date(2026, 9, 28, 0, 0, 0, 0, time.UTC)
+	if err := s.RecordTrafficMetricSuccess(name, "clones", []DayRow{{Date: "2026-09-27", Count: 1, Uniques: 1}}, fetched, "2026-09-27", "2026-09-27"); err != nil {
+		t.Fatal(err)
+	}
+	stale, obs, err = metricIsUpstreamStale(s, name, "clones", "2026-09-20")
+	if err != nil || stale || obs != "2026-09-27" {
+		t.Fatalf("fresh: stale=%v obs=%q err=%v", stale, obs, err)
+	}
+}
+
+func TestRepoHasNonZeroTrafficViewsOnly(t *testing.T) {
+	s := tempDB(t)
+	name := "o/v"
+	if err := s.UpsertRepo(name, "", 1, 0, 0, 0, 0, false, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertView(name, "2026-09-25", 4, 2); err != nil {
+		t.Fatal(err)
+	}
+	ok, err := repoHasNonZeroTrafficInWindow(s, name, "2026-09-20", "2026-09-27")
+	if err != nil || !ok {
+		t.Fatalf("ok=%v err=%v", ok, err)
+	}
+}
+
+func TestUpsertTrafficMetricStateSuccess(t *testing.T) {
+	s := tempDB(t)
+	if err := s.UpsertRepo("o/r", "", 1, 0, 0, 0, 0, false, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertClone("o/r", "2026-09-27", 5, 2); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	if err := s.UpsertTrafficMetricStateSuccess("o/r", "clones", "2026-09-20", now); err != nil {
+		t.Fatal(err)
+	}
+	st, err := s.TrafficMetricState("o/r", "clones")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.LastStatus != "success" || st.LatestObservedDate != "2026-09-20" {
+		t.Fatalf("%+v", st)
+	}
+	if err := s.UpsertTrafficMetricStateSuccess("o/r", "badmetric", "2026-09-20", now); err == nil {
+		t.Fatal("want error for bad metric")
+	}
+}

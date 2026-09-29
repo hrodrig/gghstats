@@ -67,3 +67,17 @@ func TestApplyUpstreamStaleFreeze(t *testing.T) {
 		t.Fatalf("want active fleet stale, got %+v", got)
 	}
 }
+
+func TestApplyUpstreamStaleFreeze_NilAndEmpty(t *testing.T) {
+	if err := ApplyUpstreamStaleFreeze(nil); err == nil {
+		t.Fatal("nil store")
+	}
+	s, err := store.Open(filepath.Join(t.TempDir(), "empty.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { s.Close() })
+	if err := ApplyUpstreamStaleFreeze(s); err == nil {
+		t.Fatal("empty repos")
+	}
+}

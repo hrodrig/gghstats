@@ -211,3 +211,38 @@ func TestRepoUpstreamStaleCueBannerOff(t *testing.T) {
 		t.Fatal("repo cue should be hidden when UpstreamStaleBanner=false")
 	}
 }
+
+func TestHealthzUpstreamStaleForce(t *testing.T) {
+	db := testStore(t)
+	h := New(Config{
+		Store:              db,
+		UpstreamStaleDays:  3,
+		UpstreamStaleForce: true,
+	})
+	req := httptest.NewRequest(http.MethodGet, HealthzPath, nil)
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Fatalf("status=%d", w.Code)
+	}
+	var body struct {
+		UpstreamStale struct {
+			Active    bool   `json:"active"`
+			Since     string `json:"since"`
+			DaysStuck int    `json:"days_stuck"`
+		} `json:"upstream_stale"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if !body.UpstreamStale.Active || body.UpstreamStale.Since != ForcedUpstreamStaleSince || body.UpstreamStale.DaysStuck < 1 {
+		t.Fatalf("%+v", body.UpstreamStale)
+	}
+}
+
+func TestFleetUpstreamStaleStatusNilStore(t *testing.T) {
+	got := fleetUpstreamStaleStatus(Config{UpstreamStaleDays: 3}, time.Now().UTC())
+	if got.Active {
+		t.Fatalf("%+v", got)
+	}
+}
