@@ -185,6 +185,17 @@ errors (HTTP 429, 403 rate-limited, 5xx) and honors
 Failures are classified per step (views, clones, referrers, paths,
 stars, repo metadata) and exposed as \fBgghstats_sync_errors_total{kind}\fR.
 .TP
+.B GGHSTATS_UPSTREAM_STALE_DAYS
+Completed UTC days the fleet traffic window may stall after a successful
+sync before \fBupstream_stale\fR is active (default: \fB3\fR).
+\fB0\fR disables detection entirely (no status, banner, or ops event).
+.TP
+.B GGHSTATS_UPSTREAM_STALE_BANNER
+When \fBtrue\fR (default), show the HTML stuck-traffic banner on the index
+and a repo-page cue when \fBupstream_stale\fR is active.
+\fBfalse\fR hides the visual only; detection, JSON status, and ops alerts
+still run. Banner and alerts are independent (SPEC §8.7).
+.TP
 .B GGHSTATS_OPEN_BROWSER
 Open the default browser on startup (default: \fBfalse\fR; same as \fB\-\-open\fR).
 .TP
