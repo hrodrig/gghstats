@@ -30,30 +30,32 @@ import (
 )
 
 type serveConfig struct {
-	GithubToken       string
-	DB                string
-	Host              string
-	Port              string
-	Filter            string
-	IncludePrivate    bool
-	ReportPrivate     bool
-	APIToken          string
-	SyncInterval      time.Duration
-	SyncOnStartup     bool
-	SyncWorkers       int
-	OpenBrowser       bool
-	BadgePublic       bool
-	BadgeCacheMaxAge  int
-	PublicURL         string
-	HeadHTML          string
-	ReverseProxyRules string
-	EnableCollector   bool
-	EnableUpdateCheck bool
-	Demo              bool
-	APIOnly           bool
-	CompactNumbers    bool
-	CORSOrigins       string
-	CSPMode           string
+	GithubToken         string
+	DB                  string
+	Host                string
+	Port                string
+	Filter              string
+	IncludePrivate      bool
+	ReportPrivate       bool
+	APIToken            string
+	SyncInterval        time.Duration
+	SyncOnStartup       bool
+	SyncWorkers         int
+	OpenBrowser         bool
+	BadgePublic         bool
+	BadgeCacheMaxAge    int
+	PublicURL           string
+	HeadHTML            string
+	ReverseProxyRules   string
+	EnableCollector     bool
+	EnableUpdateCheck   bool
+	Demo                bool
+	APIOnly             bool
+	CompactNumbers      bool
+	CORSOrigins         string
+	CSPMode             string
+	UpstreamStaleDays   int
+	UpstreamStaleBanner bool
 }
 
 func loadServeConfig() serveConfig {
@@ -102,6 +104,8 @@ func loadServeConfig() serveConfig {
 	cfg.CompactNumbers = envBool("GGHSTATS_COMPACT_NUMBERS", false)
 	cfg.CORSOrigins = os.Getenv("GGHSTATS_CORS_ORIGINS")
 	cfg.CSPMode = strings.TrimSpace(os.Getenv("GGHSTATS_CSP"))
+	cfg.UpstreamStaleDays = envUpstreamStaleDays()
+	cfg.UpstreamStaleBanner = envBool("GGHSTATS_UPSTREAM_STALE_BANNER", true)
 
 	return cfg
 }
@@ -276,33 +280,35 @@ func runServe(args []string) error {
 
 	// Start HTTP server
 	handler := server.New(server.Config{
-		Store:              db,
-		ReportVisibility:   store.ReportVisibility{IncludePrivate: cfg.ReportPrivate},
-		APIToken:           cfg.APIToken,
-		SyncCoordinator:    coord,
-		SyncOnStartup:      cfg.SyncOnStartup,
-		InitialSyncPending: initialSyncPending,
-		BadgePublic:        cfg.BadgePublic,
-		BadgeCacheMaxAge:   cfg.BadgeCacheMaxAge,
-		PublicURL:          cfg.PublicURL,
-		DisableMetrics:     !envBool("GGHSTATS_METRICS", true),
-		MetricsRegistry:    metricsReg,
-		DomainMetrics:      domainMetrics,
-		CustomCSSAbsPath:   cssAbs,
-		CustomCSSQuery:     cssQuery,
-		DefaultLocale:      editableSettings.DefaultLocale,
-		EnabledLocales:     enabledLocales,
-		CompactNumbers:     editableSettings.CompactNumbers,
-		SettingsManager:    settingsManager,
-		LocalOnlySettings:  isLoopbackBindHost(cfg.Host),
-		RateLimiter:        rateLimiter,
-		TrustedProxies:     trusted,
-		Whitelist:          whitelist,
-		HeadHTML:           template.HTML(cfg.HeadHTML),
-		ReverseProxyRules:  server.ParseReverseProxyRules(cfg.ReverseProxyRules),
-		APIOnly:            cfg.APIOnly,
-		CORSOrigins:        corsOrigins,
-		CSPMode:            cfg.CSPMode,
+		Store:               db,
+		ReportVisibility:    store.ReportVisibility{IncludePrivate: cfg.ReportPrivate},
+		APIToken:            cfg.APIToken,
+		SyncCoordinator:     coord,
+		SyncOnStartup:       cfg.SyncOnStartup,
+		InitialSyncPending:  initialSyncPending,
+		BadgePublic:         cfg.BadgePublic,
+		BadgeCacheMaxAge:    cfg.BadgeCacheMaxAge,
+		PublicURL:           cfg.PublicURL,
+		DisableMetrics:      !envBool("GGHSTATS_METRICS", true),
+		MetricsRegistry:     metricsReg,
+		DomainMetrics:       domainMetrics,
+		CustomCSSAbsPath:    cssAbs,
+		CustomCSSQuery:      cssQuery,
+		DefaultLocale:       editableSettings.DefaultLocale,
+		EnabledLocales:      enabledLocales,
+		CompactNumbers:      editableSettings.CompactNumbers,
+		UpstreamStaleDays:   cfg.UpstreamStaleDays,
+		UpstreamStaleBanner: cfg.UpstreamStaleBanner,
+		SettingsManager:     settingsManager,
+		LocalOnlySettings:   isLoopbackBindHost(cfg.Host),
+		RateLimiter:         rateLimiter,
+		TrustedProxies:      trusted,
+		Whitelist:           whitelist,
+		HeadHTML:            template.HTML(cfg.HeadHTML),
+		ReverseProxyRules:   server.ParseReverseProxyRules(cfg.ReverseProxyRules),
+		APIOnly:             cfg.APIOnly,
+		CORSOrigins:         corsOrigins,
+		CSPMode:             cfg.CSPMode,
 		Settings: server.SettingsSnapshot{
 			RuntimeMode:              map[bool]string{true: "Demo", false: "Production"}[cfg.Demo],
 			Host:                     cfg.Host,
@@ -427,6 +433,13 @@ func configureSyncAlerts(ctx context.Context, cfg serveConfig, db *store.Store, 
 			FailedRepos:        failed,
 			Unreachable:        result.Unreachable,
 			RateLimitRemaining: result.RateLimitRemaining,
+		}
+		ustale, err := store.DetectFleetUpstreamStale(db, reportScope, cfg.UpstreamStaleDays, time.Now().UTC(), snap.Success)
+		if err != nil {
+			slog.Error("alerts: detect upstream stale", "error", err)
+		} else {
+			snap.UpstreamStale = ustale.Active
+			snap.UpstreamStaleSince = ustale.Since
 		}
 		alert.RunAllRules(ctx, alert.EvalConfig{
 			DB:               db,

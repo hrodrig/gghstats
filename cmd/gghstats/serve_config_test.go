@@ -251,3 +251,48 @@ func TestResolveCSSPath(t *testing.T) {
 		t.Fatalf("missing file should yield empty abs, got %q q=%q", abs, q)
 	}
 }
+
+func TestLoadServeConfigUpstreamStaleDefaults(t *testing.T) {
+	t.Setenv("GGHSTATS_UPSTREAM_STALE_DAYS", "")
+	t.Setenv("GGHSTATS_UPSTREAM_STALE_BANNER", "")
+	cfg := loadServeConfig()
+	if cfg.UpstreamStaleDays != 3 {
+		t.Fatalf("UpstreamStaleDays = %d, want 3", cfg.UpstreamStaleDays)
+	}
+	if !cfg.UpstreamStaleBanner {
+		t.Fatal("UpstreamStaleBanner default want true")
+	}
+}
+
+func TestLoadServeConfigUpstreamStaleDays(t *testing.T) {
+	cases := []struct {
+		env  string
+		want int
+	}{
+		{"0", 0},
+		{"5", 5},
+		{"-1", 3},
+		{"nope", 3},
+	}
+	for _, tc := range cases {
+		t.Run(tc.env, func(t *testing.T) {
+			t.Setenv("GGHSTATS_UPSTREAM_STALE_DAYS", tc.env)
+			cfg := loadServeConfig()
+			if cfg.UpstreamStaleDays != tc.want {
+				t.Fatalf("days=%d want %d", cfg.UpstreamStaleDays, tc.want)
+			}
+		})
+	}
+}
+
+func TestLoadServeConfigUpstreamStaleBanner(t *testing.T) {
+	for _, off := range []string{"false", "0", "off"} {
+		t.Run(off, func(t *testing.T) {
+			t.Setenv("GGHSTATS_UPSTREAM_STALE_BANNER", off)
+			cfg := loadServeConfig()
+			if cfg.UpstreamStaleBanner {
+				t.Fatalf("BANNER=%q want false", off)
+			}
+		})
+	}
+}
