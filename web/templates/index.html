@@ -52,7 +52,7 @@
 {{if and .UpstreamStaleBanner .UpstreamStaleActive}}
 <div id="upstream-stale-banner" class="alert alert-warning app-upstream-stale-banner border-0 shadow-sm mb-3" role="alert" data-gghstats-role="upstream-stale-banner">
   <strong>{{call .T "index.upstream_stale_title"}}</strong>
-  {{call .Tfmt "index.upstream_stale_body" (dict "since" .UpstreamStaleSince "days_stuck" (printf "%d" .UpstreamStaleDaysStuck))}}
+  {{call .Tfmt "index.upstream_stale_body" (dict "since" .UpstreamStaleSince "days_stuck" (printf "%d" .UpstreamStaleDaysStuck) "stuck" (printf "%d" .UpstreamStaleStuckRepos) "eligible" (printf "%d" .UpstreamStaleEligibleRepos))}}
   <a class="app-upstream-stale-help" href="{{.UpstreamStaleHelpURL}}" target="_blank" rel="noopener noreferrer">{{call .T "index.upstream_stale_help_link"}}</a>
 </div>
 {{end}}
