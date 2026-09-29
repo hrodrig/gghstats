@@ -239,46 +239,52 @@ func TestOpsEventMetrics_UpstreamStale(t *testing.T) {
 	}
 }
 
-func TestOpsEventMetrics_LegacyEvents(t *testing.T) {
+func TestOpsEventMetrics_RepoFetchFailed(t *testing.T) {
 	count, _, _, skip, err := opsEventMetrics("repo_fetch_failed", SyncSnapshot{
 		ReposFailed: 2, ReposAttempted: 5, FailedRepos: []string{"a/b"},
 	}, 0, "this_sync")
 	if err != nil || skip || count != 2 {
-		t.Fatalf("repo_fetch_failed count=%v skip=%v err=%v", count, skip, err)
+		t.Fatalf("count=%v skip=%v err=%v", count, skip, err)
 	}
 	_, _, _, _, err = opsEventMetrics("repo_fetch_failed", SyncSnapshot{}, 0, "bad")
 	if err == nil {
 		t.Fatal("want window error")
 	}
+}
 
-	_, _, _, skip, err = opsEventMetrics("sync_failed", SyncSnapshot{Success: true}, 0, "this_sync")
+func TestOpsEventMetrics_SyncFailed(t *testing.T) {
+	_, _, _, skip, err := opsEventMetrics("sync_failed", SyncSnapshot{Success: true}, 0, "this_sync")
 	if err != nil || !skip {
 		t.Fatal("success sync skip")
 	}
 	count, _, win, skip, err := opsEventMetrics("sync_failed", SyncSnapshot{Success: false}, 0, "this_sync")
 	if err != nil || skip || count != 1 || win != "this_sync" {
-		t.Fatalf("sync_failed this_sync")
+		t.Fatal("this_sync fail")
 	}
 	count, _, _, skip, err = opsEventMetrics("sync_failed", SyncSnapshot{}, 3, "consecutive_runs")
 	if err != nil || skip || count != 3 {
 		t.Fatalf("consecutive count=%v", count)
 	}
+}
 
-	_, _, _, skip, err = opsEventMetrics("github_unreachable", SyncSnapshot{}, 0, "this_sync")
+func TestOpsEventMetrics_GitHubUnreachable(t *testing.T) {
+	_, _, _, skip, err := opsEventMetrics("github_unreachable", SyncSnapshot{}, 0, "this_sync")
 	if err != nil || !skip {
 		t.Fatal("reachable skip")
 	}
-	count, _, _, skip, err = opsEventMetrics("github_unreachable", SyncSnapshot{Unreachable: true}, 0, "this_sync")
+	count, _, _, skip, err := opsEventMetrics("github_unreachable", SyncSnapshot{Unreachable: true}, 0, "this_sync")
 	if err != nil || skip || count != 1 {
 		t.Fatal("unreachable")
 	}
+}
 
-	_, _, _, skip, err = opsEventMetrics("rate_limit", SyncSnapshot{RateLimitRemaining: -1}, 0, "this_sync")
+func TestOpsEventMetrics_RateLimit(t *testing.T) {
+	_, _, _, skip, err := opsEventMetrics("rate_limit", SyncSnapshot{RateLimitRemaining: -1}, 0, "this_sync")
 	if err != nil || !skip {
 		t.Fatal("no rate limit skip")
 	}
-	count, _, _, skip, err = opsEventMetrics("rate_limit", SyncSnapshot{RateLimitRemaining: 50}, 0, "this_sync")
+	count, _, _, skip, err := opsEventMetrics("rate_limit", SyncSnapshot{RateLimitRemaining: 50}, 0, "this_sync")
 	if err != nil || skip || count != 50 {
-		t.Fatalf("rate_limit count=%v", count)
+		t.Fatalf("count=%v", count)
 	}
 }

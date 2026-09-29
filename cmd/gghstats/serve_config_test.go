@@ -258,12 +258,17 @@ func TestResolveCSSPath(t *testing.T) {
 func TestLoadServeConfigUpstreamStaleDefaults(t *testing.T) {
 	t.Setenv("GGHSTATS_UPSTREAM_STALE_DAYS", "")
 	t.Setenv("GGHSTATS_UPSTREAM_STALE_BANNER", "")
+	t.Setenv("GGHSTATS_DEMO_UPSTREAM_STALE", "")
+	t.Setenv("GGHSTATS_UPSTREAM_STALE_FORCE", "")
 	cfg := loadServeConfig()
 	if cfg.UpstreamStaleDays != 3 {
 		t.Fatalf("UpstreamStaleDays = %d, want 3", cfg.UpstreamStaleDays)
 	}
 	if !cfg.UpstreamStaleBanner {
 		t.Fatal("UpstreamStaleBanner default want true")
+	}
+	if cfg.DemoUpstreamStale || cfg.UpstreamStaleForce {
+		t.Fatalf("dogfood flags must default off: demo=%v force=%v", cfg.DemoUpstreamStale, cfg.UpstreamStaleForce)
 	}
 }
 

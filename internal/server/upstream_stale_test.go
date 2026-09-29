@@ -8,7 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hrodrig/gghstats/internal/github"
 	"github.com/hrodrig/gghstats/internal/store"
+	"github.com/hrodrig/gghstats/internal/sync"
 )
 
 func seedStuckFleet(t *testing.T, s *store.Store) string {
@@ -244,5 +246,65 @@ func TestFleetUpstreamStaleStatusNilStore(t *testing.T) {
 	got := fleetUpstreamStaleStatus(Config{UpstreamStaleDays: 3}, time.Now().UTC())
 	if got.Active {
 		t.Fatalf("%+v", got)
+	}
+}
+
+func TestHealthzUpstreamStaleKeepsLivenessOK(t *testing.T) {
+	db := testStore(t)
+	seedStuckFleet(t, db)
+	h := New(Config{
+		Store:             db,
+		UpstreamStaleDays: 3,
+	})
+	req := httptest.NewRequest(http.MethodGet, HealthzPath, nil)
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status=%d", w.Code)
+	}
+	var body struct {
+		Status        string `json:"status"`
+		UpstreamStale struct {
+			Active bool `json:"active"`
+		} `json:"upstream_stale"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.Status != "ok" || !body.UpstreamStale.Active {
+		t.Fatalf("%+v", body)
+	}
+}
+
+func TestFleetUpstreamStale_CoordinatorNeverFinishedNotActive(t *testing.T) {
+	db := testStore(t)
+	seedStuckFleet(t, db)
+	coord := sync.NewCoordinator(github.NewClient("tok"), db, sync.Options{Filter: "*"})
+	// Fresh coordinator: LastFinishedAt nil → lastSyncOK false → no freeze signal.
+	h := New(Config{
+		Store:               db,
+		SyncCoordinator:     coord,
+		UpstreamStaleDays:   3,
+		UpstreamStaleBanner: true,
+	})
+	req := httptest.NewRequest(http.MethodGet, HealthzPath, nil)
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	var body struct {
+		UpstreamStale struct {
+			Active bool `json:"active"`
+		} `json:"upstream_stale"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.UpstreamStale.Active {
+		t.Fatal("unfinished sync must not surface upstream_stale")
+	}
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if strings.Contains(w.Body.String(), `id="upstream-stale-banner"`) {
+		t.Fatal("banner must stay hidden when sync never finished")
 	}
 }
