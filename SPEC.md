@@ -238,14 +238,11 @@ GitHub returns stargazer pages **newest-first**; gghstats always sorts ascending
   until the next sync refreshes metadata or an operator uses explicit include;
   migrations do not delete historical data. Operator upgrade steps:
   README “Upgrading to 1.5.0”.
-- **Fleet `upstream_stale` (distinct from freshness):** when sync succeeds but
-  the fleet traffic observed window stops advancing for
-  `GGHSTATS_UPSTREAM_STALE_DAYS` completed UTC days (default **3**; **0**
-  disables detection), gghstats exposes fleet status `upstream_stale` with
-  `since` and `days_stuck` on healthz / index JSON. Optional HTML banner
-  (`GGHSTATS_UPSTREAM_STALE_BANNER`, default **true**) is independent of ops
-  alerts (§8.7). This is **not** per-metric freshness `delayed` / `missing` /
-  `failed`.
+- **Fleet `upstream_stale` (≠ freshness):** after successful sync, if the fleet
+  observed window stalls ≥ `GGHSTATS_UPSTREAM_STALE_DAYS` (default **3**; **0** =
+  off), expose `upstream_stale` (`since`, `days_stuck`) on healthz / index JSON.
+  Optional HTML banner via `GGHSTATS_UPSTREAM_STALE_BANNER` (default **true**),
+  independent of ops alerts (§8.7). Operator examples: **gghstats-selfhosted**.
 
 ---
 

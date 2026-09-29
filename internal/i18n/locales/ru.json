@@ -184,7 +184,7 @@
     "stats_help_max": "Максимальное наблюдаемое значение. {{value}} {{unit}} в пиковый день{{date}}.",
     "stats_help_p95_one": "95-й перцентиль (nearest-rank): в 95% дней значение было ≤ этого. {{value}} — только примерно {{days}} день (5%) превысил этот порог.",
     "stats_help_p95_other": "95-й перцентиль (nearest-rank): в 95% дней значение было ≤ этого. {{value}} — только примерно {{days}} дня (5%) превысили этот порог.",
-    "upstream_stale_title": "Трафик GitHub, похоже, застрял",
+    "upstream_stale_title": "Трафик GitHub, похоже, застрял.",
     "upstream_stale_body": "Трафик Insights флота не продвигается с {{since}} ({{days_stuck}} завершённых суток UTC). Синхронизация gghstats в порядке; обычно это означает зависание на стороне GitHub.",
     "upstream_stale_help_link": "GitHub Community"
   },

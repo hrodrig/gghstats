@@ -184,7 +184,7 @@
     "stats_help_max": "Höchster beobachteter Wert. {{value}} {{unit}} am Spitzentag{{date}}.",
     "stats_help_p95_one": "95. Perzentil (nearest-rank): 95% der Tage hatten einen Wert ≤ diesem. {{value}} — nur ~{{days}} Tag (5%) überschritt diesen Schwellenwert.",
     "stats_help_p95_other": "95. Perzentil (nearest-rank): 95% der Tage hatten einen Wert ≤ diesem. {{value}} — nur ~{{days}} Tage (5%) überschritten diesen Schwellenwert.",
-    "upstream_stale_title": "GitHub-Traffic scheint festzustecken",
+    "upstream_stale_title": "GitHub-Traffic scheint festzustecken.",
     "upstream_stale_body": "Der Fleet-Insights-Traffic hat sich seit {{since}} nicht weiterbewegt ({{days_stuck}} abgeschlossene UTC-Tage). Die gghstats-Synchronisation ist gesund; das deutet meist auf einen Freeze auf GitHub-Seite hin.",
     "upstream_stale_help_link": "GitHub Community"
   },

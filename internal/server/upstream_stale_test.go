@@ -128,6 +128,29 @@ func TestIndexUpstreamStaleBanner(t *testing.T) {
 	}
 }
 
+func TestIndexUpstreamStaleBannerForce(t *testing.T) {
+	db := testStore(t)
+	h := New(Config{
+		Store:               db,
+		UpstreamStaleDays:   3,
+		UpstreamStaleBanner: true,
+		UpstreamStaleForce:  true,
+	})
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Fatalf("status = %d", w.Code)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "app-upstream-stale") {
+		t.Fatal("expected force banner markup")
+	}
+	if !strings.Contains(body, ForcedUpstreamStaleSince) {
+		t.Fatalf("expected since %s in body", ForcedUpstreamStaleSince)
+	}
+}
+
 func TestIndexUpstreamStaleBannerOff(t *testing.T) {
 	db := testStore(t)
 	seedStuckFleet(t, db)

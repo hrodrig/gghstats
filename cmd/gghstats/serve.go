@@ -56,6 +56,8 @@ type serveConfig struct {
 	CSPMode             string
 	UpstreamStaleDays   int
 	UpstreamStaleBanner bool
+	DemoUpstreamStale   bool
+	UpstreamStaleForce  bool
 }
 
 func loadServeConfig() serveConfig {
@@ -106,6 +108,8 @@ func loadServeConfig() serveConfig {
 	cfg.CSPMode = strings.TrimSpace(os.Getenv("GGHSTATS_CSP"))
 	cfg.UpstreamStaleDays = envUpstreamStaleDays()
 	cfg.UpstreamStaleBanner = envBool("GGHSTATS_UPSTREAM_STALE_BANNER", true)
+	cfg.DemoUpstreamStale = envBool("GGHSTATS_DEMO_UPSTREAM_STALE", false)
+	cfg.UpstreamStaleForce = envBool("GGHSTATS_UPSTREAM_STALE_FORCE", false)
 
 	return cfg
 }
@@ -128,6 +132,8 @@ func parseServeFlags(cfg *serveConfig, args []string) error {
 	fs.IntVar(&cfg.SyncWorkers, "sync-workers", cfg.SyncWorkers, "Concurrent repos per sync cycle (overrides `GGHSTATS_SYNC_WORKERS`; default 4)")
 	fs.BoolVar(&cfg.OpenBrowser, "open", cfg.OpenBrowser, "Open the default browser when the server is ready")
 	fs.BoolVar(&cfg.Demo, "demo", cfg.Demo, "Run with sample data; no GitHub token (overrides `GGHSTATS_DEMO`)")
+	fs.BoolVar(&cfg.DemoUpstreamStale, "demo-upstream-stale", cfg.DemoUpstreamStale, "With --demo: freeze traffic metric watermarks so upstream_stale banner fires (overrides `GGHSTATS_DEMO_UPSTREAM_STALE`)")
+	fs.BoolVar(&cfg.UpstreamStaleForce, "upstream-stale-force", cfg.UpstreamStaleForce, "Force upstream_stale active for UI dogfood without GitHub (overrides `GGHSTATS_UPSTREAM_STALE_FORCE`)")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return errServeHelp
@@ -247,7 +253,7 @@ func runServe(args []string) error {
 	}
 	defer db.Close()
 
-	if err := seedDemoIfEnabled(db, cfg.Demo); err != nil {
+	if err := seedDemoIfEnabled(db, cfg); err != nil {
 		return err
 	}
 	initialSyncPending, settingsManager, editableSettings, enabledLocales, err := loadEditableRuntimeSettings(cfg, db)
@@ -299,6 +305,7 @@ func runServe(args []string) error {
 		CompactNumbers:      editableSettings.CompactNumbers,
 		UpstreamStaleDays:   cfg.UpstreamStaleDays,
 		UpstreamStaleBanner: cfg.UpstreamStaleBanner,
+		UpstreamStaleForce:  cfg.UpstreamStaleForce,
 		SettingsManager:     settingsManager,
 		LocalOnlySettings:   isLoopbackBindHost(cfg.Host),
 		RateLimiter:         rateLimiter,
@@ -452,12 +459,17 @@ func configureSyncAlerts(ctx context.Context, cfg serveConfig, db *store.Store, 
 	slog.Info(fmt.Sprintf("alerts: %d rule(s) will evaluate after sync", len(rules)))
 }
 
-func seedDemoIfEnabled(db *store.Store, enabled bool) error {
-	if !enabled {
+func seedDemoIfEnabled(db *store.Store, cfg serveConfig) error {
+	if !cfg.Demo {
 		return nil
 	}
 	if err := demo.SeedIfEmpty(db); err != nil {
 		return fmt.Errorf("demo seed: %w", err)
+	}
+	if cfg.DemoUpstreamStale {
+		if err := demo.ApplyUpstreamStaleFreeze(db); err != nil {
+			return fmt.Errorf("demo upstream_stale: %w", err)
+		}
 	}
 	return nil
 }

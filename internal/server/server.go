@@ -78,6 +78,9 @@ type Config struct {
 	// UpstreamStaleBanner controls the index HTML warning when fleet stuck
 	// (GGHSTATS_UPSTREAM_STALE_BANNER, default true). Does not gate JSON status (D-05/D-06).
 	UpstreamStaleBanner bool
+	// UpstreamStaleForce forces active fleet status for local dogfood without
+	// GitHub (GGHSTATS_UPSTREAM_STALE_FORCE). Does not invent traffic day rows.
+	UpstreamStaleForce bool
 	// Settings is a redacted, read-only snapshot for the settings page. It must
 	// never contain credentials, file paths, or raw proxy/alert configuration.
 	Settings SettingsSnapshot

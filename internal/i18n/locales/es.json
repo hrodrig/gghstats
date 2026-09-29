@@ -184,7 +184,7 @@
     "stats_help_max": "Valor más alto observado. {{value}} {{unit}} en el día pico{{date}}.",
     "stats_help_p95_one": "Percentil 95 (nearest-rank): el 95% de los días tuvo un valor ≤ este. {{value}} — solo ~{{days}} día (5%) superó este umbral.",
     "stats_help_p95_other": "Percentil 95 (nearest-rank): el 95% de los días tuvo un valor ≤ este. {{value}} — solo ~{{days}} días (5%) superaron este umbral.",
-    "upstream_stale_title": "El tráfico de GitHub parece estancado",
+    "upstream_stale_title": "El tráfico de GitHub parece estancado.",
     "upstream_stale_body": "El tráfico Insights de la flota no ha avanzado desde {{since}} ({{days_stuck}} días UTC completados). La sincronización de gghstats está sana; suele indicar un congelamiento del lado de GitHub.",
     "upstream_stale_help_link": "GitHub Community"
   },

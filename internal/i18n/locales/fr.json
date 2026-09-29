@@ -184,7 +184,7 @@
     "stats_help_max": "Valeur la plus haute observée. {{value}} {{unit}} le jour de pointe{{date}}.",
     "stats_help_p95_one": "95e percentile (nearest-rank) : 95% des jours avaient une valeur ≤ celle-ci. {{value}} — seulement ~{{days}} jour (5%) a dépassé ce seuil.",
     "stats_help_p95_other": "95e percentile (nearest-rank) : 95% des jours avaient une valeur ≤ celle-ci. {{value}} — seulement ~{{days}} jours (5%) ont dépassé ce seuil.",
-    "upstream_stale_title": "Le trafic GitHub semble bloqué",
+    "upstream_stale_title": "Le trafic GitHub semble bloqué.",
     "upstream_stale_body": "Le trafic Insights de la flotte n’a pas progressé depuis {{since}} ({{days_stuck}} jours UTC complets). La synchronisation gghstats est saine ; cela indique souvent un gel côté GitHub.",
     "upstream_stale_help_link": "GitHub Community"
   },
