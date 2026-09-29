@@ -7,6 +7,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.4] - 2026-09-29
+
+### Changed
+
+- **OPS-upstream-stale banner UX:** index/repo copy shows `stuck`/`eligible` counts (already on healthz JSON) so partial thaw — lifetime KPIs moving while the fleet majority remains stuck — is not mistaken for a false alarm. SPEC §4.8 documents active thresholds (≥3 stuck and ≥50% of eligible).
+
 ## [1.6.3] - 2026-09-28
 
 ### Added
@@ -688,7 +694,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.3...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.4...HEAD
+[1.6.4]: https://github.com/hrodrig/gghstats/compare/v1.6.3...v1.6.4
 [1.6.3]: https://github.com/hrodrig/gghstats/compare/v1.6.2...v1.6.3
 [1.6.2]: https://github.com/hrodrig/gghstats/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/hrodrig/gghstats/compare/v1.6.0...v1.6.1

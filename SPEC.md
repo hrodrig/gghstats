@@ -1,6 +1,6 @@
 # Spec — HTTP API and sync
 
-Normative operator contracts for **gghstats** as of **v1.6.3**.
+Normative operator contracts for **gghstats** as of **v1.6.4**.
 **Client how-to (examples, auth, dogfood map):** **[docs/api.md](docs/api.md)**.  
 Narrative install/env: **[README.md](README.md)**. Product direction: **[ROADMAP.md](ROADMAP.md)**.
 
@@ -240,9 +240,13 @@ GitHub returns stargazer pages **newest-first**; gghstats always sorts ascending
   README “Upgrading to 1.5.0”.
 - **Fleet `upstream_stale` (≠ freshness):** after successful sync, if the fleet
   observed window stalls ≥ `GGHSTATS_UPSTREAM_STALE_DAYS` (default **3**; **0** =
-  off), expose `upstream_stale` (`since`, `days_stuck`) on healthz / index JSON.
-  Optional HTML banner via `GGHSTATS_UPSTREAM_STALE_BANNER` (default **true**),
-  independent of ops alerts (§8.7). Operator examples: **gghstats-selfhosted**.
+  off), expose `upstream_stale` (`active`, `since`, `days_stuck`, `stuck_repos`,
+  `eligible_repos`) on healthz / index JSON. Active when **≥3** eligible repos
+  are stuck **and** stuck covers **≥50%** of eligible (report-scoped). Optional
+  HTML banner via `GGHSTATS_UPSTREAM_STALE_BANNER` (default **true**) surfaces
+  those counts so partial thaw (lifetime KPIs moving while majority still stuck)
+  is not mistaken for a false alarm; independent of ops alerts (§8.7). Operator
+  examples: **gghstats-selfhosted**.
 
 ---
 

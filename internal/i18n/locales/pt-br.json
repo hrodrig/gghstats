@@ -185,7 +185,7 @@
     "stats_help_p95_one": "Percentil 95 (nearest-rank): 95% dos dias tiveram valor ≤ este. {{value}} — só ~{{days}} dia (5%) ultrapassou este limiar.",
     "stats_help_p95_other": "Percentil 95 (nearest-rank): 95% dos dias tiveram valor ≤ este. {{value}} — só ~{{days}} dias (5%) ultrapassaram este limiar.",
     "upstream_stale_title": "O tráfego do GitHub parece travado.",
-    "upstream_stale_body": "O tráfego Insights da frota não avançou desde {{since}} ({{days_stuck}} dias UTC concluídos). A sincronização do gghstats está saudável; isso costuma indicar um congelamento do lado do GitHub.",
+    "upstream_stale_body": "A janela Insights observada da frota está travada em {{stuck}} de {{eligible}} repos do relatório desde {{since}} ({{days_stuck}} dias UTC concluídos). Os KPI lifetime ainda podem subir enquanto alguns repos descongelam. A sincronização do gghstats está saudável; isso costuma indicar um congelamento do lado do GitHub.",
     "upstream_stale_help_link": "GitHub Community"
   },
   "h2h": {
@@ -287,7 +287,7 @@
     "trends_blurb": "Momento de clones vs a janela anterior de mesmo tamanho (mesma fórmula do H2H).",
     "momentum_7d": "Momento (7d)",
     "momentum_30d": "Momento (30d)",
-    "upstream_stale_cue": "Tráfego da frota travado desde {{since}} ({{days_stuck}} dias).",
+    "upstream_stale_cue": "Tráfego da frota travado em {{stuck}}/{{eligible}} repos desde {{since}} ({{days_stuck}} dias).",
     "upstream_stale_help_link": "GitHub Community"
   },
   "not_found": {

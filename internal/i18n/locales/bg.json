@@ -185,7 +185,7 @@
     "stats_help_p95_one": "95-и персентил (nearest-rank): през 95% от дните стойността е била ≤ тази. {{value}} — само около {{days}} ден (5%) е надхвърлил този праг.",
     "stats_help_p95_other": "95-и персентил (nearest-rank): през 95% от дните стойността е била ≤ тази. {{value}} — само около {{days}} дни (5%) са надхвърлили този праг.",
     "upstream_stale_title": "GitHub трафикът изглежда заседнал.",
-    "upstream_stale_body": "Fleet Insights трафикът не е напреднал от {{since}} ({{days_stuck}} завършени UTC дни). Синхронизацията на gghstats е здрава; обикновено означава замразяване от страна на GitHub.",
+    "upstream_stale_body": "Fleet Insights водният знак е заседнал за {{stuck}} от {{eligible}} репозитории в доклада от {{since}} ({{days_stuck}} завършени UTC дни). Lifetime KPI все още могат да растат, докато някои репозитории се размразят. Синхронизацията на gghstats е здрава; обикновено означава замразяване от страна на GitHub.",
     "upstream_stale_help_link": "GitHub Community"
   },
   "h2h": {
@@ -287,7 +287,7 @@
     "trends_blurb": "Импулс на клониранията спрямо предходен период със същата дължина (същата формула като H2H).",
     "momentum_7d": "Импулс (7d)",
     "momentum_30d": "Импулс (30d)",
-    "upstream_stale_cue": "Fleet трафикът е заседнал от {{since}} ({{days_stuck}} дни).",
+    "upstream_stale_cue": "Fleet трафикът е заседнал за {{stuck}}/{{eligible}} репозитории от {{since}} ({{days_stuck}} дни).",
     "upstream_stale_help_link": "GitHub Community"
   },
   "not_found": {

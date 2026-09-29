@@ -16,7 +16,7 @@
         {{if .Repo.Description}}<p class="text-secondary mb-4">{{.Repo.Description}}</p>{{end}}
         {{if and .UpstreamStaleBanner .UpstreamStaleActive}}
         <div id="upstream-stale-cue" class="small app-upstream-stale-cue mb-2" role="status" data-gghstats-role="upstream-stale-cue">
-          <strong>{{call .Tfmt "repo.upstream_stale_cue" (dict "since" .UpstreamStaleSince "days_stuck" (printf "%d" .UpstreamStaleDaysStuck))}}</strong>
+          <strong>{{call .Tfmt "repo.upstream_stale_cue" (dict "since" .UpstreamStaleSince "days_stuck" (printf "%d" .UpstreamStaleDaysStuck) "stuck" (printf "%d" .UpstreamStaleStuckRepos) "eligible" (printf "%d" .UpstreamStaleEligibleRepos))}}</strong>
           <a class="app-upstream-stale-help" href="{{.UpstreamStaleHelpURL}}" target="_blank" rel="noopener noreferrer">{{call .T "repo.upstream_stale_help_link"}}</a>
         </div>
         {{end}}
