@@ -1,7 +1,7 @@
 # Plan — v1.6.x
 
-**Status:** **Open** — **1.6.0** / **1.6.1** / **1.6.2** shipped; remaining slices land as
-**1.6.2+** patches when they are docs/ops/tiny UX, or as a **1.7.0** minor when a
+**Status:** **Open** — **1.6.0** / **1.6.1** / **1.6.2** / **1.6.3** shipped; remaining slices land as
+**1.6.3+** patches when they are docs/ops/tiny UX, or as a **1.7.0** minor when a
 slice adds a new CLI surface or non-trivial API/UI contract. Prefer patches until
 a slice clearly needs a minor bump (see Versioning).
 
@@ -20,7 +20,8 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Spec: [SPEC.md](../SPEC.md) · Themes:
 | **1.6.0** | Shipped — responsive UX, gated Settings, bg/ru, soft theme starter (#46/#56) |
 | **1.6.1** | Shipped — Featured chip contrast (#60) + `docs/themes.md` (#61) |
 | **1.6.2** | Shipped — UX-search-empty (#73/#75) + sqlite 1.59.0 + plan/docs band |
-| **1.6.2+** | DOC / OPS / tiny UX below; no new CLI subcommands unless agreed as patch |
+| **1.6.3** | Shipped — OPS-upstream-stale (#80): detect, banner, alert, dogfood |
+| **1.6.3+** | DOC / OPS / tiny UX below; no new CLI subcommands unless agreed as patch |
 | **1.7.0** | New CLI (`config check` / `doctor`), non-trivial keyboard/shareable-URL
 | or badge extensions — bump minor when first of those lands |
 | **2.0.0** | Line B — not this band |
@@ -38,6 +39,7 @@ contract.
 | **DOC-61** | Built-in theme palettes + swatches + component contract | 1.6.1 |
 | **DEP-sqlite** | `modernc.org/sqlite` 1.59.0 + keep `golang.org/x/net` pin | 1.6.2 |
 | **UX-search-empty** | Index + Featured distinct empty-state for filter miss | 1.6.2 |
+| **OPS-upstream-stale** | Fleet `upstream_stale` detect + banner + once/episode alert (#80) | 1.6.3 |
 
 ## In scope
 
@@ -59,13 +61,14 @@ contract.
 
 ### Suggested implementation order
 
-1. **DOC-auth + DOC-idx + DOC-faq** (docs-only; ship as **1.6.2** candidate).
-2. **OPS-1d** (operator session; may close without code).
-3. **UX-h2h** then **UX-keys** (small UI; patch or early 1.7.0).
-4. **META-rel** (tooling; can land anytime; no VERSION bump required until used in release).
-5. **DX-check → DX-doctor** (**1.7.0**).
-6. **UX-url** / **A-uniques** when capacity allows.
-7. **REL** when a coherent set is ready.
+1. **DOC-auth + DOC-idx + DOC-faq** — **done** (shipped with **1.6.2**).
+2. **OPS-1d** — **done** (2026-09-19 note).
+3. **OPS-upstream-stale** ([#80](https://github.com/hrodrig/gghstats/issues/80)) — **done** (shipped with **1.6.3**).
+4. **UX-h2h** then **UX-keys** (small UI; patch or early 1.7.0).
+5. **META-rel** (tooling; can land anytime; no VERSION bump required until used in release).
+6. **DX-check → DX-doctor** (**1.7.0**).
+7. **UX-url** / **A-uniques** when capacity allows.
+8. **REL** when a coherent set is ready.
 
 Work lands on `develop` via pull requests (repo gitflow).
 
@@ -76,11 +79,22 @@ Work lands on `develop` via pull requests (repo gitflow).
    behavior (unless a later security band reopens it).
 2. **`(1d)` semantics unchanged** unless OPS-1d proves a store/SQL bug. GitHub
    lag remaining the default explanation when sync `failed=0` but series stall.
+   **OPS-upstream-stale (#80)** productizes that explanation: when the API
+   succeeds but the traffic window stops advancing (fleet-wide), surface
+   `upstream_stale` with a **configurable UI banner (default on)** — do not
+   invent traffic points. Banner help links to GitHub Community discussions
+   search (API/Insights); community [#208852](https://github.com/orgs/community/discussions/208852)
+   remains historical evidence in docs only.
 3. **CLI DX before OpenAPI / SSE / pprof.** Prefer introspection operators can
    run on the VPS over new HTTP surfaces.
 4. **Dependabot bumps must keep `golang.org/x/net` pin.** After any tidy, run
    `go get golang.org/x/net@v0.57.0` + `make check-x-net-pin` (AGENTS.md).
 5. **No Line B in 1.6.x.** Webhooks / delta sync wait for **2.0.0**.
+6. **Stuck traffic ships visual by default.** OPS-upstream-stale includes a
+   dashboard banner (and repo-page cue) **on by default**
+   (`GGHSTATS_UPSTREAM_STALE_BANNER=true`); operators may set `false` to hide
+   HTML while keeping detect/status/alerts. Alert/notify is independent of the
+   banner (notify-only is supported).
 
 ## Out of scope
 
@@ -108,12 +122,14 @@ Work lands on `develop` via pull requests (repo gitflow).
 1. DOC-auth + DOC-idx (+ DOC-faq) on `develop`.
 2. OPS-1d recorded (pass/fail vs GitHub lag) — **done 2026-09-19:** lag confirmed;
    `(1d)` and unique-cloner KPI advanced on production dogfood; no store bug filed.
-3. At least one of UX-h2h or UX-keys on `develop`, **or** explicitly deferred in
+3. **OPS-upstream-stale (#80)** — **done** (shipped **1.6.3**: stuck banner default-on,
+   opt-out via `GGHSTATS_UPSTREAM_STALE_BANNER`, optional once/episode alert).
+4. At least one of UX-h2h or UX-keys on `develop`, **or** explicitly deferred in
    CHANGELOG with user OK.
-4. If DX-check/doctor land: man page + `--help` + tests; VERSION minor bump.
-5. META-rel usable locally (`make …`) before the next release that uses it.
-6. ROADMAP band row + CHANGELOG `[Unreleased]` aligned.
-7. `make release-check` (user asks); merge develop→main + tag (user OK).
+5. If DX-check/doctor land: man page + `--help` + tests; VERSION minor bump.
+6. META-rel usable locally (`make …`) before the next release that uses it.
+7. ROADMAP band row + CHANGELOG `[Unreleased]` aligned.
+8. `make release-check` (user asks); merge develop→main + tag (user OK).
 
 ## Checklist
 
@@ -123,6 +139,7 @@ Work lands on `develop` via pull requests (repo gitflow).
 - [x] DOC-faq (index coverage matrix known limitation)
 - [x] OPS-1d dogfood recheck note
 - [x] UX-search-empty filtered `q` vs empty catalog (index [#73](https://github.com/hrodrig/gghstats/issues/73) + Featured [#75](https://github.com/hrodrig/gghstats/issues/75))
+- [ ] OPS-upstream-stale detect stuck GitHub traffic + **UI banner default-on** ([#80](https://github.com/hrodrig/gghstats/issues/80); candidate 1.6.3)
 - [ ] UX-h2h index → H2H prefill
 - [ ] UX-keys shortcuts
 - [ ] META-rel pre-release drift checker

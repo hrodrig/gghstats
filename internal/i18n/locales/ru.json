@@ -183,7 +183,10 @@
     "stats_help_min": "Минимальное наблюдаемое значение. {{value}} {{unit}} в самый спокойный день{{date}}.",
     "stats_help_max": "Максимальное наблюдаемое значение. {{value}} {{unit}} в пиковый день{{date}}.",
     "stats_help_p95_one": "95-й перцентиль (nearest-rank): в 95% дней значение было ≤ этого. {{value}} — только примерно {{days}} день (5%) превысил этот порог.",
-    "stats_help_p95_other": "95-й перцентиль (nearest-rank): в 95% дней значение было ≤ этого. {{value}} — только примерно {{days}} дня (5%) превысили этот порог."
+    "stats_help_p95_other": "95-й перцентиль (nearest-rank): в 95% дней значение было ≤ этого. {{value}} — только примерно {{days}} дня (5%) превысили этот порог.",
+    "upstream_stale_title": "Трафик GitHub, похоже, застрял.",
+    "upstream_stale_body": "Трафик Insights флота не продвигается с {{since}} ({{days_stuck}} завершённых суток UTC). Синхронизация gghstats в порядке; обычно это означает зависание на стороне GitHub.",
+    "upstream_stale_help_link": "GitHub Community"
   },
   "h2h": {
     "title": "Сравнение один на один (H2H)",
@@ -283,7 +286,9 @@
     "no_paths": "Данных о путях пока нет.",
     "trends_blurb": "Динамика клонирований по сравнению с предыдущим периодом такой же длины (та же формула, что и H2H).",
     "momentum_7d": "Динамика (7d)",
-    "momentum_30d": "Динамика (30d)"
+    "momentum_30d": "Динамика (30d)",
+    "upstream_stale_cue": "Трафик флота застрял с {{since}} ({{days_stuck}} дн.).",
+    "upstream_stale_help_link": "GitHub Community"
   },
   "not_found": {
     "title": "Не найдено",

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -131,5 +132,159 @@ func TestDefaultOpsLevel(t *testing.T) {
 	}
 	if got := defaultOpsLevel("rate_limit"); got != "warn" {
 		t.Fatalf("rate_limit=%q", got)
+	}
+	if got := defaultOpsLevel("upstream_stale"); got != "warn" {
+		t.Fatalf("upstream_stale=%q", got)
+	}
+}
+
+func TestRunOpsRules_UpstreamStaleOncePerEpisode(t *testing.T) {
+	dir := t.TempDir()
+	db, err := store.Open(filepath.Join(dir, "t.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	var n int
+	var lastBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n++
+		b, _ := io.ReadAll(r.Body)
+		lastBody = string(b)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+	ApplyRetryConfig(RetryConfig{MaxAttempts: 1, InitialBackoff: time.Millisecond, MaxBackoff: time.Millisecond})
+	t.Cleanup(func() { ApplyRetryConfig(DefaultRetryConfig) })
+
+	rule := RuleSpec{
+		Kind: KindOps, Event: "upstream_stale", Op: "gte", Value: 1,
+		// Empty Debounce → opsDebounceMode "once" (episode, not once_per_utc_day).
+	}
+	if got := rule.opsDebounceMode(); got != "once" {
+		t.Fatalf("opsDebounceMode = %q, want once", got)
+	}
+	// identityKey still uses debounceMode() (empty → once_per_utc_day) for the stamp key shape.
+	wantKey := rule.identityKey(rule.Event)
+	if wantKey != "ops|upstream_stale|||gte|1|once_per_utc_day" {
+		t.Fatalf("rule_key shape = %q", wantKey)
+	}
+
+	cfg := EvalConfig{
+		DB:      db,
+		Rules:   []RuleSpec{rule},
+		Senders: BuildSenders([]ResolvedSink{{Type: TypeSlack, URL: srv.URL}}, srv.Client()),
+		Now:     time.Date(2026, 9, 28, 12, 0, 0, 0, time.UTC),
+	}
+
+	stuck := SyncSnapshot{
+		Success: true, RateLimitRemaining: 5000,
+		UpstreamStale: true, UpstreamStaleSince: "2026-09-23",
+	}
+	RunOpsRules(context.Background(), cfg, stuck)
+	if n != 1 {
+		t.Fatalf("enter stuck: want 1 delivery, got %d", n)
+	}
+	if !strings.Contains(lastBody, "upstream_stale") || !strings.Contains(lastBody, "2026-09-23") {
+		t.Fatalf("payload missing event/since: %s", lastBody)
+	}
+	stamp, err := db.AlertDebounceGet(wantKey)
+	if err != nil || stamp != "fired" {
+		t.Fatalf("debounce stamp after fire: %q err=%v", stamp, err)
+	}
+
+	RunOpsRules(context.Background(), cfg, stuck)
+	if n != 1 {
+		t.Fatalf("still stuck: want no second delivery, got %d", n)
+	}
+
+	clear := SyncSnapshot{Success: true, RateLimitRemaining: 5000, UpstreamStale: false}
+	RunOpsRules(context.Background(), cfg, clear)
+	stamp, err = db.AlertDebounceGet(wantKey)
+	if err != nil || stamp != "" {
+		t.Fatalf("after recover stamp should clear: %q err=%v", stamp, err)
+	}
+	if n != 1 {
+		t.Fatalf("recover must not deliver: got %d", n)
+	}
+
+	RunOpsRules(context.Background(), cfg, stuck)
+	if n != 2 {
+		t.Fatalf("re-enter stuck: want 2nd delivery, got %d", n)
+	}
+}
+
+func TestOpsEventMetrics_UpstreamStale(t *testing.T) {
+	_, _, _, skip, err := opsEventMetrics("upstream_stale", SyncSnapshot{}, 0, "this_sync")
+	if err != nil || !skip {
+		t.Fatalf("inactive want skip err=%v skip=%v", err, skip)
+	}
+	count, detail, win, skip, err := opsEventMetrics("upstream_stale", SyncSnapshot{
+		UpstreamStale: true, UpstreamStaleSince: "2026-09-23",
+	}, 0, "this_sync")
+	if err != nil || skip || count != 1 || win != "this_sync" {
+		t.Fatalf("count=%v win=%q skip=%v err=%v", count, win, skip, err)
+	}
+	if detail == "" || !strings.Contains(detail, "2026-09-23") {
+		t.Fatalf("detail=%q", detail)
+	}
+	count, detail, _, skip, err = opsEventMetrics("upstream_stale", SyncSnapshot{UpstreamStale: true}, 0, "this_sync")
+	if err != nil || skip || count != 1 || !strings.Contains(detail, "stuck") {
+		t.Fatalf("no since: detail=%q", detail)
+	}
+	_, _, _, _, err = opsEventMetrics("nope", SyncSnapshot{}, 0, "this_sync")
+	if err == nil {
+		t.Fatal("unknown event")
+	}
+}
+
+func TestOpsEventMetrics_RepoFetchFailed(t *testing.T) {
+	count, _, _, skip, err := opsEventMetrics("repo_fetch_failed", SyncSnapshot{
+		ReposFailed: 2, ReposAttempted: 5, FailedRepos: []string{"a/b"},
+	}, 0, "this_sync")
+	if err != nil || skip || count != 2 {
+		t.Fatalf("count=%v skip=%v err=%v", count, skip, err)
+	}
+	_, _, _, _, err = opsEventMetrics("repo_fetch_failed", SyncSnapshot{}, 0, "bad")
+	if err == nil {
+		t.Fatal("want window error")
+	}
+}
+
+func TestOpsEventMetrics_SyncFailed(t *testing.T) {
+	_, _, _, skip, err := opsEventMetrics("sync_failed", SyncSnapshot{Success: true}, 0, "this_sync")
+	if err != nil || !skip {
+		t.Fatal("success sync skip")
+	}
+	count, _, win, skip, err := opsEventMetrics("sync_failed", SyncSnapshot{Success: false}, 0, "this_sync")
+	if err != nil || skip || count != 1 || win != "this_sync" {
+		t.Fatal("this_sync fail")
+	}
+	count, _, _, skip, err = opsEventMetrics("sync_failed", SyncSnapshot{}, 3, "consecutive_runs")
+	if err != nil || skip || count != 3 {
+		t.Fatalf("consecutive count=%v", count)
+	}
+}
+
+func TestOpsEventMetrics_GitHubUnreachable(t *testing.T) {
+	_, _, _, skip, err := opsEventMetrics("github_unreachable", SyncSnapshot{}, 0, "this_sync")
+	if err != nil || !skip {
+		t.Fatal("reachable skip")
+	}
+	count, _, _, skip, err := opsEventMetrics("github_unreachable", SyncSnapshot{Unreachable: true}, 0, "this_sync")
+	if err != nil || skip || count != 1 {
+		t.Fatal("unreachable")
+	}
+}
+
+func TestOpsEventMetrics_RateLimit(t *testing.T) {
+	_, _, _, skip, err := opsEventMetrics("rate_limit", SyncSnapshot{RateLimitRemaining: -1}, 0, "this_sync")
+	if err != nil || !skip {
+		t.Fatal("no rate limit skip")
+	}
+	count, _, _, skip, err := opsEventMetrics("rate_limit", SyncSnapshot{RateLimitRemaining: 50}, 0, "this_sync")
+	if err != nil || skip || count != 50 {
+		t.Fatalf("count=%v", count)
 	}
 }

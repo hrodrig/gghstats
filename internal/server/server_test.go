@@ -37,8 +37,19 @@ func TestHealthEndpoint(t *testing.T) {
 	if w.Code != 200 {
 		t.Errorf("status = %d, want 200", w.Code)
 	}
-	if w.Body.String() != `{"status":"ok"}` {
-		t.Errorf("body = %q", w.Body.String())
+	var body map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("json: %v body=%q", err, w.Body.String())
+	}
+	if body["status"] != "ok" {
+		t.Errorf("status = %v", body["status"])
+	}
+	us, ok := body["upstream_stale"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("missing upstream_stale: %v", body)
+	}
+	if us["active"] != false {
+		t.Errorf("upstream_stale.active = %v, want false", us["active"])
 	}
 }
 

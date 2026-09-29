@@ -72,6 +72,15 @@ type Config struct {
 	// metric-style abbreviations (1.2k, 1.1M) instead of thousands separators
 	// (GGHSTATS_COMPACT_NUMBERS, default false).
 	CompactNumbers bool
+	// UpstreamStaleDays is K for fleet stuck detection (GGHSTATS_UPSTREAM_STALE_DAYS).
+	// Default 3 from serve; 0 disables detection entirely (D-12).
+	UpstreamStaleDays int
+	// UpstreamStaleBanner controls the index HTML warning when fleet stuck
+	// (GGHSTATS_UPSTREAM_STALE_BANNER, default true). Does not gate JSON status (D-05/D-06).
+	UpstreamStaleBanner bool
+	// UpstreamStaleForce forces active fleet status for local dogfood without
+	// GitHub (GGHSTATS_UPSTREAM_STALE_FORCE). Does not invent traffic day rows.
+	UpstreamStaleForce bool
 	// Settings is a redacted, read-only snapshot for the settings page. It must
 	// never contain credentials, file paths, or raw proxy/alert configuration.
 	Settings SettingsSnapshot
@@ -190,7 +199,7 @@ func mountStaticRoutes(mux *http.ServeMux, favFS fs.FS, customCSSPath string) {
 }
 
 func mountAPIRoutes(mux *http.ServeMux, cfg Config) {
-	mux.HandleFunc("GET "+HealthzPath, handleHealthz)
+	mux.HandleFunc("GET "+HealthzPath, handleHealthz(cfg))
 	mux.HandleFunc("GET /api/repos", apiMiddleware(cfg.APIToken, handleAPIRepos(cfg)))
 	mux.HandleFunc("GET /api/v1/repos/{owner}/{repo}", apiMiddleware(cfg.APIToken, handleAPIRepo(cfg)))
 	mux.HandleFunc("GET /api/v1/repos/{owner}/{repo}/traffic", apiMiddleware(cfg.APIToken, handleAPIRepoTraffic(cfg)))
@@ -353,9 +362,17 @@ func optionalAPITokenMiddleware(token string, next http.HandlerFunc) http.Handle
 
 // --- Handlers ---
 
-func handleHealthz(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprint(w, `{"status":"ok"}`)
+func handleHealthz(cfg Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		payload := map[string]interface{}{
+			"status":         "ok",
+			"upstream_stale": fleetUpstreamStaleStatus(cfg, time.Now().UTC()),
+		}
+		if err := json.NewEncoder(w).Encode(payload); err != nil {
+			slog.Error("encode healthz", "error", err)
+		}
+	}
 }
 
 func handleAPIRepos(cfg Config) http.HandlerFunc {
@@ -371,14 +388,15 @@ func handleAPIRepos(cfg Config) http.HandlerFunc {
 		totalStars, totalForks, totalClones, _, totalViews, _ := sumIndexKPIs(repos)
 		items := repos
 		resp := map[string]interface{}{
-			"total_count":  len(repos),
-			"total_stars":  totalStars,
-			"total_forks":  totalForks,
-			"total_views":  totalViews,
-			"total_clones": totalClones,
-			"sort":         sort,
-			"dir":          dir,
-			"q":            query,
+			"total_count":    len(repos),
+			"total_stars":    totalStars,
+			"total_forks":    totalForks,
+			"total_views":    totalViews,
+			"total_clones":   totalClones,
+			"sort":           sort,
+			"dir":            dir,
+			"q":              query,
+			"upstream_stale": fleetUpstreamStaleStatus(cfg, time.Now().UTC()),
 		}
 		if paginate {
 			totalPages := indexTotalPages(len(repos), perPage)
@@ -653,38 +671,43 @@ func clampIndexPage(page, totalPages int) int {
 
 type indexTemplatePayload struct {
 	localeBinder
-	ShowingLine          string
-	Repos                []indexRepoRow
-	Sort                 string
-	Dir                  string
-	Query                string
-	Page                 int
-	PerPage              int
-	Total                int
-	From                 int
-	To                   int
-	KPIStars             int
-	KPIForks             int
-	KPIClones            int
-	KPICloneUniques      int
-	KPIViews             int
-	KPIViewUniques       int
-	PrevURL              string
-	NextURL              string
-	SortNameURL          string
-	SortStarsURL         string
-	SortForksURL         string
-	SortClonesURL        string
-	SortClones1dURL      string
-	SortClones7dURL      string
-	SortClones30dURL     string
-	SortViewsURL         string
-	ListClonesAggJSON    template.JS
-	ListClonesAggCount   int
-	ListCloneStats       *cloneStatistics
-	ListUniqueCloneStats *cloneStatistics
-	InitialSyncRunning   bool
-	InitialSyncFailed    bool
+	ShowingLine            string
+	Repos                  []indexRepoRow
+	Sort                   string
+	Dir                    string
+	Query                  string
+	Page                   int
+	PerPage                int
+	Total                  int
+	From                   int
+	To                     int
+	KPIStars               int
+	KPIForks               int
+	KPIClones              int
+	KPICloneUniques        int
+	KPIViews               int
+	KPIViewUniques         int
+	PrevURL                string
+	NextURL                string
+	SortNameURL            string
+	SortStarsURL           string
+	SortForksURL           string
+	SortClonesURL          string
+	SortClones1dURL        string
+	SortClones7dURL        string
+	SortClones30dURL       string
+	SortViewsURL           string
+	ListClonesAggJSON      template.JS
+	ListClonesAggCount     int
+	ListCloneStats         *cloneStatistics
+	ListUniqueCloneStats   *cloneStatistics
+	InitialSyncRunning     bool
+	InitialSyncFailed      bool
+	UpstreamStaleBanner    bool
+	UpstreamStaleActive    bool
+	UpstreamStaleSince     string
+	UpstreamStaleDaysStuck int
+	UpstreamStaleHelpURL   template.URL
 }
 
 func buildIndexTemplatePayload(
@@ -790,6 +813,12 @@ func handleIndex(cfg Config, db *store.Store, tmpl *template.Template) http.Hand
 				data.InitialSyncFailed = true
 			}
 		}
+		ustale := fleetUpstreamStaleStatus(cfg, time.Now().UTC())
+		data.UpstreamStaleBanner = cfg.UpstreamStaleBanner
+		data.UpstreamStaleActive = ustale.Active
+		data.UpstreamStaleSince = ustale.Since
+		data.UpstreamStaleDaysStuck = ustale.DaysStuck
+		data.UpstreamStaleHelpURL = template.URL(UpstreamStaleCommunityHelpURL)
 
 		content := executeTemplate(tmpl, "index", data)
 		renderLayout(w, r, tmpl, cfg, layoutData{
@@ -911,50 +940,61 @@ func handleRepoPage(cfg Config, db *store.Store, tmpl *template.Template) http.H
 		}
 
 		lb := bindPageLocale(r, cfg)
+		ustale := fleetUpstreamStaleStatus(cfg, time.Now().UTC())
 		data := struct {
 			localeBinder
-			Repo             *store.RepoSummary
-			BadgeBaseURL     string
-			ViewsJSON        template.JS
-			ClonesJSON       template.JS
-			ViewsFreshness   trafficFreshness
-			ClonesFreshness  trafficFreshness
-			StarsJSON        template.JS
-			Referrers        []store.PopularItem
-			Paths            []store.PopularItem
-			ChartClonesTitle string
-			ChartViewsTitle  string
-			ChartStarsTitle  string
-			SyncRepoAria     string
-			TrafficJSONURL   string
-			TrafficJSONAuth  bool
-			Momentum7d       string
-			Momentum30d      string
-			Momentum7dUp     bool
-			Momentum30dUp    bool
-			HasMomentum      bool
+			Repo                   *store.RepoSummary
+			BadgeBaseURL           string
+			ViewsJSON              template.JS
+			ClonesJSON             template.JS
+			ViewsFreshness         trafficFreshness
+			ClonesFreshness        trafficFreshness
+			StarsJSON              template.JS
+			Referrers              []store.PopularItem
+			Paths                  []store.PopularItem
+			ChartClonesTitle       string
+			ChartViewsTitle        string
+			ChartStarsTitle        string
+			SyncRepoAria           string
+			TrafficJSONURL         string
+			TrafficJSONAuth        bool
+			Momentum7d             string
+			Momentum30d            string
+			Momentum7dUp           bool
+			Momentum30dUp          bool
+			HasMomentum            bool
+			UpstreamStaleBanner    bool
+			UpstreamStaleActive    bool
+			UpstreamStaleSince     string
+			UpstreamStaleDaysStuck int
+			UpstreamStaleHelpURL   template.URL
 		}{
-			localeBinder:     lb,
-			Repo:             summary,
-			BadgeBaseURL:     publicBaseURL(r, cfg.PublicURL),
-			ViewsJSON:        template.JS(viewsJSON),
-			ClonesJSON:       template.JS(clonesJSON),
-			ViewsFreshness:   viewsFreshness,
-			ClonesFreshness:  clonesFreshness,
-			StarsJSON:        template.JS(starsJSON),
-			Referrers:        referrers,
-			Paths:            paths,
-			ChartClonesTitle: lb.Tfmt("repo.chart_clones", map[string]string{"repo": fullName}),
-			ChartViewsTitle:  lb.Tfmt("repo.chart_views", map[string]string{"repo": fullName}),
-			ChartStarsTitle:  lb.Tfmt("repo.chart_stars", map[string]string{"repo": fullName}),
-			SyncRepoAria:     lb.Tfmt("common.sync_repo_aria", map[string]string{"repo": fullName}),
-			TrafficJSONURL:   "/" + fullName + "/traffic.json",
-			TrafficJSONAuth:  cfg.APIToken != "",
-			Momentum7d:       momentum7d,
-			Momentum30d:      momentum30d,
-			Momentum7dUp:     momentum7dUp,
-			Momentum30dUp:    momentum30dUp,
-			HasMomentum:      momentum7d != "" && momentum30d != "",
+			localeBinder:           lb,
+			Repo:                   summary,
+			BadgeBaseURL:           publicBaseURL(r, cfg.PublicURL),
+			ViewsJSON:              template.JS(viewsJSON),
+			ClonesJSON:             template.JS(clonesJSON),
+			ViewsFreshness:         viewsFreshness,
+			ClonesFreshness:        clonesFreshness,
+			StarsJSON:              template.JS(starsJSON),
+			Referrers:              referrers,
+			Paths:                  paths,
+			ChartClonesTitle:       lb.Tfmt("repo.chart_clones", map[string]string{"repo": fullName}),
+			ChartViewsTitle:        lb.Tfmt("repo.chart_views", map[string]string{"repo": fullName}),
+			ChartStarsTitle:        lb.Tfmt("repo.chart_stars", map[string]string{"repo": fullName}),
+			SyncRepoAria:           lb.Tfmt("common.sync_repo_aria", map[string]string{"repo": fullName}),
+			TrafficJSONURL:         "/" + fullName + "/traffic.json",
+			TrafficJSONAuth:        cfg.APIToken != "",
+			Momentum7d:             momentum7d,
+			Momentum30d:            momentum30d,
+			Momentum7dUp:           momentum7dUp,
+			Momentum30dUp:          momentum30dUp,
+			HasMomentum:            momentum7d != "" && momentum30d != "",
+			UpstreamStaleBanner:    cfg.UpstreamStaleBanner,
+			UpstreamStaleActive:    ustale.Active,
+			UpstreamStaleSince:     ustale.Since,
+			UpstreamStaleDaysStuck: ustale.DaysStuck,
+			UpstreamStaleHelpURL:   template.URL(UpstreamStaleCommunityHelpURL),
 		}
 
 		content := executeTemplate(tmpl, "repo", data)

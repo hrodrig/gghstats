@@ -1,5 +1,5 @@
 .\" Man page for gghstats(1)
-.TH GGHSTATS 1 "September 2026" "gghstats v1.6.2" "User Commands"
+.TH GGHSTATS 1 "September 2026" "gghstats v1.6.3" "User Commands"
 .SH NAME
 gghstats \- self-hosted GitHub repository traffic dashboard and CLI
 .SH SYNOPSIS
@@ -184,6 +184,18 @@ errors (HTTP 429, 403 rate-limited, 5xx) and honors
 \fBX-RateLimit-Reset\fR when the GitHub API advertises a near-future reset.
 Failures are classified per step (views, clones, referrers, paths,
 stars, repo metadata) and exposed as \fBgghstats_sync_errors_total{kind}\fR.
+.TP
+.B GGHSTATS_UPSTREAM_STALE_DAYS
+Days before fleet \fBupstream_stale\fR (default \fB3\fR; \fB0\fR = off). See SPEC §4.8.
+.TP
+.B GGHSTATS_UPSTREAM_STALE_BANNER
+Show HTML stuck banner when active (default \fBtrue\fR). \fBfalse\fR = hide UI only.
+.TP
+.B GGHSTATS_DEMO_UPSTREAM_STALE
+With demo mode, freeze metric watermarks for UI checks (\fB\-\-demo\-upstream\-stale\fR).
+.TP
+.B GGHSTATS_UPSTREAM_STALE_FORCE
+Force \fBupstream_stale\fR active for dogfood (\fB\-\-upstream\-stale\-force\fR).
 .TP
 .B GGHSTATS_OPEN_BROWSER
 Open the default browser on startup (default: \fBfalse\fR; same as \fB\-\-open\fR).

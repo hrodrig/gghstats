@@ -1054,3 +1054,22 @@ html[data-bs-theme="midnight"] .app-brutalist .table-light > :not(caption) > * >
     overflow-wrap: anywhere;
   }
 }
+
+/* Upstream stale fleet banner / repo cue (theme-safe; no purple glow). */
+.app-upstream-stale-banner {
+  border-left: 4px solid var(--brutal-warning, #c47a1a) !important;
+  background: color-mix(in srgb, var(--brutal-warning, #c47a1a) 14%, var(--brutal-elevated, #fff)) !important;
+  color: var(--brutal-text, inherit);
+}
+
+.app-upstream-stale-cue {
+  border-left: 3px solid var(--brutal-warning, #c47a1a);
+  padding: 0.35rem 0.65rem;
+  background: color-mix(in srgb, var(--brutal-warning, #c47a1a) 10%, transparent);
+  color: var(--brutal-text, inherit);
+}
+
+.app-upstream-stale-help {
+  margin-left: 0.35rem;
+  white-space: nowrap;
+}
