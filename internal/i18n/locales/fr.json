@@ -185,7 +185,7 @@
     "stats_help_p95_one": "95e percentile (nearest-rank) : 95% des jours avaient une valeur ≤ celle-ci. {{value}} — seulement ~{{days}} jour (5%) a dépassé ce seuil.",
     "stats_help_p95_other": "95e percentile (nearest-rank) : 95% des jours avaient une valeur ≤ celle-ci. {{value}} — seulement ~{{days}} jours (5%) ont dépassé ce seuil.",
     "upstream_stale_title": "Le trafic GitHub semble bloqué.",
-    "upstream_stale_body": "Le trafic Insights de la flotte n’a pas progressé depuis {{since}} ({{days_stuck}} jours UTC complets). La synchronisation gghstats est saine ; cela indique souvent un gel côté GitHub.",
+    "upstream_stale_body": "La fenêtre Insights observée de la flotte est bloquée pour {{stuck}} dépôts sur {{eligible}} du rapport depuis {{since}} ({{days_stuck}} jours UTC complets). Les KPI lifetime peuvent encore bouger pendant qu’une partie des dépôts reprend. La synchronisation gghstats est saine ; cela indique souvent un gel côté GitHub.",
     "upstream_stale_help_link": "GitHub Community"
   },
   "h2h": {
@@ -287,7 +287,7 @@
     "trends_blurb": "Momentum des clones vs la fenêtre précédente de même durée (même formule que H2H).",
     "momentum_7d": "Momentum (7j)",
     "momentum_30d": "Momentum (30j)",
-    "upstream_stale_cue": "Trafic de flotte bloqué depuis {{since}} ({{days_stuck}} jours).",
+    "upstream_stale_cue": "Trafic de flotte bloqué pour {{stuck}}/{{eligible}} dépôts depuis {{since}} ({{days_stuck}} jours).",
     "upstream_stale_help_link": "GitHub Community"
   },
   "not_found": {

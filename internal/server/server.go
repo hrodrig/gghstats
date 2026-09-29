@@ -671,43 +671,45 @@ func clampIndexPage(page, totalPages int) int {
 
 type indexTemplatePayload struct {
 	localeBinder
-	ShowingLine            string
-	Repos                  []indexRepoRow
-	Sort                   string
-	Dir                    string
-	Query                  string
-	Page                   int
-	PerPage                int
-	Total                  int
-	From                   int
-	To                     int
-	KPIStars               int
-	KPIForks               int
-	KPIClones              int
-	KPICloneUniques        int
-	KPIViews               int
-	KPIViewUniques         int
-	PrevURL                string
-	NextURL                string
-	SortNameURL            string
-	SortStarsURL           string
-	SortForksURL           string
-	SortClonesURL          string
-	SortClones1dURL        string
-	SortClones7dURL        string
-	SortClones30dURL       string
-	SortViewsURL           string
-	ListClonesAggJSON      template.JS
-	ListClonesAggCount     int
-	ListCloneStats         *cloneStatistics
-	ListUniqueCloneStats   *cloneStatistics
-	InitialSyncRunning     bool
-	InitialSyncFailed      bool
-	UpstreamStaleBanner    bool
-	UpstreamStaleActive    bool
-	UpstreamStaleSince     string
-	UpstreamStaleDaysStuck int
-	UpstreamStaleHelpURL   template.URL
+	ShowingLine                string
+	Repos                      []indexRepoRow
+	Sort                       string
+	Dir                        string
+	Query                      string
+	Page                       int
+	PerPage                    int
+	Total                      int
+	From                       int
+	To                         int
+	KPIStars                   int
+	KPIForks                   int
+	KPIClones                  int
+	KPICloneUniques            int
+	KPIViews                   int
+	KPIViewUniques             int
+	PrevURL                    string
+	NextURL                    string
+	SortNameURL                string
+	SortStarsURL               string
+	SortForksURL               string
+	SortClonesURL              string
+	SortClones1dURL            string
+	SortClones7dURL            string
+	SortClones30dURL           string
+	SortViewsURL               string
+	ListClonesAggJSON          template.JS
+	ListClonesAggCount         int
+	ListCloneStats             *cloneStatistics
+	ListUniqueCloneStats       *cloneStatistics
+	InitialSyncRunning         bool
+	InitialSyncFailed          bool
+	UpstreamStaleBanner        bool
+	UpstreamStaleActive        bool
+	UpstreamStaleSince         string
+	UpstreamStaleDaysStuck     int
+	UpstreamStaleStuckRepos    int
+	UpstreamStaleEligibleRepos int
+	UpstreamStaleHelpURL       template.URL
 }
 
 func buildIndexTemplatePayload(
@@ -818,6 +820,8 @@ func handleIndex(cfg Config, db *store.Store, tmpl *template.Template) http.Hand
 		data.UpstreamStaleActive = ustale.Active
 		data.UpstreamStaleSince = ustale.Since
 		data.UpstreamStaleDaysStuck = ustale.DaysStuck
+		data.UpstreamStaleStuckRepos = ustale.StuckRepos
+		data.UpstreamStaleEligibleRepos = ustale.EligibleRepos
 		data.UpstreamStaleHelpURL = template.URL(UpstreamStaleCommunityHelpURL)
 
 		content := executeTemplate(tmpl, "index", data)
@@ -943,58 +947,62 @@ func handleRepoPage(cfg Config, db *store.Store, tmpl *template.Template) http.H
 		ustale := fleetUpstreamStaleStatus(cfg, time.Now().UTC())
 		data := struct {
 			localeBinder
-			Repo                   *store.RepoSummary
-			BadgeBaseURL           string
-			ViewsJSON              template.JS
-			ClonesJSON             template.JS
-			ViewsFreshness         trafficFreshness
-			ClonesFreshness        trafficFreshness
-			StarsJSON              template.JS
-			Referrers              []store.PopularItem
-			Paths                  []store.PopularItem
-			ChartClonesTitle       string
-			ChartViewsTitle        string
-			ChartStarsTitle        string
-			SyncRepoAria           string
-			TrafficJSONURL         string
-			TrafficJSONAuth        bool
-			Momentum7d             string
-			Momentum30d            string
-			Momentum7dUp           bool
-			Momentum30dUp          bool
-			HasMomentum            bool
-			UpstreamStaleBanner    bool
-			UpstreamStaleActive    bool
-			UpstreamStaleSince     string
-			UpstreamStaleDaysStuck int
-			UpstreamStaleHelpURL   template.URL
+			Repo                       *store.RepoSummary
+			BadgeBaseURL               string
+			ViewsJSON                  template.JS
+			ClonesJSON                 template.JS
+			ViewsFreshness             trafficFreshness
+			ClonesFreshness            trafficFreshness
+			StarsJSON                  template.JS
+			Referrers                  []store.PopularItem
+			Paths                      []store.PopularItem
+			ChartClonesTitle           string
+			ChartViewsTitle            string
+			ChartStarsTitle            string
+			SyncRepoAria               string
+			TrafficJSONURL             string
+			TrafficJSONAuth            bool
+			Momentum7d                 string
+			Momentum30d                string
+			Momentum7dUp               bool
+			Momentum30dUp              bool
+			HasMomentum                bool
+			UpstreamStaleBanner        bool
+			UpstreamStaleActive        bool
+			UpstreamStaleSince         string
+			UpstreamStaleDaysStuck     int
+			UpstreamStaleStuckRepos    int
+			UpstreamStaleEligibleRepos int
+			UpstreamStaleHelpURL       template.URL
 		}{
-			localeBinder:           lb,
-			Repo:                   summary,
-			BadgeBaseURL:           publicBaseURL(r, cfg.PublicURL),
-			ViewsJSON:              template.JS(viewsJSON),
-			ClonesJSON:             template.JS(clonesJSON),
-			ViewsFreshness:         viewsFreshness,
-			ClonesFreshness:        clonesFreshness,
-			StarsJSON:              template.JS(starsJSON),
-			Referrers:              referrers,
-			Paths:                  paths,
-			ChartClonesTitle:       lb.Tfmt("repo.chart_clones", map[string]string{"repo": fullName}),
-			ChartViewsTitle:        lb.Tfmt("repo.chart_views", map[string]string{"repo": fullName}),
-			ChartStarsTitle:        lb.Tfmt("repo.chart_stars", map[string]string{"repo": fullName}),
-			SyncRepoAria:           lb.Tfmt("common.sync_repo_aria", map[string]string{"repo": fullName}),
-			TrafficJSONURL:         "/" + fullName + "/traffic.json",
-			TrafficJSONAuth:        cfg.APIToken != "",
-			Momentum7d:             momentum7d,
-			Momentum30d:            momentum30d,
-			Momentum7dUp:           momentum7dUp,
-			Momentum30dUp:          momentum30dUp,
-			HasMomentum:            momentum7d != "" && momentum30d != "",
-			UpstreamStaleBanner:    cfg.UpstreamStaleBanner,
-			UpstreamStaleActive:    ustale.Active,
-			UpstreamStaleSince:     ustale.Since,
-			UpstreamStaleDaysStuck: ustale.DaysStuck,
-			UpstreamStaleHelpURL:   template.URL(UpstreamStaleCommunityHelpURL),
+			localeBinder:               lb,
+			Repo:                       summary,
+			BadgeBaseURL:               publicBaseURL(r, cfg.PublicURL),
+			ViewsJSON:                  template.JS(viewsJSON),
+			ClonesJSON:                 template.JS(clonesJSON),
+			ViewsFreshness:             viewsFreshness,
+			ClonesFreshness:            clonesFreshness,
+			StarsJSON:                  template.JS(starsJSON),
+			Referrers:                  referrers,
+			Paths:                      paths,
+			ChartClonesTitle:           lb.Tfmt("repo.chart_clones", map[string]string{"repo": fullName}),
+			ChartViewsTitle:            lb.Tfmt("repo.chart_views", map[string]string{"repo": fullName}),
+			ChartStarsTitle:            lb.Tfmt("repo.chart_stars", map[string]string{"repo": fullName}),
+			SyncRepoAria:               lb.Tfmt("common.sync_repo_aria", map[string]string{"repo": fullName}),
+			TrafficJSONURL:             "/" + fullName + "/traffic.json",
+			TrafficJSONAuth:            cfg.APIToken != "",
+			Momentum7d:                 momentum7d,
+			Momentum30d:                momentum30d,
+			Momentum7dUp:               momentum7dUp,
+			Momentum30dUp:              momentum30dUp,
+			HasMomentum:                momentum7d != "" && momentum30d != "",
+			UpstreamStaleBanner:        cfg.UpstreamStaleBanner,
+			UpstreamStaleActive:        ustale.Active,
+			UpstreamStaleSince:         ustale.Since,
+			UpstreamStaleDaysStuck:     ustale.DaysStuck,
+			UpstreamStaleStuckRepos:    ustale.StuckRepos,
+			UpstreamStaleEligibleRepos: ustale.EligibleRepos,
+			UpstreamStaleHelpURL:       template.URL(UpstreamStaleCommunityHelpURL),
 		}
 
 		content := executeTemplate(tmpl, "repo", data)

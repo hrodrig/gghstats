@@ -119,6 +119,9 @@ func TestIndexUpstreamStaleBanner(t *testing.T) {
 	if !strings.Contains(html, since) {
 		t.Fatal("banner missing since date")
 	}
+	if !strings.Contains(html, "3 of 3") {
+		t.Fatal("banner missing stuck/eligible counts")
+	}
 	if !strings.Contains(html, "https://github.com/orgs/community/discussions?discussions_q=") {
 		t.Fatal("banner missing Community discussions search help URL")
 	}
@@ -189,6 +192,9 @@ func TestRepoUpstreamStaleCue(t *testing.T) {
 	}
 	if !strings.Contains(html, since) {
 		t.Fatal("repo cue missing since date")
+	}
+	if !strings.Contains(html, "3/3") {
+		t.Fatal("repo cue missing stuck/eligible counts")
 	}
 	if !strings.Contains(html, "https://github.com/orgs/community/discussions?discussions_q=") {
 		t.Fatal("repo cue missing Community discussions search help URL")

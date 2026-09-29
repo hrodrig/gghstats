@@ -161,7 +161,7 @@
     "initial_sync_failed_help": "Check the server terminal for the GitHub error, then refresh this page or start another sync.",
     "initial_sync_failed_partial": "The first sync failed; check the server terminal for details.",
     "upstream_stale_title": "GitHub traffic appears stuck.",
-    "upstream_stale_body": "Fleet Insights traffic has not advanced since {{since}} ({{days_stuck}} completed UTC days). gghstats sync is healthy; this usually means a GitHub-side freeze.",
+    "upstream_stale_body": "Fleet Insights watermark is stuck for {{stuck}} of {{eligible}} report-scoped repos since {{since}} ({{days_stuck}} completed UTC days). Lifetime KPIs can still move while some repos thaw. gghstats sync is healthy; this usually means a GitHub-side freeze.",
     "upstream_stale_help_link": "GitHub Community",
     "pagination_aria_top": "Repository list pagination (top)",
     "pagination_aria_bottom": "Repository list pagination (bottom)",
@@ -287,7 +287,7 @@
     "trends_blurb": "Clone momentum vs the previous window of the same length (same formula as H2H).",
     "momentum_7d": "Momentum (7d)",
     "momentum_30d": "Momentum (30d)",
-    "upstream_stale_cue": "Fleet traffic stuck since {{since}} ({{days_stuck}} days).",
+    "upstream_stale_cue": "Fleet traffic stuck for {{stuck}}/{{eligible}} repos since {{since}} ({{days_stuck}} days).",
     "upstream_stale_help_link": "GitHub Community"
   },
   "not_found": {

@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **OPS-upstream-stale banner UX:** index/repo copy shows `stuck`/`eligible` counts (already on healthz JSON) so partial thaw — lifetime KPIs moving while the fleet majority remains stuck — is not mistaken for a false alarm. SPEC §4.8 documents active thresholds (≥3 stuck and ≥50% of eligible).
+
 ## [1.6.3] - 2026-09-28
 
 ### Added
