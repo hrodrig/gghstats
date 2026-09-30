@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Stars over time chart (#91):** X-axis uses calendar time (not equal-width categories); series pads to today with the Stars KPI when history lags; star sync **heals** with a full stargazer rebuild when the SQLite series is behind the cursor/KPI.
+
 ## [1.6.4] - 2026-09-29
 
 ### Changed
