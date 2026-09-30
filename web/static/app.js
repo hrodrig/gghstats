@@ -269,7 +269,7 @@ function initRepoCharts() {
   renderMetrics('chart_clones', payload.clones, 'uniques', 'count', clonesTitle);
   renderMetrics('chart_views', payload.views, 'uniques', 'count', viewsTitle);
   if (payload.stars && payload.stars.length > 0) {
-    renderStars('chart_stars', payload.stars, starsTitle);
+    renderStars('chart_stars', payload.stars, starsTitle, payload.starsKPI);
   }
 }
 
@@ -1247,18 +1247,18 @@ function renderMetrics(canvasId, data, uniqueCol, countCol, chartLabel) {
   });
 }
 
-function renderStars(canvasId, data, chartLabel) {
+function renderStars(canvasId, data, chartLabel, starsKPI) {
   const el = document.getElementById(canvasId);
   if (!el || !data || data.length === 0) return;
 
   const c = chartThemeColors();
+  const points = alignStarsTimeSeries(data, starsKPI);
   new Chart(el, {
     type: 'line',
     data: {
-      labels: data.map(d => d.date),
       datasets: [{
         label: chartLabel,
-        data: data.map(d => d.total),
+        data: points,
         borderColor: c.primary,
         backgroundColor: 'transparent',
         pointStyle: false,
@@ -1272,9 +1272,17 @@ function renderStars(canvasId, data, chartLabel) {
       interaction: { mode: 'index' },
       scales: {
         x: {
+          type: 'time',
+          time: {
+            unit: 'day',
+            tooltipFormat: 'yyyy-MM-dd',
+            displayFormats: { day: 'yyyy-MM-dd' }
+          },
           ticks: {
             color: c.fg,
             maxRotation: 45,
+            autoSkip: true,
+            maxTicksLimit: 14,
             font: { size: 11, family: "'JetBrains Mono', monospace" }
           },
           grid: { color: c.grid },
@@ -1284,6 +1292,7 @@ function renderStars(canvasId, data, chartLabel) {
           beginAtZero: true,
           ticks: {
             color: c.fg,
+            precision: 0,
             font: { size: 11, family: "'JetBrains Mono', monospace" },
             callback: formatChartTick
           },
@@ -1298,4 +1307,23 @@ function renderStars(canvasId, data, chartLabel) {
     },
     plugins: [mouseLinePlugin]
   });
+}
+
+/** Sparse star rows → {x,y} time points; pad to today UTC with Stars KPI when needed. */
+function alignStarsTimeSeries(data, starsKPI) {
+  const points = (data || [])
+    .filter(d => d && d.date)
+    .map(d => ({ x: d.date, y: Number(d.total) || 0 }));
+  if (points.length === 0) return points;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const kpi = Number(starsKPI);
+  const last = points[points.length - 1];
+  const y = Number.isFinite(kpi) && kpi > last.y ? kpi : last.y;
+  if (last.x === today) {
+    last.y = y;
+    return points;
+  }
+  points.push({ x: today, y });
+  return points;
 }

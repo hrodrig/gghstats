@@ -346,7 +346,7 @@ func TestSeedDemoIfEnabled(t *testing.T) {
 		t.Fatal(err)
 	}
 	n, _ = db.RepoCount()
-	if n != 3 {
+	if n != 4 {
 		t.Fatalf("seed repos=%d", n)
 	}
 
