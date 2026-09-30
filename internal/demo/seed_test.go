@@ -22,8 +22,8 @@ func TestSeedIfEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n != 3 {
-		t.Fatalf("repos = %d, want 3", n)
+	if n != 4 {
+		t.Fatalf("repos = %d, want 4", n)
 	}
 	// Second call must not duplicate.
 	if err := SeedIfEmpty(s); err != nil {
@@ -33,8 +33,8 @@ func TestSeedIfEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n2 != 3 {
-		t.Fatalf("after re-seed repos = %d, want 3", n2)
+	if n2 != 4 {
+		t.Fatalf("after re-seed repos = %d, want 4", n2)
 	}
 
 	sum, err := s.RepoByName("demo/alpha")
@@ -43,6 +43,21 @@ func TestSeedIfEmpty(t *testing.T) {
 	}
 	if sum.TotalClones < 1 {
 		t.Fatalf("expected clone totals after deltas, got %d", sum.TotalClones)
+	}
+
+	sparse, err := s.RepoByName("demo/sparse-stars")
+	if err != nil || sparse == nil {
+		t.Fatalf("sparse-stars missing: %v", err)
+	}
+	if sparse.Stars != 22 {
+		t.Fatalf("sparse-stars KPI = %d, want 22", sparse.Stars)
+	}
+	hist, err := s.StarsByRepo("demo/sparse-stars")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(hist) != 7 || hist[len(hist)-1].Total != 11 {
+		t.Fatalf("sparse history want 7 rows ending at 11, got %+v", hist)
 	}
 }
 

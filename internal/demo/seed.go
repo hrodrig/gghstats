@@ -72,6 +72,39 @@ func Seed(db *store.Store) error {
 			return fmt.Errorf("demo seed stars %s: %w", r.name, err)
 		}
 	}
+
+	// demo/sparse-stars: reproduces #91 — KPI ahead of sparse event history (category X looked wrong).
+	const sparseName = "demo/sparse-stars"
+	if err := db.UpsertRepo(sparseName, "Demo: star history lags KPI (chart time-scale dogfood)", 22, 0, 0, 0, 0, false, false, ""); err != nil {
+		return fmt.Errorf("demo seed repo %s: %w", sparseName, err)
+	}
+	for i := 0; i < 30; i++ {
+		d := today.AddDate(0, 0, -i).Format("2006-01-02")
+		if err := db.UpsertClone(sparseName, d, 3+i%5, 2); err != nil {
+			return fmt.Errorf("demo seed clones %s: %w", sparseName, err)
+		}
+		if err := db.UpsertView(sparseName, d, 5+i%3, 2); err != nil {
+			return fmt.Errorf("demo seed views %s: %w", sparseName, err)
+		}
+	}
+	sparseStars := []struct {
+		date  string
+		total int
+	}{
+		{"2026-05-02", 1},
+		{"2026-05-17", 2},
+		{"2026-05-18", 3},
+		{"2026-07-04", 6},
+		{"2026-07-05", 9},
+		{"2026-07-08", 10},
+		{"2026-07-11", 11},
+	}
+	for _, s := range sparseStars {
+		if err := db.UpsertStar(sparseName, s.date, s.total); err != nil {
+			return fmt.Errorf("demo seed stars %s: %w", sparseName, err)
+		}
+	}
+
 	if err := db.UpdateDeltas(); err != nil {
 		return fmt.Errorf("demo seed deltas: %w", err)
 	}
