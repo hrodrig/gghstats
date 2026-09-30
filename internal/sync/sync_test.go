@@ -262,6 +262,82 @@ func TestRunStarHistoryIncrementalSkipsUnchanged(t *testing.T) {
 	}
 }
 
+func TestRunStarHistoryHealsWhenCursorAheadOfSeries(t *testing.T) {
+	repoPath := "owner/repo"
+	ts := time.Date(2026, 3, 20, 0, 0, 0, 0, time.UTC)
+	times := []time.Time{
+		time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
+		time.Date(2026, 1, 2, 12, 0, 0, 0, time.UTC),
+		time.Date(2026, 1, 3, 12, 0, 0, 0, time.UTC),
+		time.Date(2026, 1, 4, 12, 0, 0, 0, time.UTC),
+	}
+	stargazerHits := 0
+	starCount := 4
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if handleSyncTrafficFixture(t, w, r, repoPath, ts, starCount) {
+			return
+		}
+		if strings.HasPrefix(r.URL.Path, "/repos/"+repoPath+"/stargazers") {
+			stargazerHits++
+			json.NewEncoder(w).Encode([]github.Star{
+				{StarredAt: times[3]}, {StarredAt: times[2]}, {StarredAt: times[1]}, {StarredAt: times[0]},
+			})
+			return
+		}
+		t.Fatalf("unexpected request: %s", r.URL.Path)
+	}))
+	defer srv.Close()
+
+	c := github.NewClient("tok")
+	c.BaseURL = srv.URL
+	s := tempStore(t)
+	seedStarHistoryDesync(t, s, repoPath, times[1])
+
+	if _, err := Run(c, s, Options{Repos: []string{repoPath}, SyncStars: true}, nil); err != nil {
+		t.Fatalf("heal Run: %v", err)
+	}
+	if stargazerHits != 1 {
+		t.Fatalf("heal should full-fetch stargazers; hits=%d", stargazerHits)
+	}
+	assertStarHistoryHealed(t, s, repoPath, 4)
+}
+
+func seedStarHistoryDesync(t *testing.T, s *store.Store, repoPath string, cursorAt time.Time) {
+	t.Helper()
+	if err := s.UpsertRepo(repoPath, "", 4, 0, 0, 0, 0, false, false, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertStar(repoPath, "2026-01-01", 1); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertStar(repoPath, "2026-01-02", 2); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SetStarSyncCursor(repoPath, 4, cursorAt); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func assertStarHistoryHealed(t *testing.T, s *store.Store, repoPath string, want int) {
+	t.Helper()
+	rows, err := s.StarsByRepo(repoPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	max, err := s.MaxStarTotal(repoPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if max != want || len(rows) < want {
+		t.Fatalf("after heal: max=%d rows=%+v want %d", max, rows, want)
+	}
+	cur, err := s.GetStarSyncCursor(repoPath)
+	if err != nil || !cur.Synced || cur.LastSeenStarCount != want {
+		t.Fatalf("cursor after heal: %+v err=%v", cur, err)
+	}
+}
+
 // handleSyncTrafficFixture serves repo metadata + traffic endpoints used by star-history tests.
 // Returns true when the request was handled (caller should return).
 func handleSyncTrafficFixture(t *testing.T, w http.ResponseWriter, r *http.Request, repoPath string, ts time.Time, starCount int) bool {

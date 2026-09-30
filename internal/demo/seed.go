@@ -27,14 +27,15 @@ func SeedIfEmpty(db *store.Store) error {
 	return nil
 }
 
+type repoSpec struct {
+	name, desc             string
+	stars, forks, watchers int
+	cloneBase, viewBase    int
+	cloneStep              int
+}
+
 // Seed writes a fixed sample dataset suitable for index, repo charts, trends, and H2H.
 func Seed(db *store.Store) error {
-	type repoSpec struct {
-		name, desc             string
-		stars, forks, watchers int
-		cloneBase, viewBase    int
-		cloneStep              int
-	}
 	repos := []repoSpec{
 		{name: "demo/alpha", desc: "Sample rising traffic (demo)", stars: 42, forks: 3, watchers: 10, cloneBase: 8, viewBase: 20, cloneStep: 1},
 		{name: "demo/beta", desc: "Sample steady traffic (demo)", stars: 18, forks: 1, watchers: 5, cloneBase: 12, viewBase: 15, cloneStep: 0},
@@ -43,37 +44,82 @@ func Seed(db *store.Store) error {
 
 	today := time.Now().UTC()
 	for _, r := range repos {
-		if err := db.UpsertRepo(r.name, r.desc, r.stars, r.forks, r.watchers, 0, 0, false, false, ""); err != nil {
-			return fmt.Errorf("demo seed repo %s: %w", r.name, err)
+		if err := seedTrafficRepo(db, r, today); err != nil {
+			return err
 		}
-		// 60 days so 30d momentum has a previous window.
-		for i := 0; i < 60; i++ {
-			d := today.AddDate(0, 0, -i).Format("2006-01-02")
-			age := 59 - i // older days first in growth curve
-			clones := r.cloneBase + r.cloneStep*age/2
-			if clones < 1 {
-				clones = 1
-			}
-			views := r.viewBase + r.cloneStep*age/3
-			if views < 1 {
-				views = 1
-			}
-			uniqC := clones/2 + 1
-			uniqV := views/2 + 1
-			if err := db.UpsertClone(r.name, d, clones, uniqC); err != nil {
-				return fmt.Errorf("demo seed clones %s: %w", r.name, err)
-			}
-			if err := db.UpsertView(r.name, d, views, uniqV); err != nil {
-				return fmt.Errorf("demo seed views %s: %w", r.name, err)
-			}
-		}
-		starDay := today.Format("2006-01-02")
-		if err := db.UpsertStar(r.name, starDay, r.stars); err != nil {
-			return fmt.Errorf("demo seed stars %s: %w", r.name, err)
-		}
+	}
+	if err := seedSparseStarsRepo(db, today); err != nil {
+		return err
 	}
 	if err := db.UpdateDeltas(); err != nil {
 		return fmt.Errorf("demo seed deltas: %w", err)
+	}
+	return nil
+}
+
+func seedTrafficRepo(db *store.Store, r repoSpec, today time.Time) error {
+	if err := db.UpsertRepo(r.name, r.desc, r.stars, r.forks, r.watchers, 0, 0, false, false, ""); err != nil {
+		return fmt.Errorf("demo seed repo %s: %w", r.name, err)
+	}
+	// 60 days so 30d momentum has a previous window.
+	for i := 0; i < 60; i++ {
+		d := today.AddDate(0, 0, -i).Format("2006-01-02")
+		age := 59 - i // older days first in growth curve
+		clones := r.cloneBase + r.cloneStep*age/2
+		if clones < 1 {
+			clones = 1
+		}
+		views := r.viewBase + r.cloneStep*age/3
+		if views < 1 {
+			views = 1
+		}
+		uniqC := clones/2 + 1
+		uniqV := views/2 + 1
+		if err := db.UpsertClone(r.name, d, clones, uniqC); err != nil {
+			return fmt.Errorf("demo seed clones %s: %w", r.name, err)
+		}
+		if err := db.UpsertView(r.name, d, views, uniqV); err != nil {
+			return fmt.Errorf("demo seed views %s: %w", r.name, err)
+		}
+	}
+	starDay := today.Format("2006-01-02")
+	if err := db.UpsertStar(r.name, starDay, r.stars); err != nil {
+		return fmt.Errorf("demo seed stars %s: %w", r.name, err)
+	}
+	return nil
+}
+
+// seedSparseStarsRepo reproduces #91 — KPI ahead of sparse event history.
+func seedSparseStarsRepo(db *store.Store, today time.Time) error {
+	const sparseName = "demo/sparse-stars"
+	if err := db.UpsertRepo(sparseName, "Demo: star history lags KPI (chart time-scale dogfood)", 22, 0, 0, 0, 0, false, false, ""); err != nil {
+		return fmt.Errorf("demo seed repo %s: %w", sparseName, err)
+	}
+	for i := 0; i < 30; i++ {
+		d := today.AddDate(0, 0, -i).Format("2006-01-02")
+		if err := db.UpsertClone(sparseName, d, 3+i%5, 2); err != nil {
+			return fmt.Errorf("demo seed clones %s: %w", sparseName, err)
+		}
+		if err := db.UpsertView(sparseName, d, 5+i%3, 2); err != nil {
+			return fmt.Errorf("demo seed views %s: %w", sparseName, err)
+		}
+	}
+	sparseStars := []struct {
+		date  string
+		total int
+	}{
+		{"2026-05-02", 1},
+		{"2026-05-17", 2},
+		{"2026-05-18", 3},
+		{"2026-07-04", 6},
+		{"2026-07-05", 9},
+		{"2026-07-08", 10},
+		{"2026-07-11", 11},
+	}
+	for _, s := range sparseStars {
+		if err := db.UpsertStar(sparseName, s.date, s.total); err != nil {
+			return fmt.Errorf("demo seed stars %s: %w", sparseName, err)
+		}
 	}
 	return nil
 }

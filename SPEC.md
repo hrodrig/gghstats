@@ -1,6 +1,6 @@
 # Spec — HTTP API and sync
 
-Normative operator contracts for **gghstats** as of **v1.6.4**.
+Normative operator contracts for **gghstats** as of **v1.6.5**.
 **Client how-to (examples, auth, dogfood map):** **[docs/api.md](docs/api.md)**.  
 Narrative install/env: **[README.md](README.md)**. Product direction: **[ROADMAP.md](ROADMAP.md)**.
 
@@ -125,6 +125,8 @@ With API-only + token + seeded store, an HTTP client must rebuild **index**, **r
 ### 3.7 `GET /api/v1/repos/{owner}/{repo}/stars`
 
 - Same auth. **200**: `name`, `stars[]` (cumulative star history rows). **404** if not report-visible.
+- Rows are **sparse** (a day appears when the cumulative total changed). Unlike clones/views (§3.4), this endpoint does **not** emit a dense daily calendar of zeros.
+- **HTML Stars over time chart:** X-axis is **calendar time** (Chart.js time scale), not equal-width categories per row. Horizontal distance reflects real day gaps. The page may pad a final point to today’s UTC date using the repo **Stars** KPI (`repos.stars`) when history lags metadata, so the chart endpoint and KPI agree for the same page load; the next successful star-history sync heals SQLite (§4.7).
 
 ### 3.8 `GET /api/v1/repos/{owner}/{repo}/popular`
 
@@ -200,13 +202,15 @@ Also: `gghstats_sync_repos_processed_total{status}` with `success` | `error`.
 **Algorithm (per repo, when `SyncStars` is on):**
 
 1. Read metadata `stargazers_count` (already fetched).
-2. If cursor synced and count **unchanged** → **skip** stargazer HTTP entirely.
-3. If never synced or count **decreased** (unstars) → **full** pagination; sort by `starred_at` ascending; rewrite daily cumulative totals; update cursor.
-4. If count **increased** by `D` → fetch newest pages until `D` new stars (or past `last_starred_at`); append cumulatives from `last_seen_star_count + 1`; update cursor.
+2. Read `MAX(stars.total)` for the repo (0 if no history rows).
+3. **Heal:** if the cursor is synced and history max total **&lt;** current `stargazers_count`, and either the cursor count **equals** metadata (would have skipped) **or** history max **&lt;** `last_seen_star_count` (cursor ahead of SQLite series) → **full** rebuild (step 5). Normal growth (`last_seen` &lt; current with history matching the cursor) still uses incremental (step 6).
+4. Else if cursor synced and count **unchanged** → **skip** stargazer HTTP entirely.
+5. If never synced or count **decreased** (unstars) → **full** pagination; sort by `starred_at` ascending; rewrite daily cumulative totals; update cursor.
+6. If count **increased** by `D` → fetch newest pages until `D` new stars (or past `last_starred_at`); append cumulatives from `last_seen_star_count + 1`; update cursor.
 
 GitHub returns stargazer pages **newest-first**; gghstats always sorts ascending before writing cumulative day totals.
 
-**Operator signal:** logs include `stargazers skipped` (`count_unchanged`) or `stargazers synced` with `mode=full|incremental`.
+**Operator signal:** logs include `stargazers skipped` (`count_unchanged`), `stargazers synced` with `mode=full|incremental`, or `mode=full_heal` when history lagged the KPI/cursor.
 
 ### 4.8 Traffic freshness and report visibility persistence
 
