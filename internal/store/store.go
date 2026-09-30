@@ -813,6 +813,19 @@ func (s *Store) StarsByRepo(repo string) ([]StarRow, error) {
 	return result, rows.Err()
 }
 
+// MaxStarTotal returns MAX(total) for a repo's star history, or 0 if no rows.
+func (s *Store) MaxStarTotal(repo string) (int, error) {
+	var max sql.NullInt64
+	err := s.db.QueryRow(`SELECT MAX(total) FROM stars WHERE repo=?`, repo).Scan(&max)
+	if err != nil {
+		return 0, err
+	}
+	if !max.Valid {
+		return 0, nil
+	}
+	return int(max.Int64), nil
+}
+
 // RepoSummary holds aggregated metrics for a single repo.
 type RepoSummary struct {
 	Name           string `json:"name"`

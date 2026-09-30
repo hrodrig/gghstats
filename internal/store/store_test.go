@@ -655,6 +655,21 @@ func TestUpsertAndQueryStars(t *testing.T) {
 	if rows[2].Total != 20 {
 		t.Errorf("last star total = %d, want 20 (MAX kept)", rows[2].Total)
 	}
+
+	max, err := s.MaxStarTotal("r")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if max != 20 {
+		t.Errorf("MaxStarTotal = %d, want 20", max)
+	}
+	empty, err := s.MaxStarTotal("missing")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if empty != 0 {
+		t.Errorf("MaxStarTotal(missing) = %d, want 0", empty)
+	}
 }
 
 func TestStarSyncCursor(t *testing.T) {

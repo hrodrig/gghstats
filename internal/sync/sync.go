@@ -263,13 +263,24 @@ func syncRepoStars(gh *github.Client, db *store.Store, repo github.Repo, name, t
 	}
 
 	current := repo.StargazersCount
-	if cursor.Synced && current == cursor.LastSeenStarCount {
+	historyMax, err := db.MaxStarTotal(name)
+	if err != nil {
+		recordSyncErr(rec, "stargazers")
+		slog.Warn("stargazers history max read failed")
+		return
+	}
+	// Cursor/history desync: series max behind KPI while cursor thinks we are caught up,
+	// or cursor advanced past what SQLite history actually holds.
+	historyBehind := cursor.Synced && historyMax < current &&
+		(cursor.LastSeenStarCount == current || historyMax < cursor.LastSeenStarCount)
+
+	if cursor.Synced && current == cursor.LastSeenStarCount && !historyBehind {
 		slog.Info("stargazers skipped", "reason", "count_unchanged", "count", current)
 		return
 	}
 
-	// Count dropped (unstars) or first sync: full pagination rebuild.
-	if !cursor.Synced || current < cursor.LastSeenStarCount {
+	// Count dropped (unstars), first sync, or heal when history lags KPI/cursor.
+	if !cursor.Synced || current < cursor.LastSeenStarCount || historyBehind {
 		stars, err := gh.Stargazers(name)
 		if err != nil {
 			recordSyncErr(rec, "stargazers")
@@ -280,7 +291,11 @@ func syncRepoStars(gh *github.Client, db *store.Store, repo github.Repo, name, t
 		if err := db.SetStarSyncCursor(name, current, newestStarredAt(stars)); err != nil {
 			slog.Warn("stargazers cursor write failed")
 		}
-		slog.Info("stargazers synced", "mode", "full", "stars", len(stars), "count", current)
+		mode := "full"
+		if historyBehind {
+			mode = "full_heal"
+		}
+		slog.Info("stargazers synced", "mode", mode, "stars", len(stars), "count", current, "history_max", historyMax)
 		return
 	}
 
