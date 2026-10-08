@@ -7,6 +7,16 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.6] - 2026-10-07
+
+### Security
+
+- Keep the explicit **`golang.org/x/net v0.57.0`** pin after Dependabot module bumps (`go mod tidy` can drop it; CI `check-x-net-pin` / AGENTS policy).
+
+### Changed
+
+- **Dependencies:** `modernc.org/sqlite` 1.59.0 → 1.60.1 (and matching `modernc.org/libc` / `golang.org/x/sys` updates).
+
 ## [1.6.5] - 2026-09-30
 
 ### Fixed
@@ -700,7 +710,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.5...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.6...HEAD
+[1.6.6]: https://github.com/hrodrig/gghstats/compare/v1.6.5...v1.6.6
 [1.6.5]: https://github.com/hrodrig/gghstats/compare/v1.6.4...v1.6.5
 [1.6.4]: https://github.com/hrodrig/gghstats/compare/v1.6.3...v1.6.4
 [1.6.3]: https://github.com/hrodrig/gghstats/compare/v1.6.2...v1.6.3
