@@ -7,6 +7,16 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.7] - 2026-10-14
+
+### Security
+
+- **Go toolchain 1.26.6 → 1.27.2:** the 1.26.6 stdlib (`net/http`, `net/textproto`) carried GO-2026-6612 (Critical) and several High CVEs (GO-2026-6603/6605/6607/6608/6609/6610/6611/6613/6617). Rebuilding with 1.27.2 clears them from the shipped binary and container image. `golang.org/x/net` pin stays at v0.57.0.
+
+### Changed
+
+- **Docs:** cross-link the reference Atlas UI (**[gghstats-xui](https://github.com/hrodrig/gghstats-xui)**) and its operator manifests for the API-only frontend story, plus the live demo link.
+
 ## [1.6.6] - 2026-10-07
 
 ### Security
@@ -710,7 +720,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.6...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.7...HEAD
+[1.6.7]: https://github.com/hrodrig/gghstats/compare/v1.6.6...v1.6.7
 [1.6.6]: https://github.com/hrodrig/gghstats/compare/v1.6.5...v1.6.6
 [1.6.5]: https://github.com/hrodrig/gghstats/compare/v1.6.4...v1.6.5
 [1.6.4]: https://github.com/hrodrig/gghstats/compare/v1.6.3...v1.6.4
