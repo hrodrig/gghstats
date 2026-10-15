@@ -1,16 +1,16 @@
 # gghstats
 
-[![Version](https://img.shields.io/badge/version-1.6.6-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-1.6.7-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
 [![gghstats clones](https://gghstats.hermesrodriguez.com/api/v1/badge/hrodrig/gghstats?metric=clones)](https://gghstats.hermesrodriguez.com/hrodrig/gghstats)
-[![Go 1.26.6](https://img.shields.io/badge/go-1.26.6-00ADD8?logo=go)](https://go.dev/)
+[![Go 1.27.2](https://img.shields.io/badge/go-1.27.2-00ADD8?logo=go)](https://go.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![pkg.go.dev](https://pkg.go.dev/badge/github.com/hrodrig/gghstats)](https://pkg.go.dev/github.com/hrodrig/gghstats)
 [![deps.dev](https://img.shields.io/badge/deps.dev-go%20module-blue)](https://deps.dev/go/github.com%2Fhrodrig%2Fgghstats)
 
-**Repo:** [github.com/hrodrig/gghstats](https://github.com/hrodrig/gghstats) · **Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) · **Spec:** [SPEC.md](SPEC.md) · **Operator:** [gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted) · **Live:** [gghstats.hermesrodriguez.com](https://gghstats.hermesrodriguez.com) · **Changelog:** [CHANGELOG.md](CHANGELOG.md) · **Roadmap:** [ROADMAP.md](ROADMAP.md)
+**Repo:** [github.com/hrodrig/gghstats](https://github.com/hrodrig/gghstats) · **Releases:** [GitHub Releases](https://github.com/hrodrig/gghstats/releases) · **Spec:** [SPEC.md](SPEC.md) · **Operator:** [gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted) · **Live:** [gghstats.hermesrodriguez.com](https://gghstats.hermesrodriguez.com) · **Alt UI demo:** [xui.hermesrodriguez.com](https://xui.hermesrodriguez.com/) · **Changelog:** [CHANGELOG.md](CHANGELOG.md) · **Roadmap:** [ROADMAP.md](ROADMAP.md)
 
 ![gghstats — self-hosted GitHub traffic beyond the 14-day window](assets/gghstats-poster-devto.png)
 
@@ -18,9 +18,11 @@ Self-hosted dashboard and CLI for GitHub repository traffic stats. GitHub only k
 
 If you want your **own self-hosted** deployment (Docker Compose, Traefik with TLS, Helm, optional Prometheus/Grafana/Loki), use the companion repo **[gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted)** — it lists the supported options and example manifests.
 
+**Alternate frontends (API-only):** run `GGHSTATS_API_ONLY=true` and point any UI at the JSON API. Reference skin **[gghstats-xui](https://github.com/hrodrig/gghstats-xui)** ([live](https://xui.hermesrodriguez.com/); deploy: **[gghstats-xui-selfhosted](https://github.com/hrodrig/gghstats-xui-selfhosted)**). The built-in dashboard is one interface — the goal is **many** (yours included).
+
 **Related tools (same maintainer):**
+- **[gghstats-xui](https://github.com/hrodrig/gghstats-xui)** — reference Atlas Day/Night UI on API-only ([live](https://xui.hermesrodriguez.com/); deploy: [gghstats-xui-selfhosted](https://github.com/hrodrig/gghstats-xui-selfhosted))
 - **[pgwd](https://github.com/hrodrig/pgwd)** — PostgreSQL connection watchdog ([live traffic](https://gghstats.hermesrodriguez.com/hrodrig/pgwd); deploy: [pgwd-selfhosted](https://github.com/hrodrig/pgwd-selfhosted))
-- **[gghstats](https://github.com/hrodrig/gghstats)** — GitHub repo traffic beyond 14 days ([live demo](https://gghstats.hermesrodriguez.com); deploy: [gghstats-selfhosted](https://github.com/hrodrig/gghstats-selfhosted))
 - **[kzero](https://github.com/hrodrig/kzero)** — bastion-first declarative workload reset ([live traffic](https://gghstats.hermesrodriguez.com/hrodrig/kzero); deploy: [kzero-selfhosted](https://github.com/hrodrig/kzero-selfhosted))
 - **[groot](https://github.com/hrodrig/groot)** — Kubernetes diagnostics archive ([live traffic](https://gghstats.hermesrodriguez.com/hrodrig/groot); deploy: [groot-selfhosted](https://github.com/hrodrig/groot-selfhosted))
 
@@ -114,7 +116,7 @@ All labels are a **snapshot (checked 2026-07-27)** — re-verify upstream stars,
 
 | | **gghstats** | [ghstats](https://github.com/vladkens/ghstats) | [git-clone-stats](https://github.com/taylorwilsdon/git-clone-stats) |
 |--|--------------|------------------------------------------------|---------------------------------------------------------------------|
-| Runtime | Go 1.26, single binary | Rust, single binary | Python (PyPI / uv) |
+| Runtime | Go 1.27, single binary | Rust, single binary | Python (PyPI / uv) |
 | Release | **1.1.0** | ~0.9.0 (Jun 2026) | ~1.0.6 (~Aug 2025) |
 | GitHub stars (approx.) | ~5 | ~180 | ~24 |
 | Storage | SQLite | SQLite | SQLite or Firestore |
@@ -969,6 +971,8 @@ gghstats exposes a **small read-only JSON surface** for probes, scripts, and **b
 **Start here for clients:** **[docs/api.md](docs/api.md)** — authentication, CORS, request/response examples, and the dogfood map (index / repo / H2H). Normative status codes and sync rules: [SPEC.md](SPEC.md) §2–§3.
 
 **Bring your own frontend:** set `GGHSTATS_API_ONLY=true` to disable the HTML dashboard and SEO routes. Protect the API with `GGHSTATS_API_TOKEN`; for browser SPAs use a BFF/proxy and set `GGHSTATS_CORS_ORIGINS` — do **not** put the token in a public bundle (startup warns if API-only + open CORS `*`).
+
+Reference implementation: **[gghstats-xui](https://github.com/hrodrig/gghstats-xui)** (SvelteKit BFF) · live demo [xui.hermesrodriguez.com](https://xui.hermesrodriguez.com/) · operator manifests **[gghstats-xui-selfhosted](https://github.com/hrodrig/gghstats-xui-selfhosted)** (Compose / Helm). Fork that skin or ship your own UI — api-only exists to **encourage new interfaces** on the same JSON surface.
 
 #### `GET /api/v1/healthz`
 
