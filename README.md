@@ -5,7 +5,7 @@
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
 [![gghstats clones](https://gghstats.hermesrodriguez.com/api/v1/badge/hrodrig/gghstats?metric=clones)](https://gghstats.hermesrodriguez.com/hrodrig/gghstats)
-[![Go 1.26.6](https://img.shields.io/badge/go-1.26.6-00ADD8?logo=go)](https://go.dev/)
+[![Go 1.27.2](https://img.shields.io/badge/go-1.27.2-00ADD8?logo=go)](https://go.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![pkg.go.dev](https://pkg.go.dev/badge/github.com/hrodrig/gghstats)](https://pkg.go.dev/github.com/hrodrig/gghstats)
 [![deps.dev](https://img.shields.io/badge/deps.dev-go%20module-blue)](https://deps.dev/go/github.com%2Fhrodrig%2Fgghstats)
@@ -114,7 +114,7 @@ All labels are a **snapshot (checked 2026-07-27)** — re-verify upstream stars,
 
 | | **gghstats** | [ghstats](https://github.com/vladkens/ghstats) | [git-clone-stats](https://github.com/taylorwilsdon/git-clone-stats) |
 |--|--------------|------------------------------------------------|---------------------------------------------------------------------|
-| Runtime | Go 1.26, single binary | Rust, single binary | Python (PyPI / uv) |
+| Runtime | Go 1.27, single binary | Rust, single binary | Python (PyPI / uv) |
 | Release | **1.1.0** | ~0.9.0 (Jun 2026) | ~1.0.6 (~Aug 2025) |
 | GitHub stars (approx.) | ~5 | ~180 | ~24 |
 | Storage | SQLite | SQLite | SQLite or Firestore |
