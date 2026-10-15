@@ -11,6 +11,17 @@ type TrustedProxies struct {
 	nets []*net.IPNet
 }
 
+// withDefaultHostMask appends /32 (IPv4) or /128 (IPv6) when cidr is a bare address.
+func withDefaultHostMask(cidr string) string {
+	if strings.Contains(cidr, "/") {
+		return cidr
+	}
+	if strings.Contains(cidr, ":") {
+		return cidr + "/128"
+	}
+	return cidr + "/32"
+}
+
 // ParseTrustedProxies parses comma-separated IPs/CIDRs.
 // Bare IPv4 → /32; bare IPv6 → /128. Invalid entries are skipped.
 // Empty input returns a non-nil empty set (ContainsIP always false).
@@ -21,13 +32,7 @@ func ParseTrustedProxies(s string) *TrustedProxies {
 		if cidr == "" {
 			continue
 		}
-		if !strings.Contains(cidr, "/") {
-			if strings.Contains(cidr, ":") {
-				cidr += "/128"
-			} else {
-				cidr += "/32"
-			}
-		}
+		cidr = withDefaultHostMask(cidr)
 		_, n, err := net.ParseCIDR(cidr)
 		if err != nil {
 			continue

@@ -230,6 +230,31 @@ func TestSettingsUpdateIsUnavailableWithoutTokenOnNonLoopback(t *testing.T) {
 	}
 }
 
+func TestSettingsUpdateDeniesLoopbackWhenForwardedHeadersPresent(t *testing.T) {
+	db := testStore(t)
+	manager, err := NewSettingsManager(filepath.Join(t.TempDir(), "settings.json"), EditableSettings{
+		DefaultLocale: "en",
+	}, []string{"en"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := New(Config{
+		Store:             db,
+		SettingsManager:   manager,
+		LocalOnlySettings: true,
+		DisableMetrics:    true,
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/settings", bytes.NewBufferString(`{"compact_numbers":true}`))
+	req.RemoteAddr = "127.0.0.1:12345"
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Forwarded-For", "203.0.113.9")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("loopback+XFF status = %d, want %d (local-only denied)", w.Code, http.StatusNotFound)
+	}
+}
+
 func TestCompactNumbersUseLiveSettingsSnapshot(t *testing.T) {
 	db := testStore(t)
 	if err := db.UpsertRepo("a/b", "", 1500, 0, 0, 0, 0, false, false, ""); err != nil {

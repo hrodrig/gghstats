@@ -52,10 +52,8 @@ func NewWhitelist(cfg WhitelistConfig, apiToken string) *Whitelist {
 		if cidr == "" {
 			continue
 		}
-		// If it doesn't contain a slash, treat as /32 (single IP).
-		if !strings.Contains(cidr, "/") {
-			cidr += "/32"
-		}
+		// Bare IPv4 → /32; bare IPv6 → /128 (same as trusted proxies).
+		cidr = withDefaultHostMask(cidr)
 		_, net, err := net.ParseCIDR(cidr)
 		if err != nil {
 			continue // skip invalid entries
