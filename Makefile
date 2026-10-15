@@ -137,20 +137,22 @@ lint:
 	@echo "Running go vet..."
 	@go vet ./...
 
-# Ensure the explicit x/net pin stays in go.mod — Snyk expects >= X_NET_MIN_VERSION.
-# Auto-restores the pin if go mod tidy (or CI runner setup) dropped it.
+# Ensure golang.org/x/net stays in go.mod at >= X_NET_MIN_VERSION.
+# Auto-restores the pin if go mod tidy dropped it. Does NOT downgrade a newer pin.
 check-x-net-pin:
 	@echo "Checking golang.org/x/net pin (minimum $(X_NET_MIN_VERSION))..."
-	@grep -q 'golang.org/x/net $(X_NET_MIN_VERSION)' go.mod || { \
-		echo "go.mod missing pin; re-pinning golang.org/x/net@$(X_NET_MIN_VERSION)..."; \
-		go get golang.org/x/net@$(X_NET_MIN_VERSION); \
-	}
-	@resolved=$$(go list -m -f '{{.Version}}' golang.org/x/net); \
-	if [ "$$resolved" != "$(X_NET_MIN_VERSION)" ]; then \
-		echo "golang.org/x/net resolved to $$resolved; re-pinning to $(X_NET_MIN_VERSION)..."; \
+	@if ! grep -qE 'golang\.org/x/net[[:space:]]+v[0-9]' go.mod; then \
+		echo "go.mod missing pin; pinning golang.org/x/net@$(X_NET_MIN_VERSION)..."; \
 		go get golang.org/x/net@$(X_NET_MIN_VERSION); \
 	fi
-	@echo "golang.org/x/net pin OK ($(X_NET_MIN_VERSION))"
+	@resolved=$$(go list -m -f '{{.Version}}' golang.org/x/net); \
+	lowest=$$(printf '%s\n%s\n' "$(X_NET_MIN_VERSION)" "$$resolved" | sort -V | head -n1); \
+	if [ "$$lowest" != "$(X_NET_MIN_VERSION)" ]; then \
+		echo "golang.org/x/net resolved to $$resolved (< $(X_NET_MIN_VERSION)); re-pinning..."; \
+		go get golang.org/x/net@$(X_NET_MIN_VERSION); \
+		resolved=$$(go list -m -f '{{.Version}}' golang.org/x/net); \
+	fi; \
+	echo "golang.org/x/net pin OK ($$resolved, minimum $(X_NET_MIN_VERSION))"
 
 lint-fix:
 	gofmt -s -w .

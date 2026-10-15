@@ -172,7 +172,10 @@ override inheritance; unknown GitHub visibility remains hidden by default
 (including immediately after a 1.5.0 upgrade, until sync refreshes metadata).
 .TP
 .B GGHSTATS_SYNC_INTERVAL
-Sync frequency (default: \fB1h\fR).
+Sync frequency (default: \fB1h\fR). Must be a positive Go duration
+(for example \fB1h\fR, \fB30m\fR). Zero or negative values are ignored
+and the default is kept (\fBtime.NewTicker\fR panics on non-positive
+intervals).
 .TP
 .B GGHSTATS_SYNC_ON_STARTUP
 Run sync before serving (default: \fBtrue\fR).
@@ -201,7 +204,11 @@ Force \fBupstream_stale\fR active for dogfood (\fB\-\-upstream\-stale\-force\fR)
 Open the default browser on startup (default: \fBfalse\fR; same as \fB\-\-open\fR).
 .TP
 .B GGHSTATS_API_TOKEN
-Protect JSON API routes; optional for manual sync from the UI.
+Protect JSON API routes and the Settings UI; optional for manual sync
+from the UI. When the process binds to loopback and this token is empty,
+Settings allow local-only preference edits. Behind a reverse proxy on
+loopback, set a token — requests with \fBX-Forwarded-For\fR /
+\fBForwarded\fR never qualify as local-only.
 .TP
 .B GGHSTATS_API_ONLY
 When \fBtrue\fR, skip the HTML dashboard and SEO routes
@@ -269,6 +276,7 @@ alerts are enabled). Milestone example:
 .TP
 .B GGHSTATS_WHITELIST
 Comma-separated IPs/CIDRs allowed to access the server (empty = all allowed).
+Bare IPv4 addresses become \fB/32\fR; bare IPv6 addresses become \fB/128\fR.
 .TP
 .B GGHSTATS_WHITELIST_PATHS
 Comma-separated path prefixes where the whitelist applies (empty = all routes).

@@ -38,6 +38,26 @@ func TestParseReverseProxyRules(t *testing.T) {
 	}
 }
 
+func TestReverseProxyHandlerStripsAuthCredentials(t *testing.T) {
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "token=%q cookie=%q", r.Header.Get("x-api-token"), r.Header.Get("Cookie"))
+	}))
+	defer backend.Close()
+
+	handler := newReverseProxyHandler(ReverseProxyRule{Local: "/kiko", URL: backend.URL})
+	req := httptest.NewRequest(http.MethodGet, "/kiko/x", nil)
+	req.Header.Set("x-api-token", "secret-token")
+	req.AddCookie(&http.Cookie{Name: settingsSessionCookieName, Value: "session-value"})
+	req.AddCookie(&http.Cookie{Name: "keep-me", Value: "1"})
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	body := strings.TrimSpace(w.Body.String())
+	want := `token="" cookie="keep-me=1"`
+	if body != want {
+		t.Fatalf("got %q, want %q", body, want)
+	}
+}
+
 func TestReverseProxyHandler(t *testing.T) {
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "method=%s path=%s host=%s custom=%s", r.Method, r.URL.Path, r.Host, r.Header.Get("X-Custom"))

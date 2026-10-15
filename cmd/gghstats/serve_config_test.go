@@ -110,6 +110,24 @@ func TestLoadServeConfigInvalidSyncIntervalIgnored(t *testing.T) {
 	}
 }
 
+func TestLoadServeConfigNonPositiveSyncIntervalIgnored(t *testing.T) {
+	t.Setenv("GGHSTATS_GITHUB_TOKEN", "")
+	t.Setenv("GGHSTATS_DB", "")
+	t.Setenv("GGHSTATS_HOST", "")
+	t.Setenv("GGHSTATS_PORT", "")
+	t.Setenv("GGHSTATS_FILTER", "")
+	t.Setenv("GGHSTATS_INCLUDE_PRIVATE", "")
+	t.Setenv("GGHSTATS_API_TOKEN", "")
+
+	for _, v := range []string{"0", "0s", "-1h"} {
+		t.Setenv("GGHSTATS_SYNC_INTERVAL", v)
+		cfg := loadServeConfig()
+		if cfg.SyncInterval != time.Hour {
+			t.Errorf("SYNC_INTERVAL=%q: want default 1h, got %v", v, cfg.SyncInterval)
+		}
+	}
+}
+
 func TestLoadServeConfigCollectorAndUpdateDefaults(t *testing.T) {
 	t.Setenv("GGHSTATS_ENABLE_COLLECTOR", "")
 	t.Setenv("GGHSTATS_ENABLE_UPDATE_CHECK", "")
