@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Local / CI image (make docker-build, docker compose). Release images: Dockerfile.release + GoReleaser.
 # Runtime: distroless static Debian 13 (no shell/apk — smaller attack surface), same pattern as groot.
-FROM --platform=$BUILDPLATFORM golang:1.26.6-bookworm AS builder
+FROM --platform=$BUILDPLATFORM golang:1.27.2-bookworm AS builder
 
 # Pin module proxy so builds do not inherit a broken or empty GOPROXY from the host/BuildKit environment.
 ENV GOPROXY=https://proxy.golang.org,direct
