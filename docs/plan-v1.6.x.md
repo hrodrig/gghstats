@@ -58,7 +58,7 @@ contract.
 | **UX-url** | UI | Shareable index/repo query state (`range`, `metric`, `theme`, selected repos where cheap) | M | `history.replaceState`; no backend |
 | **A-uniques** | Alerts | Optional alert rule `metric` for GitHub **uniques** (not only `count`) | M | Parked from [plan-v1.5.0.md](plan-v1.5.0.md); SPEC §8 explicit |
 | **DOC** | Docs | SPEC / README / api / man / CHANGELOG / ROADMAP as slices land | — | English |
-| **SEC-audit-20261026** | Security | P0 fixes from the 2026-10-26 multi-agent audit: packaged data dir, CSV formula neutralization, `all_repos` window validation, constant-time token compare, rate limiter race, badge label cap | M | Ships with **1.6.8** (CHANGELOG `[Unreleased]`) |
+| **SEC-audit-20261026** | Security | P0 fixes from the 2026-10-26 multi-agent audit: packaged data dir, CSV formula neutralization, `all_repos` window validation, constant-time token compare, rate limiter race, badge label cap | M | **Shipped in 1.6.8** |
 | **REL** | Release | Patch or minor bump per Versioning; `make release-check` only after user asks | — | develop→main + tag need explicit OK |
 
 ### Suggested implementation order

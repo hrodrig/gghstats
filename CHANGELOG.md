@@ -7,6 +7,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.8] - 2026-10-27
+
 ### Security
 
 - **Packaged data directory:** the `.deb`/`.rpm` now ship `/var/lib/gghstats` (`type: dir`, mode `0755`). systemd does not create `WorkingDirectory`, so the packaged service failed to start on a package install (manual installs were unaffected).
@@ -14,11 +16,15 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - **API token comparison:** the `x-api-token` header is compared with `crypto/subtle.ConstantTimeCompare` on every route that accepts it (API JSON, `traffic.json`, badges, Settings, IP whitelist bypass) instead of `==`.
 - **Rate limiter race:** the per-IP `lastSeen` field is accessed atomically; the request path and the background cleanup no longer race on it.
 - **Badge label cap:** the `label` query parameter of `/api/v1/badge/*` is capped at 64 bytes, so a crafted label can no longer inflate the rendered SVG.
+- **Reverse-proxy credentials:** hop-by-hop credentials are stripped when forwarding through the reverse proxy.
+- **Local-only Settings:** Settings mutations that require a local client are denied when the request arrives via a reverse proxy / forwarded headers.
 
 ### Fixed
 
 - **`scope=all_repos` with a window other than `lifetime` is now rejected at startup.** Such a rule evaluated to zero and never fired without reporting anything. SPEC §8.2 defines `scope=all_repos` only for `window=lifetime`; the combination now fails startup with an explicit error. Operators using it must switch to `scope=each_repo` or `window=lifetime`.
 - **Go toolchain 1.27.2 → 1.27.3** in `go.mod` and in the container image, adding margin over the 1.27.2 stdlib fix for GO-2026-6612.
+- **Non-positive sync intervals** are rejected at serve startup.
+- **Whitelist IPv6 host masks** are parsed correctly (no longer treating host bits as network).
 
 ### Changed
 
@@ -738,7 +744,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.7...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.8...HEAD
+[1.6.8]: https://github.com/hrodrig/gghstats/compare/v1.6.7...v1.6.8
 [1.6.7]: https://github.com/hrodrig/gghstats/compare/v1.6.6...v1.6.7
 [1.6.6]: https://github.com/hrodrig/gghstats/compare/v1.6.5...v1.6.6
 [1.6.5]: https://github.com/hrodrig/gghstats/compare/v1.6.4...v1.6.5
