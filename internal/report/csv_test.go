@@ -88,3 +88,58 @@ func TestCSVWithReferrersAndPaths(t *testing.T) {
 		t.Error("missing path")
 	}
 }
+
+func TestSanitizeCSVCell(t *testing.T) {
+	tests := []struct {
+		name string
+		cell string
+		want string
+	}{
+		{name: "plain host is untouched", cell: "github.com", want: "github.com"},
+		{name: "path is untouched", cell: "/hrodrig/pgwd", want: "/hrodrig/pgwd"},
+		{name: "empty is untouched", cell: "", want: ""},
+		{name: "equals prefix", cell: "=cmd|'/C calc'!A0", want: "'=cmd|'/C calc'!A0"},
+		{name: "plus prefix", cell: "+1+1", want: "'+1+1"},
+		{name: "minus prefix", cell: "-1+1", want: "'-1+1"},
+		{name: "at prefix", cell: "@SUM(1+1)", want: "'@SUM(1+1)"},
+		{name: "tab prefix", cell: "\t=1+1", want: "'\t=1+1"},
+		{name: "carriage return prefix", cell: "\r=1+1", want: "'\r=1+1"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := sanitizeCSVCell(tt.cell); got != tt.want {
+				t.Errorf("sanitizeCSVCell(%q) = %q, want %q", tt.cell, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCSVNeutralizesSpreadsheetFormulas(t *testing.T) {
+	refs := []store.ReferrerRow{
+		{Date: "2026-03-20", Referrer: "=1+1", Count: 40, Uniques: 10},
+	}
+	paths := []store.PathRow{
+		{Date: "2026-03-20", Path: "/repo", Title: "@SUM(1+1)", Count: 100, Uniques: 20},
+	}
+
+	var buf bytes.Buffer
+	if err := CSV(&buf, "r", nil, nil, refs, paths); err != nil {
+		t.Fatalf("CSV() error: %v", err)
+	}
+	out := buf.String()
+
+	escaped := []string{"'=1+1", "'@SUM(1+1)"}
+	for _, want := range escaped {
+		if !strings.Contains(out, want) {
+			t.Errorf("exported CSV is missing the neutralized cell %q: %s", want, out)
+		}
+	}
+
+	raw := []string{",=1+1", ",@SUM(1+1)"}
+	for _, unwanted := range raw {
+		if strings.Contains(out, unwanted) {
+			t.Errorf("exported CSV contains an unescaped formula %q: %s", unwanted, out)
+		}
+	}
+}
