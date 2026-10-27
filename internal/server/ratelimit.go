@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -26,8 +27,10 @@ type RateLimiter struct {
 }
 
 type rateLimiterEntry struct {
-	limiter  *rate.Limiter
-	lastSeen time.Time
+	limiter *rate.Limiter
+	// lastSeen is written by getOrCreate on the request path and read by
+	// cleanup from the background goroutine, so it is accessed atomically.
+	lastSeen atomic.Int64 // unix nanoseconds
 }
 
 // SetRateLimitMetrics attaches Prometheus counters for the rate limiter.
@@ -108,13 +111,13 @@ func (rl *RateLimiter) Middleware(next http.Handler, skip MiddlewareSkip) http.H
 func (rl *RateLimiter) getOrCreate(ip string) *rateLimiterEntry {
 	if v, ok := rl.limiters.Load(ip); ok {
 		e := v.(*rateLimiterEntry)
-		e.lastSeen = time.Now()
+		e.lastSeen.Store(time.Now().UnixNano())
 		return e
 	}
 	entry := &rateLimiterEntry{
-		limiter:  rate.NewLimiter(rl.rate, rl.burst),
-		lastSeen: time.Now(),
+		limiter: rate.NewLimiter(rl.rate, rl.burst),
 	}
+	entry.lastSeen.Store(time.Now().UnixNano())
 	v, _ := rl.limiters.LoadOrStore(ip, entry)
 	return v.(*rateLimiterEntry)
 }
@@ -136,7 +139,7 @@ func (rl *RateLimiter) cleanup() {
 	now := time.Now()
 	rl.limiters.Range(func(key, value any) bool {
 		e := value.(*rateLimiterEntry)
-		if now.Sub(e.lastSeen) > rl.maxIdle {
+		if now.Sub(time.Unix(0, e.lastSeen.Load())) > rl.maxIdle {
 			rl.limiters.Delete(key)
 		}
 		return true

@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 )
@@ -505,7 +506,7 @@ func TestRateLimiterCleanup(t *testing.T) {
 	// Manually set lastSeen far in the past to simulate idle IP.
 	rl.limiters.Range(func(key, value any) bool {
 		e := value.(*rateLimiterEntry)
-		e.lastSeen = time.Now().Add(-10 * time.Minute)
+		e.lastSeen.Store(time.Now().Add(-10 * time.Minute).UnixNano())
 		return false
 	})
 
@@ -551,4 +552,33 @@ func TestRateLimiterEnvIntegration(t *testing.T) {
 	}
 	// When disabled, serve.go should not create a RateLimiter, so cfg.RateLimiter
 	// stays nil. finalizeHandler then skips rate limiting.
+}
+
+// TestRateLimiterConcurrentGetOrCreateAndCleanup exercises the request path
+// and the background cleanup against the same entries. It is a regression test
+// for the data race on the entry lastSeen field; run it with -race.
+func TestRateLimiterConcurrentGetOrCreateAndCleanup(t *testing.T) {
+	rl := NewRateLimiter(RateLimitConfig{Enabled: true, Requests: 1000, Period: time.Minute, Burst: 100})
+	defer rl.Shutdown()
+
+	var wg sync.WaitGroup
+	for range 8 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for range 200 {
+				rl.getOrCreate("10.0.0.1")
+			}
+		}()
+	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for range 200 {
+			rl.cleanup()
+		}
+	}()
+
+	wg.Wait()
 }
