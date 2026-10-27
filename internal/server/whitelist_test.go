@@ -50,6 +50,19 @@ func TestNewWhitelistSingleIP(t *testing.T) {
 	}
 }
 
+func TestNewWhitelistBareIPv6(t *testing.T) {
+	w := NewWhitelist(WhitelistConfig{CIDRs: "2001:db8::1"}, "")
+	if w == nil {
+		t.Fatal("expected non-nil whitelist for bare IPv6")
+	}
+	if !w.allowed("2001:db8::1") {
+		t.Error("2001:db8::1 should be allowed")
+	}
+	if w.allowed("2001:db8::2") {
+		t.Error("2001:db8::2 should NOT be allowed (/128 host mask)")
+	}
+}
+
 func TestNewWhitelistCIDR(t *testing.T) {
 	w := NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/24"}, "")
 	if w == nil {

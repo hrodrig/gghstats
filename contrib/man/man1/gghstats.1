@@ -1,5 +1,5 @@
 .\" Man page for gghstats(1)
-.TH GGHSTATS 1 "October 2026" "gghstats v1.6.7" "User Commands"
+.TH GGHSTATS 1 "October 2026" "gghstats v1.6.8" "User Commands"
 .SH NAME
 gghstats \- self-hosted GitHub repository traffic dashboard and CLI
 .SH SYNOPSIS
@@ -47,7 +47,9 @@ Download traffic for one repository into the database.
 Print a traffic summary in the terminal.
 .TP
 .B export
-Export traffic data to CSV.
+Export traffic data to CSV. Cells coming from GitHub (referrers, paths, page
+titles) are prefixed with a quote when they start with a formula character, so
+a spreadsheet cannot execute them.
 .TP
 .B backup
 Write a consistent SQLite snapshot with \fBVACUUM INTO\fR
@@ -172,7 +174,10 @@ override inheritance; unknown GitHub visibility remains hidden by default
 (including immediately after a 1.5.0 upgrade, until sync refreshes metadata).
 .TP
 .B GGHSTATS_SYNC_INTERVAL
-Sync frequency (default: \fB1h\fR).
+Sync frequency (default: \fB1h\fR). Must be a positive Go duration
+(for example \fB1h\fR, \fB30m\fR). Zero or negative values are ignored
+and the default is kept (\fBtime.NewTicker\fR panics on non-positive
+intervals).
 .TP
 .B GGHSTATS_SYNC_ON_STARTUP
 Run sync before serving (default: \fBtrue\fR).
@@ -201,7 +206,11 @@ Force \fBupstream_stale\fR active for dogfood (\fB\-\-upstream\-stale\-force\fR)
 Open the default browser on startup (default: \fBfalse\fR; same as \fB\-\-open\fR).
 .TP
 .B GGHSTATS_API_TOKEN
-Protect JSON API routes; optional for manual sync from the UI.
+Protect JSON API routes and the Settings UI; optional for manual sync
+from the UI. When the process binds to loopback and this token is empty,
+Settings allow local-only preference edits. Behind a reverse proxy on
+loopback, set a token — requests with \fBX-Forwarded-For\fR /
+\fBForwarded\fR never qualify as local-only.
 .TP
 .B GGHSTATS_API_ONLY
 When \fBtrue\fR, skip the HTML dashboard and SEO routes
@@ -266,9 +275,12 @@ JSON array of traffic, \fBstar milestone\fR, and ops rules (evaluated after sync
 alerts are enabled). Milestone example:
 \fB{"repo":"owner/repo","metric":"stars","milestones":[100,500],"fire":"once"}\fR
 — each threshold notifies at most once (SPEC §8.3).
+\fBscope=all_repos\fR is accepted only with \fBwindow=lifetime\fR (SPEC §8.2);
+any other window is rejected at startup.
 .TP
 .B GGHSTATS_WHITELIST
 Comma-separated IPs/CIDRs allowed to access the server (empty = all allowed).
+Bare IPv4 addresses become \fB/32\fR; bare IPv6 addresses become \fB/128\fR.
 .TP
 .B GGHSTATS_WHITELIST_PATHS
 Comma-separated path prefixes where the whitelist applies (empty = all routes).

@@ -38,7 +38,7 @@ contract.
 | **UX-46** | Dashboard Settings / soft theme / locales / #56 offcanvas | 1.6.0 |
 | **UI-60** | Featured stars/chips readable under Midnight/Dark | 1.6.1 |
 | **DOC-61** | Built-in theme palettes + swatches + component contract | 1.6.1 |
-| **DEP-sqlite** | `modernc.org/sqlite` 1.59.0 + keep `golang.org/x/net` pin | 1.6.2 |
+| **DEP-sqlite** | `modernc.org/sqlite` 1.59.0 + `golang.org/x/net` floor | 1.6.2 |
 | **UX-search-empty** | Index + Featured distinct empty-state for filter miss | 1.6.2 |
 | **OPS-upstream-stale (MVP)** | Fleet `upstream_stale` detect + banner + once/episode alert; partial-thaw stuck/eligible banner UX ([#80](https://github.com/hrodrig/gghstats/issues/80) **stays open** for further contributions) | 1.6.3 / 1.6.4 |
 
@@ -58,6 +58,7 @@ contract.
 | **UX-url** | UI | Shareable index/repo query state (`range`, `metric`, `theme`, selected repos where cheap) | M | `history.replaceState`; no backend |
 | **A-uniques** | Alerts | Optional alert rule `metric` for GitHub **uniques** (not only `count`) | M | Parked from [plan-v1.5.0.md](plan-v1.5.0.md); SPEC §8 explicit |
 | **DOC** | Docs | SPEC / README / api / man / CHANGELOG / ROADMAP as slices land | — | English |
+| **SEC-audit-20261026** | Security | P0 fixes from the 2026-10-26 multi-agent audit: packaged data dir, CSV formula neutralization, `all_repos` window validation, constant-time token compare, rate limiter race, badge label cap | M | **Shipped in 1.6.8** |
 | **REL** | Release | Patch or minor bump per Versioning; `make release-check` only after user asks | — | develop→main + tag need explicit OK |
 
 ### Suggested implementation order
@@ -88,8 +89,12 @@ Work lands on `develop` via pull requests (repo gitflow).
    remains historical evidence in docs only.
 3. **CLI DX before OpenAPI / SSE / pprof.** Prefer introspection operators can
    run on the VPS over new HTTP surfaces.
-4. **Dependabot bumps must keep `golang.org/x/net` pin.** After any tidy, run
-   `go get golang.org/x/net@v0.57.0` + `make check-x-net-pin` (AGENTS.md).
+4. **The `golang.org/x/net` floor is a `replace`, not a `require`.** `go mod
+   tidy` drops a `require` for a module whose packages are not imported, so the
+   floor lives in `go.mod` as `replace golang.org/x/net => golang.org/x/net
+   v0.60.0` and `make check-x-net-pin` only verifies it (AGENTS.md). The
+   advisories are cleared by the Go toolchain floor (`go` directive ≥ 1.27.2)
+   as well.
 5. **No Line B in 1.6.x.** Webhooks / delta sync wait for **2.0.0**.
 6. **Stuck traffic ships visual by default.** OPS-upstream-stale includes a
    dashboard banner (and repo-page cue) **on by default**
@@ -143,6 +148,7 @@ Work lands on `develop` via pull requests (repo gitflow).
 - [x] OPS-1d dogfood recheck note
 - [x] UX-search-empty filtered `q` vs empty catalog (index [#73](https://github.com/hrodrig/gghstats/issues/73) + Featured [#75](https://github.com/hrodrig/gghstats/issues/75))
 - [x] OPS-upstream-stale MVP: detect + **UI banner default-on** + stuck/eligible counts ([#80](https://github.com/hrodrig/gghstats/issues/80) remains open; **1.6.3** / **1.6.4**)
+- [ ] SEC-audit-20261026 P0 fixes + Bloque 1 quick wins on `develop` (PR)
 - [ ] UX-h2h index → H2H prefill
 - [ ] UX-keys shortcuts
 - [ ] META-rel pre-release drift checker

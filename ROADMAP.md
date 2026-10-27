@@ -93,7 +93,7 @@ Band plan **[docs/plan-v1.6.x.md](docs/plan-v1.6.x.md)** is **open** (post-**1.6
 
 **Shipped after 1.1.0:** **1.2.0** (compact numbers, Featured pagination/search/sort), **1.3.0** (index unique-cloners visibility, rank/share column, JSONL export), **1.4.0** (uniques UX, Featured JSON, sitemap `/featured`, Carlok #22–#25), **1.5.0** (traffic freshness, report visibility fail-closed, chart JSON / legend / `repo report ls --json`), **1.5.1** (Featured catalog not report-scoped, #47), **1.6.0** (responsive dashboard UX, gated Settings, bg/ru locales, soft theme starter, #46/#56), **1.6.1** (Featured Midnight/Dark chip contrast + `docs/themes.md`, #60/#61), **1.6.2** (search empty-state #73/#75, sqlite 1.59.0, plan/docs), **1.6.3** (OPS-upstream-stale #80).
 
-**1.6.x next:** operator DX (`config check` / `doctor` → often **1.7.0**), docs auth note, dogfood `(1d)` recheck, small UX (H2H prefill, shortcuts), pre-release drift checker — see the band plan. Line B (webhooks / delta sync) waits for **2.0.0**. Keep **plan ↔ ROADMAP ↔ SPEC ↔ CHANGELOG** in lockstep.
+**1.6.x next:** operator DX (`config check` / `doctor` → often **1.7.0**), docs auth note, dogfood `(1d)` recheck, small UX (H2H prefill, shortcuts), pre-release drift checker. Security hardening from the 2026-10-26 audit (packaged data dir, CSV formula neutralization, `all_repos` window validation, Go 1.27.3 / `x/net` floor) shipped in **1.6.8**. Line B (webhooks / delta sync) waits for **2.0.0**. Keep **plan ↔ ROADMAP ↔ SPEC ↔ CHANGELOG** in lockstep.
 
 ## Explicit non-goals (this repo)
 

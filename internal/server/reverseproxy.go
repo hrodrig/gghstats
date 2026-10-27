@@ -90,6 +90,9 @@ func newReverseProxyHandler(rule ReverseProxyRule) http.Handler {
 			}
 		}
 
+		// Never forward gghstats credentials to the upstream backend.
+		stripProxyAuthHeaders(req)
+
 		// Inject extra headers.
 		for k, v := range rule.Headers {
 			req.Header.Set(k, v)
@@ -122,6 +125,28 @@ func newReverseProxyHandler(rule ReverseProxyRule) http.Handler {
 	}
 
 	return proxy
+}
+
+// stripProxyAuthHeaders removes gghstats credentials that must not reach backends.
+func stripProxyAuthHeaders(req *http.Request) {
+	req.Header.Del("X-Api-Token")
+	req.Header.Del("x-api-token")
+
+	cookies := req.Cookies()
+	if len(cookies) == 0 {
+		return
+	}
+	req.Header.Del("Cookie")
+	kept := make([]string, 0, len(cookies))
+	for _, c := range cookies {
+		if c.Name == settingsSessionCookieName {
+			continue
+		}
+		kept = append(kept, c.Name+"="+c.Value)
+	}
+	if len(kept) > 0 {
+		req.Header.Set("Cookie", strings.Join(kept, "; "))
+	}
 }
 
 func mustParseURL(raw string) *url.URL {

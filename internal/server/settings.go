@@ -347,7 +347,7 @@ func validSettingsSession(r *http.Request, token string, now time.Time) bool {
 
 func settingsRequestAuthorized(cfg Config, r *http.Request) bool {
 	if cfg.APIToken != "" {
-		return r.Header.Get("x-api-token") == cfg.APIToken || validSettingsSession(r, cfg.APIToken, time.Now())
+		return tokenMatches(r.Header.Get("x-api-token"), cfg.APIToken) || validSettingsSession(r, cfg.APIToken, time.Now())
 	}
 	return cfg.LocalOnlySettings && requestIsLoopback(r)
 }
@@ -368,7 +368,16 @@ func settingsMiddleware(cfg Config, next http.HandlerFunc) http.HandlerFunc {
 
 // requestIsLoopback checks the connected peer, not forwarded headers. A
 // forwarded header is untrusted and must not grant access to Settings.
+//
+// When a reverse proxy sits on loopback (nginx/Caddy on 127.0.0.1), every
+// external client appears local via RemoteAddr. Presence of X-Forwarded-For
+// or Forwarded means the request likely came through such a proxy — deny
+// local-only Settings and require GGHSTATS_API_TOKEN instead.
 func requestIsLoopback(r *http.Request) bool {
+	if strings.TrimSpace(r.Header.Get("X-Forwarded-For")) != "" ||
+		strings.TrimSpace(r.Header.Get("Forwarded")) != "" {
+		return false
+	}
 	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
 	if err != nil {
 		host = strings.Trim(strings.TrimSpace(r.RemoteAddr), "[]")

@@ -298,3 +298,45 @@ func TestRepoPageBadgeEmbed(t *testing.T) {
 		t.Error("expected metric selector")
 	}
 }
+
+func TestTruncateBadgeLabel(t *testing.T) {
+	tests := []struct {
+		name  string
+		label string
+		want  string
+	}{
+		{name: "short label is untouched", label: "clones", want: "clones"},
+		{name: "empty label is untouched", label: "", want: ""},
+		{name: "long label is capped", label: strings.Repeat("a", 500), want: strings.Repeat("a", maxBadgeLabelLen)},
+		{name: "multi-byte label keeps rune boundaries", label: strings.Repeat("€", 40), want: strings.Repeat("€", 21)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := truncateBadgeLabel(tt.label)
+			if got != tt.want {
+				t.Errorf("truncateBadgeLabel() = %q (%d bytes), want %q", got, len(got), tt.want)
+			}
+		})
+	}
+}
+
+// TestBadgeLabelIsCappedInSVG keeps the cap effective on the rendered badge:
+// a crafted ?label= must not inflate the SVG.
+func TestBadgeLabelIsCappedInSVG(t *testing.T) {
+	db := testStore(t)
+	db.UpsertRepo("a/b", "", 1, 0, 1, 0, 0, false, false, "")
+	handler := New(Config{Store: db, BadgePublic: true})
+
+	req := httptest.NewRequest("GET", "/api/v1/badge/a/b?label="+strings.Repeat("a", 500), nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	body := w.Body.String()
+	if strings.Contains(body, strings.Repeat("a", maxBadgeLabelLen+1)) {
+		t.Error("badge SVG contains an uncapped label")
+	}
+	if !strings.Contains(body, strings.Repeat("a", maxBadgeLabelLen)) {
+		t.Error("badge SVG is missing the capped label")
+	}
+}

@@ -14,11 +14,11 @@ Thank you for your interest in contributing.
 
 - Format Go code with `gofmt -s`.
 - Run checks locally before submitting:
-  - `make lint` (includes **`check-x-net-pin`** for **`golang.org/x/net v0.57.0`**)
+  - `make lint` (includes **`check-x-net-pin`**, which verifies the **`golang.org/x/net`** floor of **v0.60.0**)
   - `make test`
   - `make cover` (statement coverage **≥ 80%**; SPEC §6.1)
   - `make security`
-- After **`go mod tidy`** or Dependabot dependency PRs, re-pin if needed: **`go get golang.org/x/net@v0.57.0`**, then **`make check-x-net-pin`**.
+- The **`golang.org/x/net`** floor is a **`replace`** directive in **`go.mod`** (`replace golang.org/x/net => golang.org/x/net v0.60.0`), because **`go mod tidy`** drops a plain `require` for a module whose packages are not imported. After **`go mod tidy`** or a Dependabot dependency PR, run **`make check-x-net-pin`** — it verifies the floor and fails when it is missing; it never edits **`go.mod`** for you.
 - For release-related changes, run:
   - `make release-check` (includes **cover**; do not tag below **80%**)
 - **Native OS packaging** (`.deb`, `.rpm`, FreeBSD/OpenBSD): optional maintainer gate —

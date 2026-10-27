@@ -74,6 +74,14 @@ func normalizeRule(r *RuleSpec) error {
 		if r.Repo == "" && r.Scope == "" {
 			return fmt.Errorf("repo or scope is required")
 		}
+		// SPEC §8.2 defines scope=all_repos only for window=lifetime: the
+		// aggregate branch sums the whole fleet, so any other window would
+		// query the fleet with an empty repo and silently evaluate to 0
+		// instead of firing. Reject it at startup instead of shipping a
+		// dead alert.
+		if r.Scope == "all_repos" && r.Window != "lifetime" {
+			return fmt.Errorf("scope %q only supports window %q (got %q)", r.Scope, "lifetime", r.Window)
+		}
 	case KindOps:
 		if r.Event == "" {
 			return fmt.Errorf("ops rule requires event")

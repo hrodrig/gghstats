@@ -87,7 +87,7 @@ func loadServeConfig() serveConfig {
 	}
 
 	if v := os.Getenv("GGHSTATS_SYNC_INTERVAL"); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
+		if d, err := time.ParseDuration(v); err == nil && d > 0 {
 			cfg.SyncInterval = d
 		}
 	}
@@ -547,6 +547,15 @@ func startScheduler(ctx context.Context, coord *sync.Coordinator, interval time.
 		}
 	} else {
 		slog.Info("startup sync disabled", "hint", "set GGHSTATS_SYNC_ON_STARTUP=true or use POST /api/v1/sync")
+	}
+
+	// time.NewTicker panics when interval <= 0; loadServeConfig already rejects
+	// non-positive durations, but keep a hard guard for direct callers/tests.
+	if interval <= 0 {
+		slog.Error("scheduler disabled: sync interval must be > 0", "interval", interval)
+		<-ctx.Done()
+		slog.Info("scheduler stopped")
+		return
 	}
 
 	ticker := time.NewTicker(interval)
