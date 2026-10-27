@@ -27,8 +27,10 @@ LIMIT ?=
 
 .PHONY: build check-x-net-pin clean compose-down compose-up cover dist-freebsd dist-openbsd docker-build docker-build-amd64 docker-export-amd64 docker-run docker-scan gocyclo govulncheck grype help install install-man lint lint-fix port-freebsd-sync port-openbsd-sync release release-check security server server-metrics snapshot test test-platforms test-platforms-ping test-release tools
 
-# Minimum golang.org/x/net (explicit go.mod pin; go mod tidy drops it → Prometheus resolves v0.43.0).
-X_NET_MIN_VERSION ?= v0.57.0
+# Minimum golang.org/x/net for the whole module graph. Enforced with a replace
+# directive in go.mod: `go mod tidy` drops a plain require for a module whose
+# packages are not imported, so a require line would not survive the next tidy.
+X_NET_MIN_VERSION ?= v0.60.0
 # Project-wide statement coverage floor (make cover / release-check). SPEC §6.1.
 COVER_MIN_PERCENT ?= 80
 
@@ -56,7 +58,7 @@ help:
 	@echo "  $(GREEN)grype$(RESET)            Grype directory scan (excludes ./dist/**, ./gghstats)"
 	@echo "  $(GREEN)lint$(RESET)             Check gofmt, go vet, and x/net security pin"
 	@echo "  $(GREEN)lint-fix$(RESET)         Apply gofmt -s -w"
-	@echo "  $(GREEN)check-x-net-pin$(RESET)  Verify golang.org/x/net pin in go.mod (see X_NET_MIN_VERSION)"
+	@echo "  $(GREEN)check-x-net-pin$(RESET)  Verify the golang.org/x/net floor in go.mod (see X_NET_MIN_VERSION)"
 	@echo "  $(GREEN)security$(RESET)         Run govulncheck, gocyclo and grype"
 	@echo "  $(GREEN)tools$(RESET)            Install govulncheck and gocyclo"
 	@echo "  $(GREEN)test$(RESET)             Run unit tests"
@@ -137,22 +139,29 @@ lint:
 	@echo "Running go vet..."
 	@go vet ./...
 
-# Ensure golang.org/x/net stays in go.mod at >= X_NET_MIN_VERSION.
-# Auto-restores the pin if go mod tidy dropped it. Does NOT downgrade a newer pin.
+# Verify the golang.org/x/net floor (see X_NET_MIN_VERSION).
+# The floor is a replace directive in go.mod, because `go mod tidy` drops a
+# plain require for a module whose packages are not imported. This target only
+# verifies: it never edits go.mod, so the repository cannot drift between
+# runs the way an auto-restoring pin did.
 check-x-net-pin:
-	@echo "Checking golang.org/x/net pin (minimum $(X_NET_MIN_VERSION))..."
-	@if ! grep -qE 'golang\.org/x/net[[:space:]]+v[0-9]' go.mod; then \
-		echo "go.mod missing pin; pinning golang.org/x/net@$(X_NET_MIN_VERSION)..."; \
-		go get golang.org/x/net@$(X_NET_MIN_VERSION); \
+	@echo "Checking golang.org/x/net floor (minimum $(X_NET_MIN_VERSION))..."
+	@if ! grep -qE '^replace golang\.org/x/net => golang\.org/x/net v[0-9]' go.mod; then \
+		echo "go.mod is missing the golang.org/x/net replace directive."; \
+		echo "add it with: go mod edit -replace golang.org/x/net=golang.org/x/net@$(X_NET_MIN_VERSION)"; \
+		exit 1; \
 	fi
-	@resolved=$$(go list -m -f '{{.Version}}' golang.org/x/net); \
+	@resolved=$$(go list -m -f '{{if .Replace}}{{.Replace.Version}}{{else}}{{.Version}}{{end}}' golang.org/x/net 2>/dev/null); \
+	if [ -z "$$resolved" ]; then \
+		echo "golang.org/x/net is not in the module graph: no dependency imports it, the floor is inert."; \
+		exit 0; \
+	fi; \
 	lowest=$$(printf '%s\n%s\n' "$(X_NET_MIN_VERSION)" "$$resolved" | sort -V | head -n1); \
 	if [ "$$lowest" != "$(X_NET_MIN_VERSION)" ]; then \
-		echo "golang.org/x/net resolved to $$resolved (< $(X_NET_MIN_VERSION)); re-pinning..."; \
-		go get golang.org/x/net@$(X_NET_MIN_VERSION); \
-		resolved=$$(go list -m -f '{{.Version}}' golang.org/x/net); \
+		echo "golang.org/x/net resolves to $$resolved (< $(X_NET_MIN_VERSION))."; \
+		exit 1; \
 	fi; \
-	echo "golang.org/x/net pin OK ($$resolved, minimum $(X_NET_MIN_VERSION))"
+	echo "golang.org/x/net floor OK ($$resolved >= $(X_NET_MIN_VERSION))"
 
 lint-fix:
 	gofmt -s -w .

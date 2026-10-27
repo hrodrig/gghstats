@@ -347,7 +347,7 @@ func validSettingsSession(r *http.Request, token string, now time.Time) bool {
 
 func settingsRequestAuthorized(cfg Config, r *http.Request) bool {
 	if cfg.APIToken != "" {
-		return r.Header.Get("x-api-token") == cfg.APIToken || validSettingsSession(r, cfg.APIToken, time.Now())
+		return tokenMatches(r.Header.Get("x-api-token"), cfg.APIToken) || validSettingsSession(r, cfg.APIToken, time.Now())
 	}
 	return cfg.LocalOnlySettings && requestIsLoopback(r)
 }
