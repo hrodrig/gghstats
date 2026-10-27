@@ -6,11 +6,16 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/hrodrig/gghstats/internal/store"
 )
 
 const defaultBadgeCacheMaxAge = 300
+
+// maxBadgeLabelLen caps the badge label so a crafted ?label= query cannot
+// inflate the rendered SVG, whose width grows with the label length.
+const maxBadgeLabelLen = 64
 
 type badgeMetric int
 
@@ -111,7 +116,7 @@ func handleBadge(cfg Config, db *store.Store) http.HandlerFunc {
 			return
 		}
 
-		label := strings.TrimSpace(r.URL.Query().Get("label"))
+		label := truncateBadgeLabel(strings.TrimSpace(r.URL.Query().Get("label")))
 		if label == "" {
 			label = defaultBadgeLabel(metric)
 		}
@@ -198,6 +203,20 @@ func svgEscape(s string) string {
 	s = strings.ReplaceAll(s, ">", "&gt;")
 	s = strings.ReplaceAll(s, `"`, "&quot;")
 	return s
+}
+
+// truncateBadgeLabel truncates a badge label to maxBadgeLabelLen bytes,
+// keeping rune boundaries so a multi-byte label is never cut in half.
+func truncateBadgeLabel(label string) string {
+	if len(label) <= maxBadgeLabelLen {
+		return label
+	}
+	cut := label[:maxBadgeLabelLen]
+	for len(cut) > 0 && !utf8.ValidString(cut) {
+		_, size := utf8.DecodeLastRuneInString(cut)
+		cut = cut[:len(cut)-size]
+	}
+	return cut
 }
 
 // renderBadgeSVG returns a minimal shields.io-style flat badge (no external deps).
