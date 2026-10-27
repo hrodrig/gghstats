@@ -191,6 +191,13 @@ nfpms:
       # systemd unit: enable with systemctl enable --now gghstats
       - src: contrib/systemd/gghstats.service
         dst: /lib/systemd/system/gghstats.service
+      # Data directory: the unit above sets WorkingDirectory=/var/lib/gghstats and
+      # systemd does not create it. Without this entry the packaged service fails
+      # to start ("Failed to create ... chdir"), so the dir ships with the package.
+      - dst: /var/lib/gghstats
+        type: dir
+        file_info:
+          mode: 0755
 
 release:
   github:
