@@ -90,7 +90,7 @@ func (w *Whitelist) Middleware(next http.Handler, exempt MiddlewareSkip) http.Ha
 			next.ServeHTTP(wr, r)
 			return
 		}
-		if w.apiToken != "" && r.Header.Get("x-api-token") == w.apiToken {
+		if w.apiToken != "" && tokenMatches(r.Header.Get("x-api-token"), w.apiToken) {
 			next.ServeHTTP(wr, r)
 			return
 		}

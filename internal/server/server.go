@@ -339,7 +339,7 @@ func apiMiddleware(token string, next http.HandlerFunc) http.HandlerFunc {
 			http.NotFound(w, r)
 			return
 		}
-		if r.Header.Get("x-api-token") != token {
+		if !tokenMatches(r.Header.Get("x-api-token"), token) {
 			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 			return
 		}
@@ -351,7 +351,7 @@ func apiMiddleware(token string, next http.HandlerFunc) http.HandlerFunc {
 // (option 3 for chart JSON download). Empty token → public, still report-scoped in the handler.
 func optionalAPITokenMiddleware(token string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if token != "" && r.Header.Get("x-api-token") != token {
+		if token != "" && !tokenMatches(r.Header.Get("x-api-token"), token) {
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 			return

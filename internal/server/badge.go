@@ -88,7 +88,7 @@ func badgeMiddleware(cfg Config, next http.HandlerFunc) http.HandlerFunc {
 			http.NotFound(w, r)
 			return
 		}
-		if r.Header.Get("x-api-token") != cfg.APIToken {
+		if !tokenMatches(r.Header.Get("x-api-token"), cfg.APIToken) {
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 			return
