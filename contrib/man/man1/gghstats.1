@@ -47,7 +47,9 @@ Download traffic for one repository into the database.
 Print a traffic summary in the terminal.
 .TP
 .B export
-Export traffic data to CSV.
+Export traffic data to CSV. Cells coming from GitHub (referrers, paths, page
+titles) are prefixed with a quote when they start with a formula character, so
+a spreadsheet cannot execute them.
 .TP
 .B backup
 Write a consistent SQLite snapshot with \fBVACUUM INTO\fR
@@ -273,6 +275,8 @@ JSON array of traffic, \fBstar milestone\fR, and ops rules (evaluated after sync
 alerts are enabled). Milestone example:
 \fB{"repo":"owner/repo","metric":"stars","milestones":[100,500],"fire":"once"}\fR
 — each threshold notifies at most once (SPEC §8.3).
+\fBscope=all_repos\fR is accepted only with \fBwindow=lifetime\fR (SPEC §8.2);
+any other window is rejected at startup.
 .TP
 .B GGHSTATS_WHITELIST
 Comma-separated IPs/CIDRs allowed to access the server (empty = all allowed).

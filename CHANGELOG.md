@@ -7,6 +7,24 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- **Packaged data directory:** the `.deb`/`.rpm` now ship `/var/lib/gghstats` (`type: dir`, mode `0755`). systemd does not create `WorkingDirectory`, so the packaged service failed to start on a package install (manual installs were unaffected).
+- **CSV formula injection:** exported CSV cells that come from GitHub (referrer, path, title) are prefixed with a single quote when they start with `=`, `+`, `-`, `@`, TAB or CR, so a spreadsheet cannot execute them (OWASP CSV Injection).
+- **API token comparison:** the `x-api-token` header is compared with `crypto/subtle.ConstantTimeCompare` on every route that accepts it (API JSON, `traffic.json`, badges, Settings, IP whitelist bypass) instead of `==`.
+- **Rate limiter race:** the per-IP `lastSeen` field is accessed atomically; the request path and the background cleanup no longer race on it.
+- **Badge label cap:** the `label` query parameter of `/api/v1/badge/*` is capped at 64 bytes, so a crafted label can no longer inflate the rendered SVG.
+
+### Fixed
+
+- **`scope=all_repos` with a window other than `lifetime` is now rejected at startup.** Such a rule evaluated to zero and never fired without reporting anything. SPEC §8.2 defines `scope=all_repos` only for `window=lifetime`; the combination now fails startup with an explicit error. Operators using it must switch to `scope=each_repo` or `window=lifetime`.
+- **Go toolchain 1.27.2 → 1.27.3** in `go.mod` and in the container image, adding margin over the 1.27.2 stdlib fix for GO-2026-6612.
+
+### Changed
+
+- **Dependencies:** `github.com/prometheus/client_golang` 1.24.1 → 1.25.0 (with matching `client_model`, `common`, `procfs` and `protobuf` updates).
+- **The `golang.org/x/net` floor is now a `replace` directive** (`replace golang.org/x/net => golang.org/x/net v0.60.0`) instead of a `require` line. `go mod tidy` drops a `require` for a module whose packages are not imported, so the old pin did not survive a tidy and CI silently re-added it on every run. `make check-x-net-pin` now verifies the floor and fails when it is missing instead of editing `go.mod`.
+
 ## [1.6.7] - 2026-10-14
 
 ### Security
