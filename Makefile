@@ -30,7 +30,7 @@ LIMIT ?=
 # Minimum golang.org/x/net for the whole module graph. Enforced with a replace
 # directive in go.mod: `go mod tidy` drops a plain require for a module whose
 # packages are not imported, so a require line would not survive the next tidy.
-X_NET_MIN_VERSION ?= v0.60.0
+X_NET_MIN_VERSION ?= v0.62.0
 # Project-wide statement coverage floor (make cover / release-check). SPEC §6.1.
 COVER_MIN_PERCENT ?= 80
 
