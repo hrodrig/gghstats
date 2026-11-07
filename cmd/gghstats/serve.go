@@ -491,11 +491,34 @@ func reportableFailedRepos(db *store.Store, scope store.ReportVisibility, names 
 	return visible
 }
 
-// serveHTTP listens until ctx is cancelled or ListenAndServe fails.
+// listenTCP opens the dashboard listener with Multipath TCP explicitly disabled.
+//
+// Go 1.24+ enables MPTCP on Linux listen sockets by default (GODEBUG
+// multipathtcp). MPTCP listeners are the exposure path behind CVE-2026-98432: a
+// use-after-free in the Linux kernel IPv4 TCP stack, reachable before the
+// process accepts the connection. The per-socket setting overrides GODEBUG, so
+// an operator environment cannot re-enable MPTCP for this listener; the kernel
+// still has to be patched. Elsewhere this is a no-op.
+func listenTCP(addr string) (net.Listener, error) {
+	if addr == "" {
+		addr = ":http"
+	}
+	var lc net.ListenConfig
+	lc.SetMultipathTCP(false)
+	return lc.Listen(context.Background(), "tcp", addr)
+}
+
+// serveHTTP serves until ctx is cancelled or the listener fails.
 // cancel stops the sync scheduler; callers must still defer their own cancel.
 func serveHTTP(ctx context.Context, srv *http.Server, cfg serveConfig, cancel context.CancelFunc) error {
 	errCh := make(chan error, 1)
 	go func() {
+		ln, lerr := listenTCP(srv.Addr)
+		if lerr != nil {
+			slog.Error("listen failed", "addr", srv.Addr, "error", lerr)
+			errCh <- lerr
+			return
+		}
 		logURL := serveDashboardURL(cfg.Host, cfg.Port)
 		if cfg.Host == "0.0.0.0" || cfg.Host == "::" || cfg.Host == "[::]" {
 			slog.Info("listening", "url", logURL, "bind", srv.Addr)
@@ -508,7 +531,7 @@ func serveHTTP(ctx context.Context, srv *http.Server, cfg serveConfig, cancel co
 				openBrowser(serveOpenURL(cfg.Host, cfg.Port, cfg.APIOnly))
 			}()
 		}
-		err := srv.ListenAndServe()
+		err := srv.Serve(ln)
 		if err != nil && err != http.ErrServerClosed {
 			slog.Error("server error", "error", err)
 			errCh <- err
