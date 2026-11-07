@@ -782,6 +782,21 @@ GGHSTATS_RATE_LIMIT_ENABLED=false
 
 Inactive IPs are evicted from memory after 5 minutes of idle time.
 
+### TCP listeners and MPTCP
+
+Go 1.24+ enables [Multipath TCP](https://www.rfc-editor.org/rfc/rfc8684) by default on Linux listen sockets. MPTCP listeners are the exposure path for **CVE-2026-98432**, a use-after-free in the kernel's IPv4 TCP stack reachable before the connection is accepted. gghstats opts out at two levels:
+
+- `godebug multipathtcp=0` in `go.mod`, so every socket the binary opens defaults to plain TCP;
+- `net.ListenConfig.SetMultipathTCP(false)` on the dashboard listener, which a `GODEBUG` change in the environment cannot re-enable.
+
+This hardens the process; it does not fix the kernel. Patch the host kernel (see your distribution's advisory). `serve` already binds `127.0.0.1` by default — keep it that way behind a reverse proxy when your scraper allows it, but note a loopback bind alone does **not** disable MPTCP. To confirm the build default:
+
+```bash
+go list -f '{{.DefaultGODEBUG}}' ./cmd/gghstats
+```
+
+The output must include `multipathtcp=0`. On a patched Linux host, `cat /proc/net/mptcp_net/mptcp` must not list the gghstats listener.
+
 ### IP whitelist
 
 gghstats supports optional IP-based access control via `GGHSTATS_WHITELIST`. When set, only requests from matching IPs or CIDR ranges are allowed; all others receive `403 Forbidden` with `{"error":"ip_not_whitelisted"}`.
