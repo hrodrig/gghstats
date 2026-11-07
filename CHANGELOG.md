@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- **Multipath TCP disabled on Linux:** Go 1.24+ enables MPTCP on listen sockets by default, the exposure path for **CVE-2026-98432** (IPv4 TCP use-after-free in the Linux kernel). `go.mod` now sets `godebug multipathtcp=0` and the dashboard listener calls `SetMultipathTCP(false)`, so the setting cannot be re-enabled from the environment. Patching the kernel remains the actual fix.
+
 ## [1.6.8] - 2026-10-27
 
 ### Security
