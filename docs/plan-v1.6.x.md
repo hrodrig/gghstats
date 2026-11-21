@@ -23,8 +23,8 @@ Parent: [ROADMAP.md](../ROADMAP.md) · Spec: [SPEC.md](../SPEC.md) · Themes:
 | **1.6.3** | Shipped — OPS-upstream-stale (#80): detect, banner, alert, dogfood |
 | **1.6.4** | Shipped — upstream_stale banner shows stuck/eligible (partial-thaw UX) |
 | **1.6.4+** | DOC / OPS / tiny UX below; no new CLI subcommands unless agreed as patch |
-| **1.7.0** | New CLI (`config check` / `doctor`), non-trivial keyboard/shareable-URL
-| or badge extensions — bump minor when first of those lands |
+| **1.7.0** | **Stable repo identity (#86)** — see [plan-v1.7.0.md](plan-v1.7.0.md). DX (`config check` /
+| `doctor`), keyboard/shareable-URL may follow as **1.7.x** after identity |
 | **2.0.0** | Line B — not this band |
 
 SemVer reminder (ROADMAP): patch = small corrections / docs / tiny UX on the
