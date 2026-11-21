@@ -1,6 +1,8 @@
 module github.com/hrodrig/gghstats
 
-go 1.27.3
+go 1.27.4
+
+godebug multipathtcp=0
 
 require (
 	github.com/prometheus/client_golang v1.25.0
