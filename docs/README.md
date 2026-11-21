@@ -26,7 +26,9 @@ Scoped implementation checklists per SemVer band (behavior details live in SPEC)
 | **1.1.0** | [plan-v1.1.0.md](plan-v1.1.0.md) |
 | **1.4.0** | [plan-v1.4.0.md](plan-v1.4.0.md) |
 | **1.5.0** | [plan-v1.5.0.md](plan-v1.5.0.md) (closed) |
-| **1.6.x** | [plan-v1.6.x.md](plan-v1.6.x.md) (open — post-1.6.1 DX / docs / UX) |
+| **1.6.x** | [plan-v1.6.x.md](plan-v1.6.x.md) (open — post-1.6.1 DX / docs / UX; identity deferred) |
+| **1.7.0** | [plan-v1.7.0.md](plan-v1.7.0.md) (open — #86 identity + #97 MCP + #124 MWG) |
+| **1.7.0 MCP** | [plan-v1.7.0-mcp.md](plan-v1.7.0-mcp.md) (detail for #97 — tools, auth, RO DB, PR G1–G3) |
 
 When a band ships, fold `[Unreleased]` into CHANGELOG, bump `VERSION` / badges / man / BSD ports, and mark the plan checklist complete.
 
