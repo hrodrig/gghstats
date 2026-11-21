@@ -30,4 +30,4 @@ require (
 	modernc.org/memory v1.12.1 // indirect
 )
 
-replace golang.org/x/net => golang.org/x/net v0.60.0
+replace golang.org/x/net => golang.org/x/net v0.62.0
