@@ -582,7 +582,7 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_API_TOKEN` | (none) | If set, JSON API routes **and** HTML `GET /{owner}/{repo}/traffic.json` **and** `GET /export.jsonl` require matching `x-api-token`. If unset, authenticated JSON returns **404**, but `traffic.json` / `export.jsonl` stay public like other HTML report surfaces (still report-scoped). See [HTTP API (JSON)](#http-api-json) and [docs/api.md](docs/api.md). |
 | `GGHSTATS_API_ONLY` | `false` | When true, skip HTML dashboard and SEO (`/robots.txt`, `/sitemap.xml`); JSON/probes still work |
 | `GGHSTATS_CORS_ORIGINS` | `*` (empty) | Comma-separated allowed `Origin` values for authenticated JSON; empty = `*`. Warns at startup if API-only + `*` |
-| `GGHSTATS_CSP` | report-only | Set `enforce` for enforcing CSP when `GGHSTATS_HEAD_HTML` is empty |
+| `GGHSTATS_CSP` | report-only | **Production:** set `enforce` when `GGHSTATS_HEAD_HTML` is empty. With `HEAD_HTML` set, enforce is ignored (startup warn) and Report-Only stays. Removing `'unsafe-inline'` needs nonces (follow-up). |
 | `GGHSTATS_BADGE_PUBLIC` | `true` | Set to `false` to require `x-api-token` on badge URLs (breaks `![…](url)` in GitHub READMEs unless you use a proxy) |
 | `GGHSTATS_BADGE_CACHE_SECONDS` | `300` | `Cache-Control: max-age` for badge SVG responses |
 | `GGHSTATS_PUBLIC_URL` | (none) | Optional public base URL for embed snippets, **`/sitemap.xml`**, **`/robots.txt`**, and alert dashboard links (e.g. `https://gghstats.example.com`); if unset, uses the request `Host`. On `localhost` / `127.0.0.1`, robots disallows crawling unless this is set |

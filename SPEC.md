@@ -74,7 +74,7 @@ There is **no** generic REST CRUD layer.
 | Mode | Behavior |
 |------|----------|
 | Default / unset | `Content-Security-Policy-Report-Only` baseline (self + unpkg/jsDelivr Chart.js/Bootstrap + Google Fonts; `'unsafe-inline'` for dashboard scripts) |
-| `GGHSTATS_CSP=enforce` | Sends enforcing `Content-Security-Policy` **only** when `GGHSTATS_HEAD_HTML` is empty; otherwise warn and stay Report-Only |
+| `GGHSTATS_CSP=enforce` | Sends enforcing `Content-Security-Policy` **only** when `GGHSTATS_HEAD_HTML` is empty; otherwise warn and stay Report-Only. **Recommended for public production** when HeadHTML is unused. |
 
 ### 2.2 Dogfood contract (API5)
 

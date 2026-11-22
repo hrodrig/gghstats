@@ -228,6 +228,7 @@ do not embed the API token in a public SPA.
 Content-Security-Policy mode: empty/\fBreport-only\fR (default) sends
 Report-Only; \fBenforce\fR sends an enforcing CSP when
 \fBGGHSTATS_HEAD_HTML\fR is empty (otherwise warn and stay Report-Only).
+For public production, prefer \fBenforce\fR when HeadHTML is unused.
 .TP
 .B GGHSTATS_BADGE_PUBLIC
 Allow public badge SVG URLs (default: \fBtrue\fR).
