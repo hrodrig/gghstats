@@ -7,6 +7,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.10] - 2026-11-22
+
 ### Fixed
 
 - **Index clone ranks (#126):** equal `total_clones` share a competition rank so ordinals never invert when table order among ties differs from the name tie-breaker; `ORDER BY total_clones` is stable with a secondary `name` key. Rank ordinals follow the UI locale (`1st` / `1.º` / `#n`).
@@ -767,7 +769,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.9...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.10...HEAD
+[1.6.10]: https://github.com/hrodrig/gghstats/compare/v1.6.9...v1.6.10
 [1.6.9]: https://github.com/hrodrig/gghstats/compare/v1.6.8...v1.6.9
 [1.6.8]: https://github.com/hrodrig/gghstats/compare/v1.6.7...v1.6.8
 [1.6.7]: https://github.com/hrodrig/gghstats/compare/v1.6.6...v1.6.7
