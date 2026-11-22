@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 # Local / CI image (make docker-build, docker compose). Release images: Dockerfile.release + GoReleaser.
 # Runtime: distroless static Debian 13 (no shell/apk — smaller attack surface), same pattern as groot.
-FROM --platform=$BUILDPLATFORM golang:1.27.4-bookworm AS builder
+# Digest pins refreshed by Dependabot (docker ecosystem). Index digests cover multi-arch.
+FROM --platform=$BUILDPLATFORM golang:1.27.4-bookworm@sha256:4fa7c968ba93f1635670522dbb01a2c78150443e1385746924566079f36570ea AS builder
 
 # Pin module proxy so builds do not inherit a broken or empty GOPROXY from the host/BuildKit environment.
 ENV GOPROXY=https://proxy.golang.org,direct
@@ -24,7 +25,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldfl
     -X 'github.com/hrodrig/gghstats/internal/version.BuildDate=${BUILDDATE}'" \
     -o /out/gghstats ./cmd/gghstats
 
-FROM gcr.io/distroless/static-debian13:nonroot
+FROM gcr.io/distroless/static-debian13:nonroot@sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931
 LABEL org.opencontainers.image.title="gghstats"
 LABEL org.opencontainers.image.description="GitHub traffic dashboard and CLI"
 LABEL org.opencontainers.image.source="https://github.com/hrodrig/gghstats"

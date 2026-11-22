@@ -188,24 +188,28 @@ docker-export-amd64: docker-build-amd64
 	@echo "Wrote $(DIST)/gghstats-$(VERSION)-linux-amd64.tar.gz"
 	@echo "On VPS: gunzip -c gghstats-$(VERSION)-linux-amd64.tar.gz | docker load"
 
-# Docker path: --pull=always so anchore/grype:latest is not a stale local cache (latest != auto-update).
+# Pinned scanner / vuln tooling (avoid floating @latest / :latest in CI and local make).
+GOVULNCHECK_VERSION ?= v1.10.0
+GRYPE_IMAGE ?= anchore/grype:v0.122.1
+
+# Docker path: --pull=always so the pinned Grype tag is not a stale local cache.
 docker-scan: docker-build
 	@if command -v grype >/dev/null 2>&1; then \
 		grype gghstats:$(VERSION) --fail-on $(GRYPE_FAIL_ON) ; \
 	else \
 		echo "grype not found locally, using container image..."; \
-		docker run --rm --pull=always -v /var/run/docker.sock:/var/run/docker.sock anchore/grype:latest gghstats:$(VERSION) --fail-on $(GRYPE_FAIL_ON) ; \
+		docker run --rm --pull=always -v /var/run/docker.sock:/var/run/docker.sock $(GRYPE_IMAGE) gghstats:$(VERSION) --fail-on $(GRYPE_FAIL_ON) ; \
 	fi
 
 docker-run:
 	docker run --rm -p 8080:8080 --env-file .env -v $(PWD)/data:/data gghstats:$(VERSION)
 
 tools:
-	go install golang.org/x/vuln/cmd/govulncheck@latest
+	go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
 	go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
 
 govulncheck:
-	go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+	go run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION) ./...
 
 gocyclo:
 	@command -v gocyclo >/dev/null 2>&1 || go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
@@ -220,7 +224,7 @@ grype:
 		grype dir:. $(GRYPE_DIR_EXCLUDES) ; \
 	else \
 		echo "grype not found locally, using container image..."; \
-		docker run --rm --pull=always -v "$(PWD):/workspace" anchore/grype:latest \
+		docker run --rm --pull=always -v "$(PWD):/workspace" $(GRYPE_IMAGE) \
 			dir:/workspace $(GRYPE_DIR_EXCLUDES) ; \
 	fi
 

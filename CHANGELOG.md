@@ -13,6 +13,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - **Trusted-proxy `X-Forwarded-For`:** with `GGHSTATS_TRUSTED_PROXIES` set, client IP walks the header right-to-left and skips trusted hops, so a forged leftmost prefix cannot bypass rate limit or IP whitelist.
 - **Reverse-proxy paths are rate-limited:** `GGHSTATS_REVERSE_PROXY_RULES` `local` prefixes stay IP-whitelist exempt (same-origin embeds) but share the per-IP rate limiter so the relay is not unbounded. `/metrics` remains scrape-friendly with no app auth — restrict at the edge or set `GGHSTATS_METRICS=false`.
 - **CSP production guidance:** document `GGHSTATS_CSP=enforce` for public deployments when `GGHSTATS_HEAD_HTML` is empty (enforce is ignored while HeadHTML is set).
+- **CI/supply-chain pins:** GitHub Actions pinned by commit SHA; GoReleaser `v2.20.3`, govulncheck `v1.10.0` (Go 1.27-compatible; older pins panic in SSA), Grype `v0.122.1` (no floating `@latest` / `:latest`); Dockerfile base images pinned by digest; Dependabot covers `github-actions` and `docker` in addition to `gomod`.
+- **Backup file mode:** SQLite backups and restore temps use `0600`; backup/db parent dirs `0700`.
 
 ## [1.6.9] - 2026-11-20
 

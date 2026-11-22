@@ -19,15 +19,15 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: go.mod
 
       - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.10.0
 
       - name: Run govulncheck
         run: govulncheck ./...
@@ -38,17 +38,17 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Build timestamp
         id: ts
         run: echo "b=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
       - name: Build image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           load: true
@@ -60,10 +60,10 @@ jobs:
             COMMIT=${{ github.sha }}
             BUILDDATE=${{ steps.ts.outputs.b }}
 
-      # Same as `make docker-scan` fallback: official image + --pull=always (no stale :latest cache).
+      # Pin Grype image tag (Dependabot docker ecosystem can refresh).
       - name: Run Grype on image
         run: |
           docker run --rm --pull=always \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            anchore/grype:latest \
+            anchore/grype:v0.122.1 \
             gghstats:scan --fail-on high
