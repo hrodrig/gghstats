@@ -308,10 +308,19 @@ func TestIndexPageCloneRankAndShare(t *testing.T) {
 		"1st · 80.00%",
 		"2nd · 20.00%",
 		`href="/export.jsonl"`,
+		`data-gghstats-role="export-jsonl-download"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("expected rank/share or export control %q", want)
 		}
+	}
+	if strings.Contains(body, `data-requires-api-token="1"`) {
+		t.Error("export must not require token when APIToken unset")
+	}
+
+	bodyAuth := indexPageBody(t, New(Config{Store: db, APIToken: "secret"}))
+	if !strings.Contains(bodyAuth, `data-requires-api-token="1"`) {
+		t.Error("export must require token when APIToken set")
 	}
 }
 
@@ -351,6 +360,76 @@ func TestIndexJSONLExport(t *testing.T) {
 	}
 	if len(row.Clones) != 1 || len(row.Views) != 1 || len(row.Referrers) != 1 || len(row.Paths) != 1 || len(row.Stars) != 1 {
 		t.Fatalf("expected all stored data in export: %#v", row)
+	}
+}
+
+func TestIndexJSONLExportPublicWithoutAPIToken(t *testing.T) {
+	db := testStore(t)
+	_ = db.UpsertRepo("owner/repo", "", 0, 0, 0, 0, 0, false, false, "")
+	handler := New(Config{Store: db, APIToken: ""})
+	req := httptest.NewRequest(http.MethodGet, "/export.jsonl", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", w.Code, w.Body.String())
+	}
+}
+
+func TestIndexJSONLExportRequiresTokenWhenConfigured(t *testing.T) {
+	db := testStore(t)
+	_ = db.UpsertRepo("owner/repo", "", 0, 0, 0, 0, 0, false, false, "")
+	handler := New(Config{Store: db, APIToken: "secret"})
+
+	req := httptest.NewRequest(http.MethodGet, "/export.jsonl", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("no token: status=%d, want 401", w.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/export.jsonl", nil)
+	req.Header.Set("x-api-token", "wrong")
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("bad token: status=%d, want 401", w.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/export.jsonl", nil)
+	req.Header.Set("x-api-token", "secret")
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("good token: status=%d body=%s", w.Code, w.Body.String())
+	}
+}
+
+func TestIndexJSONLExportStreamsMultipleRepos(t *testing.T) {
+	db := testStore(t)
+	_ = db.UpsertRepo("owner/a", "", 0, 0, 0, 0, 0, false, false, "")
+	_ = db.UpsertRepo("owner/b", "", 0, 0, 0, 0, 0, false, false, "")
+	_ = db.UpsertClone("owner/a", "2026-03-20", 10, 1)
+	_ = db.UpsertClone("owner/b", "2026-03-20", 5, 1)
+
+	handler := New(Config{Store: db})
+	req := httptest.NewRequest(http.MethodGet, "/export.jsonl?q=owner", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status=%d", w.Code)
+	}
+
+	dec := json.NewDecoder(w.Body)
+	var names []string
+	for dec.More() {
+		var row indexJSONLExportRow
+		if err := dec.Decode(&row); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		names = append(names, row.Repo.Name)
+	}
+	if len(names) != 2 {
+		t.Fatalf("rows=%v, want 2", names)
 	}
 }
 

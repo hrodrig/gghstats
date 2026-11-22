@@ -1057,10 +1057,10 @@ function filenameFromContentDisposition(header, fallback) {
   return m ? m[1] : fallback;
 }
 
-function initTrafficJSONDownload() {
-  const link = document.querySelector('[data-gghstats-role="traffic-json-download"]');
+function initAuthedAttachmentDownload(opts) {
+  const link = document.querySelector(opts.selector);
   if (!link) return;
-  const url = link.getAttribute('data-traffic-json-url') || link.getAttribute('href');
+  const url = link.getAttribute(opts.urlAttr) || link.getAttribute('href');
   if (!url) return;
   const requiresToken = link.getAttribute('data-requires-api-token') === '1';
 
@@ -1087,7 +1087,7 @@ function initTrafficJSONDownload() {
       const blob = await res.blob();
       const name = filenameFromContentDisposition(
         res.headers.get('Content-Disposition'),
-        'gghstats-traffic.json'
+        opts.fallbackName
       );
       const objectURL = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1103,6 +1103,22 @@ function initTrafficJSONDownload() {
     } catch {
       /* ignore network errors for download */
     }
+  });
+}
+
+function initTrafficJSONDownload() {
+  initAuthedAttachmentDownload({
+    selector: '[data-gghstats-role="traffic-json-download"]',
+    urlAttr: 'data-traffic-json-url',
+    fallbackName: 'gghstats-traffic.json'
+  });
+}
+
+function initExportJSONLDownload() {
+  initAuthedAttachmentDownload({
+    selector: '[data-gghstats-role="export-jsonl-download"]',
+    urlAttr: 'data-export-jsonl-url',
+    fallbackName: 'gghstats-export.jsonl'
   });
 }
 
@@ -1180,6 +1196,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initBadgeEmbed();
   initSyncControl();
   initTrafficJSONDownload();
+  initExportJSONLDownload();
   initSettingsForm();
   initSettingsAccess();
   initInitialSyncRefresh();

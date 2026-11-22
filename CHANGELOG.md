@@ -7,6 +7,11 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- **`GET /export.jsonl` optional token:** when `GGHSTATS_API_TOKEN` is set, the index JSONL export requires matching `x-api-token` (same rule as `traffic.json`). The sidebar Export control prompts for the token like chart JSON download. Export builds and writes one repository at a time instead of materializing the full dump in memory.
+- **Trusted-proxy `X-Forwarded-For`:** with `GGHSTATS_TRUSTED_PROXIES` set, client IP walks the header right-to-left and skips trusted hops, so a forged leftmost prefix cannot bypass rate limit or IP whitelist.
+
 ## [1.6.9] - 2026-11-20
 
 ### Security
