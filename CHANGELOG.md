@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Settings 401 + H2H formatting (#128):** Settings auth page shows the admin-required message once and a clear "Enter admin token" CTA (modal still collects the token). H2H relative margin uses `%` instead of misleading `pts`; metrics comparison values use locale thousands separators.
+
 ### Security
 
 - **`GET /export.jsonl` optional token:** when `GGHSTATS_API_TOKEN` is set, the index JSONL export requires matching `x-api-token` (same rule as `traffic.json`). The sidebar Export control prompts for the token like chart JSON download. Export builds and writes one repository at a time instead of materializing the full dump in memory.

@@ -4,13 +4,8 @@
     <div>
       <p class="app-settings-kicker">{{call .T "settings.kicker"}}</p>
       <h2 id="settings-auth-heading">{{call .T "settings.admin_required"}}</h2>
-      <p>{{call .T "layout.sync_modal_help"}}</p>
+      <p>{{call .T "settings.auth_prompt_help"}}</p>
     </div>
-    <span class="badge app-settings-readonly">{{call .T "settings.admin_required"}}</span>
-  </div>
-  <div class="alert app-settings-boundary mb-4" role="status">
-    <strong>{{call .T "settings.admin_required"}}</strong>
-    <span class="d-block mt-1">{{call .T "settings.editable_help"}}</span>
   </div>
   <button type="button" class="btn app-brutal-btn text-uppercase fw-bold" data-settings-auth-start>
     {{call .T "settings.auth_continue"}}
