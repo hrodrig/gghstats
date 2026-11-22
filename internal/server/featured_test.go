@@ -103,6 +103,39 @@ func TestFeaturedPageShell(t *testing.T) {
 	}
 }
 
+func TestFeaturedPageStripsEmojiShortcodes(t *testing.T) {
+	db := testStore(t)
+	if err := db.AddFeatured("owner/awesome-docker"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpsertFeaturedMeta(
+		"owner/awesome-docker",
+		"veggiemonk/awesome-docker",
+		"veggiemonk/awesome-docker",
+		":whale: A curated list of Docker resources and projects",
+		100,
+		false,
+	); err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/featured", nil)
+	w := httptest.NewRecorder()
+	New(Config{Store: db}).ServeHTTP(w, req)
+	got := w.Body.String()
+	if strings.Contains(got, ":whale:") {
+		t.Error("featured description must strip emoji shortcodes")
+	}
+	if !strings.Contains(got, "A curated list of Docker resources and projects") {
+		t.Error("expected cleaned description text")
+	}
+	if strings.Count(got, "<h1") != 1 {
+		t.Errorf("featured page should have a single layout <h1>, got %d", strings.Count(got, "<h1"))
+	}
+	if !strings.Contains(got, `data-gghstats-role="featured-title"`) || !strings.Contains(got, "<h2") {
+		t.Error("featured card title should be <h2>")
+	}
+}
+
 // The /featured page renders a friendly empty state when the showcase is empty.
 func TestFeaturedPageEmpty(t *testing.T) {
 	h := New(Config{Store: testStore(t)})

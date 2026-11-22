@@ -106,12 +106,12 @@
         {{end}}
       </header>
 
-      <div class="flex-grow-1 p-4 app-brutal-content" data-gghstats-role="content">
+      <main class="flex-grow-1 p-4 app-brutal-content" data-gghstats-role="content" id="main-content">
         {{.Content}}
-      </div>
+      </main>
 
-      <footer class="app-brutal-footer border-top border-3 border-dark py-3 px-4 mt-auto" data-gghstats-role="footer">
-        <div class="app-brutal-console-footer" role="contentinfo" aria-label="System footer">
+      <footer class="app-brutal-footer border-top border-3 border-dark py-3 px-4 mt-auto" data-gghstats-role="footer" aria-label="System footer">
+        <div class="app-brutal-console-footer">
           <div class="app-brutal-console-prompt" aria-hidden="true"><span class="app-brutal-console-gt">&gt;</span></div>
           <div class="app-brutal-console-body flex-grow-1 min-w-0">
             <p class="app-brutal-console-manifest mb-2 mb-md-3">{{call .T "layout.footer_manifest"}}</p>
