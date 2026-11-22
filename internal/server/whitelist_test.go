@@ -150,7 +150,9 @@ func TestWhitelistMiddlewareXForwardedFor(t *testing.T) {
 	}), MiddlewareSkip{})
 
 	req := httptest.NewRequest("GET", "/", nil)
-	req.Header.Set("X-Forwarded-For", "10.5.5.5, 172.16.0.1")
+	// Proxies append: forged leftmost must not win; client is right of forged,
+	// left of the trusted hop (192.168.1.50).
+	req.Header.Set("X-Forwarded-For", "203.0.113.9, 10.5.5.5, 192.168.1.50")
 	req.RemoteAddr = "192.168.1.1:12345"
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)

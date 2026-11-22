@@ -46,6 +46,7 @@ This document describes **current** behavior. Changes that break clients must bu
 | `GET /metrics` | Public by default | Off with `GGHSTATS_METRICS=false` |
 | HTML UI (`/`, `/{owner}/{repo}`, `/h2h`, …) | Optional IP whitelist / rate limit | Omitted when `GGHSTATS_API_ONLY=true` |
 | `GET /{owner}/{repo}/traffic.json` | `x-api-token` only if `GGHSTATS_API_TOKEN` set | Chart-aligned download; report-scoped |
+| `GET /export.jsonl` | `x-api-token` only if `GGHSTATS_API_TOKEN` set | Index JSONL dump (streamed per repo); report-scoped |
 | `/robots.txt`, `/sitemap.xml` | — | Omitted (404) when API-only |
 
 **Always exempt** from IP rate limit and IP whitelist: `/metrics`, `/api/v1/healthz`, `/api/v1/badge/*`, and each `local` prefix from `GGHSTATS_REVERSE_PROXY_RULES`.
@@ -54,7 +55,9 @@ When `GGHSTATS_API_TOKEN` is set, a matching **`x-api-token`** header bypasses t
 
 For rate limit and IP whitelist identity, `X-Forwarded-For` / `X-Real-IP`
 are trusted only when the TCP peer is in `GGHSTATS_TRUSTED_PROXIES`.
-Otherwise the peer `RemoteAddr` is authoritative.
+Otherwise the peer `RemoteAddr` is authoritative. When trusted, `X-Forwarded-For`
+is walked **right-to-left**, skipping hops that match `GGHSTATS_TRUSTED_PROXIES`,
+so a client-forged leftmost prefix cannot bypass rate limit or whitelist.
 
 There is **no** generic REST CRUD layer.
 
