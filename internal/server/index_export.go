@@ -71,7 +71,7 @@ func handleIndexJSONLExport(cfg Config) http.HandlerFunc {
 			http.Error(w, "database error", http.StatusInternalServerError)
 			return
 		}
-		rankedRepos := rankIndexReposByTotalClones(repos)
+		rankedRepos := rankIndexReposByTotalClones(repos, localeFromRequest(r, cfg))
 
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, indexJSONLExportFilename(time.Now().UTC())))

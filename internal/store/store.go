@@ -906,8 +906,8 @@ const (
 	listReposOrderForksDesc       = `ORDER BY r.forks DESC`
 	listReposOrderTotalViewsAsc   = `ORDER BY COALESCE(v.total_views, 0) ASC`
 	listReposOrderTotalViewsDesc  = `ORDER BY COALESCE(v.total_views, 0) DESC`
-	listReposOrderTotalClonesAsc  = `ORDER BY COALESCE(c.total_clones, 0) ASC`
-	listReposOrderTotalClonesDesc = `ORDER BY COALESCE(c.total_clones, 0) DESC`
+	listReposOrderTotalClonesAsc  = `ORDER BY COALESCE(c.total_clones, 0) ASC, r.name ASC`
+	listReposOrderTotalClonesDesc = `ORDER BY COALESCE(c.total_clones, 0) DESC, r.name ASC`
 	listReposOrderClones1dAsc     = `ORDER BY COALESCE(c1.clones_1d, 0) ASC`
 	listReposOrderClones1dDesc    = `ORDER BY COALESCE(c1.clones_1d, 0) DESC`
 	listReposOrderClones7dAsc     = `ORDER BY COALESCE(c7.clones_7d, 0) ASC`
