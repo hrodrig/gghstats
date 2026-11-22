@@ -10,6 +10,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 - **Index clone ranks (#126):** equal `total_clones` share a competition rank so ordinals never invert when table order among ties differs from the name tie-breaker; `ORDER BY total_clones` is stable with a secondary `name` key. Rank ordinals follow the UI locale (`1st` / `1.º` / `#n`).
+- **Select caret + mobile KPI labels (#127):** stop overwriting Bootstrap's `form-select` caret with a full `background` shorthand (label and chevron stay on one line); tighten KPI letter-spacing on narrow viewports so labels like `REPOSITORIES` do not break mid-word.
 
 ### Security
 
