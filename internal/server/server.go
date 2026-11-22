@@ -793,7 +793,7 @@ func handleIndex(cfg Config, db *store.Store, tmpl *template.Template) http.Hand
 			return
 		}
 		kpiStars, kpiForks, kpiClones, kpiCloneUniques, kpiViews, kpiViewUniques := sumIndexKPIs(repos)
-		rankedRepos := rankIndexReposByTotalClones(repos)
+		rankedRepos := rankIndexReposByTotalClones(repos, localeFromRequest(r, cfg))
 		total := len(repos)
 		start, end, reposPage := indexRepoRowsPageSlice(rankedRepos, page, perPage)
 		totalPages := indexTotalPages(total, perPage)
