@@ -189,7 +189,7 @@ docker-export-amd64: docker-build-amd64
 	@echo "On VPS: gunzip -c gghstats-$(VERSION)-linux-amd64.tar.gz | docker load"
 
 # Pinned scanner / vuln tooling (avoid floating @latest / :latest in CI and local make).
-GOVULNCHECK_VERSION ?= v1.1.4
+GOVULNCHECK_VERSION ?= v1.10.0
 GRYPE_IMAGE ?= anchore/grype:v0.122.1
 
 # Docker path: --pull=always so the pinned Grype tag is not a stale local cache.
