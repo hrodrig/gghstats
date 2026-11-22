@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Select caret + mobile KPI labels (#127):** stop overwriting Bootstrap's `form-select` caret with a full `background` shorthand (label and chevron stay on one line); tighten KPI letter-spacing on narrow viewports so labels like `REPOSITORIES` do not break mid-word.
+
 ### Security
 
 - **`GET /export.jsonl` optional token:** when `GGHSTATS_API_TOKEN` is set, the index JSONL export requires matching `x-api-token` (same rule as `traffic.json`). The sidebar Export control prompts for the token like chart JSON download. Export builds and writes one repository at a time instead of materializing the full dump in memory.

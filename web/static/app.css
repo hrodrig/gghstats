@@ -383,10 +383,21 @@ html[data-bs-theme="dark"] .app-brutalist .app-brutal-chart-well {
 .app-brutalist .form-select {
   border-radius: 0 !important;
   border: 2px solid var(--brutal-border-ink) !important;
-  background: var(--brutal-elevated);
+  /* background-color only — a full `background` shorthand drops Bootstrap's caret SVG (#127). */
+  background-color: var(--brutal-elevated);
   font-family: inherit;
   color: var(--brutal-text);
   line-height: 1.5;
+}
+
+/* Keep label + caret on one line; reserve space for the theme-aware chevron. */
+.app-brutalist .form-select {
+  white-space: nowrap;
+  padding-inline-end: 2.5rem;
+  background-image: var(--bs-form-select-bg-img);
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
 }
 
 /* Index search strip: theme-aware background (avoid bg-white + dark label contrast bug) */
@@ -802,7 +813,7 @@ html[data-bs-theme="midnight"] .app-brutalist .app-brutal-breadcrumb a:focus-vis
   min-height: 2.5rem;
   border-radius: 0 !important;
   border: 2px solid var(--brutal-border-ink) !important;
-  background: var(--brutal-elevated) !important;
+  background-color: var(--brutal-elevated) !important;
   color: var(--brutal-text) !important;
   font-family: inherit;
 }
@@ -1052,6 +1063,15 @@ html[data-bs-theme="midnight"] .app-brutalist .table-light > :not(caption) > * >
 
   .app-brutal-console-manifest {
     overflow-wrap: anywhere;
+  }
+
+  /* KPI labels: avoid mid-word breaks (e.g. REPOSITORIE/S) on narrow 2-col grid (#127). */
+  [data-gghstats-role="kpi-card"] .letter-spacing-tight {
+    letter-spacing: 0.02em;
+    font-size: 0.68rem;
+    overflow-wrap: normal;
+    word-break: keep-all;
+    hyphens: none;
   }
 }
 
