@@ -54,6 +54,9 @@ func handleFeaturedPage(cfg Config, db *store.Store, tmpl *template.Template) ht
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		for i := range featured {
+			featured[i].UpstreamDescription = stripEmojiShortcodes(featured[i].UpstreamDescription)
+		}
 
 		totalPages := indexTotalPages(total, perPage)
 		page = clampIndexPage(page, totalPages)

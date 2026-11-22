@@ -1,6 +1,6 @@
 # gghstats
 
-[![Version](https://img.shields.io/badge/version-1.6.9-blue)](https://github.com/hrodrig/gghstats/releases)
+[![Version](https://img.shields.io/badge/version-1.6.10-blue)](https://github.com/hrodrig/gghstats/releases)
 [![Release](https://img.shields.io/github/v/release/hrodrig/gghstats)](https://github.com/hrodrig/gghstats/releases)
 [![CI](https://github.com/hrodrig/gghstats/actions/workflows/ci.yml/badge.svg)](https://github.com/hrodrig/gghstats/actions)
 [![codecov](https://codecov.io/gh/hrodrig/gghstats/graph/badge.svg)](https://codecov.io/gh/hrodrig/gghstats)
@@ -579,10 +579,10 @@ Copy [`.env.example`](.env.example) → `.env` in this repository when running `
 | `GGHSTATS_SYNC_WORKERS` | `4` | Concurrent repos per sync cycle (same as `gghstats serve --sync-workers`) |
 | `GGHSTATS_DEMO` | `false` | Sample-data UI; no GitHub token, sync, or update check (same as `gghstats serve --demo`) |
 | `GGHSTATS_OPEN_BROWSER` | `false` | Open the default browser when the server is ready (same as `gghstats serve --open`) |
-| `GGHSTATS_API_TOKEN` | (none) | If set, JSON API routes **and** HTML `GET /{owner}/{repo}/traffic.json` require matching `x-api-token`. If unset, authenticated JSON returns **404**, but `traffic.json` stays public like other HTML report surfaces (still report-scoped). See [HTTP API (JSON)](#http-api-json) and [docs/api.md](docs/api.md). |
+| `GGHSTATS_API_TOKEN` | (none) | If set, JSON API routes **and** HTML `GET /{owner}/{repo}/traffic.json` **and** `GET /export.jsonl` require matching `x-api-token`. If unset, authenticated JSON returns **404**, but `traffic.json` / `export.jsonl` stay public like other HTML report surfaces (still report-scoped). See [HTTP API (JSON)](#http-api-json) and [docs/api.md](docs/api.md). |
 | `GGHSTATS_API_ONLY` | `false` | When true, skip HTML dashboard and SEO (`/robots.txt`, `/sitemap.xml`); JSON/probes still work |
 | `GGHSTATS_CORS_ORIGINS` | `*` (empty) | Comma-separated allowed `Origin` values for authenticated JSON; empty = `*`. Warns at startup if API-only + `*` |
-| `GGHSTATS_CSP` | report-only | Set `enforce` for enforcing CSP when `GGHSTATS_HEAD_HTML` is empty |
+| `GGHSTATS_CSP` | report-only | **Production:** set `enforce` when `GGHSTATS_HEAD_HTML` is empty. With `HEAD_HTML` set, enforce is ignored (startup warn) and Report-Only stays. Removing `'unsafe-inline'` needs nonces (follow-up). |
 | `GGHSTATS_BADGE_PUBLIC` | `true` | Set to `false` to require `x-api-token` on badge URLs (breaks `![…](url)` in GitHub READMEs unless you use a proxy) |
 | `GGHSTATS_BADGE_CACHE_SECONDS` | `300` | `Cache-Control: max-age` for badge SVG responses |
 | `GGHSTATS_PUBLIC_URL` | (none) | Optional public base URL for embed snippets, **`/sitemap.xml`**, **`/robots.txt`**, and alert dashboard links (e.g. `https://gghstats.example.com`); if unset, uses the request `Host`. On `localhost` / `127.0.0.1`, robots disallows crawling unless this is set |
@@ -714,11 +714,13 @@ gghstats serve
 SMTP uses the same `GGHSTATS_ALERT_SINKS` array as other sinks (SPEC §8.5).
 ### Rate limiting
 
-gghstats applies **per-IP token-bucket rate limiting** to all HTTP routes except `/metrics` and `/api/v1/healthz`. When a client exceeds the limit the server returns `429 Too Many Requests` with a JSON body `{"error":"rate_limit_exceeded"}` and a `Retry-After: 60` header.
+gghstats applies **per-IP token-bucket rate limiting** to all HTTP routes except `/metrics`, `/api/v1/healthz`, `/api/v1/badge/*`, and `/static/*`. When a client exceeds the limit the server returns `429 Too Many Requests` with a JSON body `{"error":"rate_limit_exceeded"}` and a `Retry-After: 60` header.
 
 **Middleware order (outermost first):** IP whitelist → rate limiting → request logging → Prometheus HTTP metrics → route handlers.
 
-**Always exempt** (no whitelist check, no rate limit): `/metrics`, `/api/v1/healthz`, and **`/api/v1/badge/*`** (README embeds; GitHub and other proxies must fetch SVG without auth or throttling). **Reverse-proxy paths** configured via `GGHSTATS_REVERSE_PROXY_RULES` are also exempt (each rule's `local` prefix is automatically added to the skip list).
+**Always exempt** (no whitelist check, no rate limit): `/metrics`, `/api/v1/healthz`, **`/api/v1/badge/*`** (README embeds; GitHub and other proxies must fetch SVG without auth or throttling), and `/static/*`.
+
+**Reverse-proxy paths** (`GGHSTATS_REVERSE_PROXY_RULES`): exempt from the **IP whitelist** only (so same-origin embeds keep working under a global whitelist). They **are rate-limited** like other public routes — the relay must not be unbounded.
 
 **Defaults:** 120 requests per minute, burst of 20. For most dashboard browsing this is generous; adjust for high-traffic or protected deployments.
 
@@ -731,8 +733,11 @@ If gghstats is reachable without a trusted hop, a client can send
 **Approach.** Set `GGHSTATS_TRUSTED_PROXIES` to the reverse proxy IP or CIDR.
 gghstats trusts forwarded headers only when the TCP peer is in that list.
 If the list is empty (default), those headers are ignored and the peer
-`RemoteAddr` is used. When rate limiting or a whitelist is active and the list
-is empty, `gghstats serve` logs a startup warning so operators do not assume
+`RemoteAddr` is used. When the peer is trusted, `X-Forwarded-For` is read
+**right-to-left**, skipping hops that match the trusted set (proxies that
+append leave the real client left of trusted hops; a forged leftmost prefix
+is ignored). When rate limiting or a whitelist is active and the list is
+empty, `gghstats serve` logs a startup warning so operators do not assume
 forwarded headers are in effect.
 
 **How to apply**
@@ -801,7 +806,7 @@ The output must include `multipathtcp=0`. On a patched Linux host, `cat /proc/ne
 
 gghstats supports optional IP-based access control via `GGHSTATS_WHITELIST`. When set, only requests from matching IPs or CIDR ranges are allowed; all others receive `403 Forbidden` with `{"error":"ip_not_whitelisted"}`.
 
-By default the whitelist applies to **all routes** except `/metrics`, `/api/v1/healthz`, and **`/api/v1/badge/*`** (README embeds). Scope it to specific paths with `GGHSTATS_WHITELIST_PATHS` (comma-separated prefixes, e.g. `/api/,/h2h`). Paths not listed remain publicly accessible. Badge URLs stay public even when `/api/` is whitelisted.
+By default the whitelist applies to **all routes** except `/metrics`, `/api/v1/healthz`, **`/api/v1/badge/*`**, `/static/*`, and each reverse-proxy `local` prefix. Scope it to specific paths with `GGHSTATS_WHITELIST_PATHS` (comma-separated prefixes, e.g. `/api/,/h2h,/export.jsonl,/settings`). Paths not listed remain publicly accessible. Badge URLs stay public even when `/api/` is whitelisted.
 
 When **`GGHSTATS_API_TOKEN`** is set, requests that include a matching **`x-api-token`** header bypass the IP whitelist on protected paths (the token is still validated by the API handler). This lets remote operators run **`POST /api/v1/sync`** from the dashboard without opening `/api/` to the whole internet.
 

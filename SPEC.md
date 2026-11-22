@@ -1,6 +1,6 @@
 # Spec — HTTP API and sync
 
-Normative operator contracts for **gghstats** as of **v1.6.9**.
+Normative operator contracts for **gghstats** as of **v1.6.10**.
 **Client how-to (examples, auth, dogfood map):** **[docs/api.md](docs/api.md)**.  
 Narrative install/env: **[README.md](README.md)**. Product direction: **[ROADMAP.md](ROADMAP.md)**.
 
@@ -46,15 +46,22 @@ This document describes **current** behavior. Changes that break clients must bu
 | `GET /metrics` | Public by default | Off with `GGHSTATS_METRICS=false` |
 | HTML UI (`/`, `/{owner}/{repo}`, `/h2h`, …) | Optional IP whitelist / rate limit | Omitted when `GGHSTATS_API_ONLY=true` |
 | `GET /{owner}/{repo}/traffic.json` | `x-api-token` only if `GGHSTATS_API_TOKEN` set | Chart-aligned download; report-scoped |
+| `GET /export.jsonl` | `x-api-token` only if `GGHSTATS_API_TOKEN` set | Index JSONL dump (streamed per repo); report-scoped |
 | `/robots.txt`, `/sitemap.xml` | — | Omitted (404) when API-only |
 
-**Always exempt** from IP rate limit and IP whitelist: `/metrics`, `/api/v1/healthz`, `/api/v1/badge/*`, and each `local` prefix from `GGHSTATS_REVERSE_PROXY_RULES`.
+**Always exempt** from IP rate limit **and** IP whitelist: `/metrics`, `/api/v1/healthz`, `/api/v1/badge/*`, `/static/*`.
+
+**Whitelist-only exempt** (rate limit still applies): each `local` prefix from `GGHSTATS_REVERSE_PROXY_RULES`, so same-origin embeds stay reachable under a global whitelist without becoming an unbounded relay.
+
+**`GET /metrics`:** no app-level auth; operators must restrict it at the edge (firewall, private network scrape, or reverse-proxy path deny) or set `GGHSTATS_METRICS=false`.
 
 When `GGHSTATS_API_TOKEN` is set, a matching **`x-api-token`** header bypasses the IP whitelist on protected paths (token still validated by the API handler).
 
 For rate limit and IP whitelist identity, `X-Forwarded-For` / `X-Real-IP`
 are trusted only when the TCP peer is in `GGHSTATS_TRUSTED_PROXIES`.
-Otherwise the peer `RemoteAddr` is authoritative.
+Otherwise the peer `RemoteAddr` is authoritative. When trusted, `X-Forwarded-For`
+is walked **right-to-left**, skipping hops that match `GGHSTATS_TRUSTED_PROXIES`,
+so a client-forged leftmost prefix cannot bypass rate limit or whitelist.
 
 There is **no** generic REST CRUD layer.
 
@@ -67,7 +74,7 @@ There is **no** generic REST CRUD layer.
 | Mode | Behavior |
 |------|----------|
 | Default / unset | `Content-Security-Policy-Report-Only` baseline (self + unpkg/jsDelivr Chart.js/Bootstrap + Google Fonts; `'unsafe-inline'` for dashboard scripts) |
-| `GGHSTATS_CSP=enforce` | Sends enforcing `Content-Security-Policy` **only** when `GGHSTATS_HEAD_HTML` is empty; otherwise warn and stay Report-Only |
+| `GGHSTATS_CSP=enforce` | Sends enforcing `Content-Security-Policy` **only** when `GGHSTATS_HEAD_HTML` is empty; otherwise warn and stay Report-Only. **Recommended for public production** when HeadHTML is unused. |
 
 ### 2.2 Dogfood contract (API5)
 

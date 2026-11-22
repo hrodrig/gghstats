@@ -38,6 +38,7 @@ body.app-brutalist {
   --brutal-shadow-core: #121212;
   --brutal-accent: #e63946;
   --brutal-accent-2: #1d3557;
+  --brutal-ok: #2a9d4a;
   --brutal-muted: #5c5c58;
   --brutal-chart-well: #f4f4f0;
   --brutal-chart-rim: #121212;
@@ -71,6 +72,7 @@ html[data-bs-theme="dark"] body.app-brutalist {
   --brutal-shadow-core: #000000;
   --brutal-accent: #7cfc00;
   --brutal-accent-2: #00e5ff;
+  --brutal-ok: #7cfc00;
   --brutal-muted: #9a9a95;
   --brutal-chart-well: #2d2d32;
   --brutal-chart-rim: #7cfc00;
@@ -135,6 +137,13 @@ a.app-brutal-site-brand:focus-visible {
     width: 260px;
     max-width: 100%;
     flex-shrink: 0;
+    /* Keep the rail filled while the main column scrolls (#129). */
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    height: 100vh;
+    max-height: 100vh;
+    overflow-y: auto;
   }
 }
 
@@ -383,10 +392,21 @@ html[data-bs-theme="dark"] .app-brutalist .app-brutal-chart-well {
 .app-brutalist .form-select {
   border-radius: 0 !important;
   border: 2px solid var(--brutal-border-ink) !important;
-  background: var(--brutal-elevated);
+  /* background-color only — a full `background` shorthand drops Bootstrap's caret SVG (#127). */
+  background-color: var(--brutal-elevated);
   font-family: inherit;
   color: var(--brutal-text);
   line-height: 1.5;
+}
+
+/* Keep label + caret on one line; reserve space for the theme-aware chevron. */
+.app-brutalist .form-select {
+  white-space: nowrap;
+  padding-inline-end: 2.5rem;
+  background-image: var(--bs-form-select-bg-img);
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
 }
 
 /* Index search strip: theme-aware background (avoid bg-white + dark label contrast bug) */
@@ -465,6 +485,42 @@ html[data-bs-theme="dark"] .app-brutalist .app-repo-search-submit.btn-primary:ac
   background-color: var(--brutal-search-cta) !important;
   background: var(--brutal-search-cta) !important;
   color: #fff !important;
+}
+
+/* Outline / secondary CTAs: match hard-edge neo-brutalist controls (#129). */
+.app-brutalist .btn-outline-primary,
+.app-brutalist .btn-outline-secondary {
+  border-radius: 0 !important;
+  border: 2px solid var(--brutal-border-ink) !important;
+  background: var(--brutal-elevated) !important;
+  color: var(--brutal-text) !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  box-shadow: 3px 3px 0 var(--brutal-shadow-core);
+  white-space: nowrap;
+}
+
+.app-brutalist .btn-outline-primary:hover,
+.app-brutalist .btn-outline-secondary:hover {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0 var(--brutal-shadow-core);
+  background: var(--brutal-surface) !important;
+  color: var(--brutal-text) !important;
+}
+
+.app-brutalist .btn-outline-primary.active,
+.app-brutalist .btn-outline-primary[aria-pressed="true"] {
+  background: var(--brutal-accent) !important;
+  color: #fff !important;
+  border-color: var(--brutal-border-ink) !important;
+}
+
+html[data-bs-theme="dark"] .app-brutalist .btn-outline-primary.active,
+html[data-bs-theme="dark"] .app-brutalist .btn-outline-primary[aria-pressed="true"],
+html[data-bs-theme="midnight"] .app-brutalist .btn-outline-primary.active,
+html[data-bs-theme="midnight"] .app-brutalist .btn-outline-primary[aria-pressed="true"] {
+  color: #121212 !important;
 }
 
 .app-brutalist .btn-primary:focus-visible {
@@ -580,8 +636,9 @@ html[data-bs-theme="dark"] .app-brutalist .pagination .page-item.active .page-li
   color: var(--brutal-text);
 }
 
+/* Healthy operational status — not the red accent used for errors (#129). */
 .app-brutal-console-ok {
-  color: var(--brutal-accent) !important;
+  color: var(--brutal-ok, #2a9d4a) !important;
 }
 
 .app-brutal-console-github {
@@ -617,6 +674,7 @@ html[data-bs-theme="midnight"] body.app-brutalist {
   --brutal-shadow-core: #000000;
   --brutal-accent: #65a4ff;
   --brutal-accent-2: #70d8e8;
+  --brutal-ok: #6ee7b7;
   --brutal-muted: #9aaabd;
   --brutal-chart-well: #0d1520;
   --brutal-chart-rim: #30445e;
@@ -638,6 +696,13 @@ html[data-bs-theme="midnight"] body.app-brutalist {
   --bs-info: var(--brutal-accent-2);
   --bs-body-bg: var(--brutal-paper);
   --bs-body-color: var(--brutal-text);
+}
+
+/* Midnight search placeholders need stronger contrast than Bootstrap defaults (#129). */
+html[data-bs-theme="midnight"] .app-brutalist .form-control::placeholder,
+html[data-bs-theme="midnight"] .app-brutalist .form-select::placeholder {
+  color: #b7c6d8 !important;
+  opacity: 1;
 }
 
 html[data-bs-theme="midnight"] .app-brutalist .navbar-toggler-icon {
@@ -802,7 +867,7 @@ html[data-bs-theme="midnight"] .app-brutalist .app-brutal-breadcrumb a:focus-vis
   min-height: 2.5rem;
   border-radius: 0 !important;
   border: 2px solid var(--brutal-border-ink) !important;
-  background: var(--brutal-elevated) !important;
+  background-color: var(--brutal-elevated) !important;
   color: var(--brutal-text) !important;
   font-family: inherit;
 }
@@ -1052,6 +1117,15 @@ html[data-bs-theme="midnight"] .app-brutalist .table-light > :not(caption) > * >
 
   .app-brutal-console-manifest {
     overflow-wrap: anywhere;
+  }
+
+  /* KPI labels: avoid mid-word breaks (e.g. REPOSITORIE/S) on narrow 2-col grid (#127). */
+  [data-gghstats-role="kpi-card"] .letter-spacing-tight {
+    letter-spacing: 0.02em;
+    font-size: 0.68rem;
+    overflow-wrap: normal;
+    word-break: keep-all;
+    hyphens: none;
   }
 }
 

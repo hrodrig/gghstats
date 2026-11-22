@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/hrodrig/gghstats/internal/i18n"
 	"github.com/hrodrig/gghstats/internal/store"
 )
 
@@ -16,7 +17,7 @@ type indexRepoRow struct {
 	CloneSharePercent float64
 }
 
-func rankIndexReposByTotalClones(repos []store.RepoSummary) []indexRepoRow {
+func rankIndexReposByTotalClones(repos []store.RepoSummary, locale string) []indexRepoRow {
 	if len(repos) == 0 {
 		return nil
 	}
@@ -33,9 +34,16 @@ func rankIndexReposByTotalClones(repos []store.RepoSummary) []indexRepoRow {
 		return byCloneTotal[i].TotalClones > byCloneTotal[j].TotalClones
 	})
 
+	// Competition ranking: equal TotalClones share a rank; the next distinct
+	// total uses position+1 so ordinals never invert when the table order
+	// among ties differs from the name tie-breaker.
 	ranks := make(map[string]int, len(byCloneTotal))
 	for i, repo := range byCloneTotal {
-		ranks[repo.Name] = i + 1
+		rank := i + 1
+		if i > 0 && byCloneTotal[i].TotalClones == byCloneTotal[i-1].TotalClones {
+			rank = ranks[byCloneTotal[i-1].Name]
+		}
+		ranks[repo.Name] = rank
 	}
 
 	rows := make([]indexRepoRow, len(repos))
@@ -48,7 +56,7 @@ func rankIndexReposByTotalClones(repos []store.RepoSummary) []indexRepoRow {
 		rows[i] = indexRepoRow{
 			RepoSummary:       repo,
 			CloneRank:         rank,
-			CloneRankOrdinal:  ordinal(rank),
+			CloneRankOrdinal:  ordinal(rank, locale),
 			CloneSharePercent: share,
 		}
 	}
@@ -68,17 +76,25 @@ func indexRepoRowsPageSlice(repos []indexRepoRow, page, perPage int) (start, end
 	return start, end, repos[start:end]
 }
 
-func ordinal(n int) string {
-	suffix := "th"
-	if n%100 < 11 || n%100 > 13 {
-		switch n % 10 {
-		case 1:
-			suffix = "st"
-		case 2:
-			suffix = "nd"
-		case 3:
-			suffix = "rd"
+func ordinal(n int, locale string) string {
+	locale = i18n.NormalizeLocale(locale)
+	switch locale {
+	case "en":
+		suffix := "th"
+		if n%100 < 11 || n%100 > 13 {
+			switch n % 10 {
+			case 1:
+				suffix = "st"
+			case 2:
+				suffix = "nd"
+			case 3:
+				suffix = "rd"
+			}
 		}
+		return fmt.Sprintf("%d%s", n, suffix)
+	case "es":
+		return fmt.Sprintf("%d.º", n)
+	default:
+		return fmt.Sprintf("#%d", n)
 	}
-	return fmt.Sprintf("%d%s", n, suffix)
 }

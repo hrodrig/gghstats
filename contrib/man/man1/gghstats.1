@@ -1,5 +1,5 @@
 .\" Man page for gghstats(1)
-.TH GGHSTATS 1 "November 2026" "gghstats v1.6.9" "User Commands"
+.TH GGHSTATS 1 "November 2026" "gghstats v1.6.10" "User Commands"
 .SH NAME
 gghstats \- self-hosted GitHub repository traffic dashboard and CLI
 .SH SYNOPSIS
@@ -206,11 +206,12 @@ Force \fBupstream_stale\fR active for dogfood (\fB\-\-upstream\-stale\-force\fR)
 Open the default browser on startup (default: \fBfalse\fR; same as \fB\-\-open\fR).
 .TP
 .B GGHSTATS_API_TOKEN
-Protect JSON API routes and the Settings UI; optional for manual sync
-from the UI. When the process binds to loopback and this token is empty,
-Settings allow local-only preference edits. Behind a reverse proxy on
-loopback, set a token — requests with \fBX-Forwarded-For\fR /
-\fBForwarded\fR never qualify as local-only.
+Protect JSON API routes, the Settings UI, HTML
+\fBGET /{owner}/{repo}/traffic.json\fR, and \fBGET /export.jsonl\fR;
+optional for manual sync from the UI. When the process binds to loopback
+and this token is empty, Settings allow local-only preference edits.
+Behind a reverse proxy on loopback, set a token — requests with
+\fBX-Forwarded-For\fR / \fBForwarded\fR never qualify as local-only.
 .TP
 .B GGHSTATS_API_ONLY
 When \fBtrue\fR, skip the HTML dashboard and SEO routes
@@ -227,6 +228,7 @@ do not embed the API token in a public SPA.
 Content-Security-Policy mode: empty/\fBreport-only\fR (default) sends
 Report-Only; \fBenforce\fR sends an enforcing CSP when
 \fBGGHSTATS_HEAD_HTML\fR is empty (otherwise warn and stay Report-Only).
+For public production, prefer \fBenforce\fR when HeadHTML is unused.
 .TP
 .B GGHSTATS_BADGE_PUBLIC
 Allow public badge SVG URLs (default: \fBtrue\fR).
@@ -236,6 +238,9 @@ Allow public badge SVG URLs (default: \fBtrue\fR).
 .TP
 .B GGHSTATS_METRICS
 Set to \fBfalse\fR to disable Prometheus \fB/metrics\fR.
+\fB/metrics\fR has no app-level auth; restrict it at the edge
+(firewall, private scrape network, or reverse-proxy path deny)
+or disable it.
 .TP
 .B GGHSTATS_COMPACT_NUMBERS
 When \fBtrue\fR, render large counts (stars, forks, views, clones) with compact
@@ -253,13 +258,16 @@ Time window for rate limiting as a Go duration (default: \fB1m\fR).
 .TP
 .B GGHSTATS_RATE_LIMIT_BURST
 Maximum burst of requests before smoothing (default: \fB20\fR).
-Exempt paths: \fB/metrics\fR, \fB/api/v1/healthz\fR, \fB/api/v1/badge/*\fR (README embeds).
+Exempt paths: \fB/metrics\fR, \fB/api/v1/healthz\fR, \fB/api/v1/badge/*\fR,
+\fB/static/*\fR. Reverse-proxy \fBlocal\fR prefixes are rate-limited.
 .TP
 .B GGHSTATS_TRUSTED_PROXIES
 Comma-separated proxy IPs and/or CIDRs allowed to supply
 \fBX-Forwarded-For\fR or \fBX-Real-IP\fR for client IP resolution.
 Empty by default, which means those headers are ignored and the TCP peer
 address is used for rate limiting and IP whitelist checks.
+When the peer is trusted, \fBX-Forwarded-For\fR is walked right-to-left,
+skipping hops in this list (ignores a client-forged leftmost prefix).
 Set only to your reverse proxy IP or network; do not use \fB0.0.0.0/0\fR.
 .TP
 .B GGHSTATS_ALERTS_ENABLED
@@ -291,7 +299,8 @@ Arbitrary HTML injected just before \fB</head>\fR on every HTML page
 (e.g. analytics scripts, extra CSS). Default: empty.
 .TP
 .B GGHSTATS_REVERSE_PROXY_RULES
-JSON array of reverse-proxy rules. Each rule is an object with:
+JSON array of reverse-proxy rules (whitelist-exempt; still rate-limited).
+Each rule is an object with:
 .RS
 .TP
 .B local

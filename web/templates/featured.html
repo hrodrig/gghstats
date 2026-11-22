@@ -3,7 +3,7 @@
   <div class="col-12">
     <div class="card shadow-sm border-0">
       <div class="card-body border-bottom">
-        <h1 class="fs-4 fw-bold mb-2 letter-spacing-tight" data-gghstats-role="featured-title">{{call .T "featured.title"}}</h1>
+        <h2 class="fs-4 fw-bold mb-2 letter-spacing-tight" data-gghstats-role="featured-title">{{call .T "featured.title"}}</h2>
         <p class="text-muted small mb-0" data-gghstats-role="featured-intro">{{call .T "featured.intro"}}</p>
       </div>
     </div>
@@ -68,7 +68,7 @@
           <span class="badge app-featured-stars" data-gghstats-role="featured-stars">{{call $.Tfmt "featured.stars" (dict "count" (call $.Num .UpstreamStars))}}</span>
         </div>
         <div class="mt-3 d-flex align-items-center justify-content-between gap-2">
-          <a class="btn btn-outline-primary btn-sm text-uppercase small" href="https://github.com/{{if .UpstreamFullName}}{{.UpstreamFullName}}{{else}}{{.Name}}{{end}}" target="_blank" rel="noopener noreferrer">{{call $.T "featured.view_on_github"}}</a>
+          <a class="btn btn-outline-primary btn-sm text-uppercase small text-nowrap" href="https://github.com/{{if .UpstreamFullName}}{{.UpstreamFullName}}{{else}}{{.Name}}{{end}}" target="_blank" rel="noopener noreferrer">{{call $.T "featured.view_on_github"}}</a>
           {{if .MetaUpdatedAt}}
           <span class="text-muted small" data-gghstats-role="featured-updated">{{call $.Tfmt "featured.updated_at" (dict "when" .MetaUpdatedAt)}}</span>
           {{end}}

@@ -8,6 +8,9 @@ import (
 	"strings"
 )
 
+// chmodBackup is os.Chmod in production; tests may stub it to exercise cleanup.
+var chmodBackup = os.Chmod
+
 // BackupTo writes a consistent SQLite snapshot to dest using VACUUM INTO.
 // Dest must not be the live database path; parent directories are created as needed.
 func (s *Store) BackupTo(dest string) error {
@@ -18,7 +21,7 @@ func (s *Store) BackupTo(dest string) error {
 	if err != nil {
 		return fmt.Errorf("resolve backup path: %w", err)
 	}
-	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(abs), 0o700); err != nil {
 		return fmt.Errorf("create backup directory: %w", err)
 	}
 	if _, err := os.Stat(abs); err == nil {
@@ -30,6 +33,11 @@ func (s *Store) BackupTo(dest string) error {
 	q := "VACUUM INTO " + quoteSQLiteLiteral(abs)
 	if _, err := s.db.Exec(q); err != nil {
 		return fmt.Errorf("VACUUM INTO: %w", err)
+	}
+	// VACUUM INTO inherits umask; tighten so backups are not world-readable.
+	if err := chmodBackup(abs, 0o600); err != nil {
+		_ = os.Remove(abs)
+		return fmt.Errorf("chmod backup: %w", err)
 	}
 	return nil
 }
@@ -57,12 +65,12 @@ func RestoreDBFile(srcPath, destPath string) error {
 	}
 	defer in.Close()
 
-	if err := os.MkdirAll(filepath.Dir(destAbs), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(destAbs), 0o700); err != nil {
 		return fmt.Errorf("create db directory: %w", err)
 	}
 
 	tmp := destAbs + ".restore-tmp"
-	out, err := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	out, err := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("create temp restore file: %w", err)
 	}

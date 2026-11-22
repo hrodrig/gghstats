@@ -3,7 +3,7 @@
   <div class="col-12">
     <div class="card shadow-sm border-0">
       <div class="card-body">
-        <h1 class="h4 mb-1">{{call .T "h2h.title"}}</h1>
+        <h2 class="h4 mb-1">{{call .T "h2h.title"}}</h2>
         <p class="text-muted small mb-2">{{call .T "h2h.intro"}}</p>
         <details class="small text-muted mb-3">
           <summary class="user-select-none">{{call .T "h2h.score_help_title"}}</summary>
@@ -113,8 +113,8 @@
               {{range .Result.Rows}}
               <tr>
                 <td>{{.Label}} <span class="text-muted">({{.WeightPct}}%)</span></td>
-                <td class="text-end{{if .LeadsA}} fw-semibold{{end}}">{{.ValueA}}{{if or (eq .Key "momentum_7d") (eq .Key "momentum_30d")}}%{{end}}</td>
-                <td class="text-end{{if not .LeadsA}} fw-semibold{{end}}">{{.ValueB}}{{if or (eq .Key "momentum_7d") (eq .Key "momentum_30d")}}%{{end}}</td>
+                <td class="text-end{{if .LeadsA}} fw-semibold{{end}}">{{call $.Num .ValueA}}{{if or (eq .Key "momentum_7d") (eq .Key "momentum_30d")}}%{{end}}</td>
+                <td class="text-end{{if not .LeadsA}} fw-semibold{{end}}">{{call $.Num .ValueB}}{{if or (eq .Key "momentum_7d") (eq .Key "momentum_30d")}}%{{end}}</td>
               </tr>
               {{end}}
             </tbody>

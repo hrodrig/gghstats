@@ -81,7 +81,7 @@
           <p id="sync-status" class="small app-brutal-muted mb-2" aria-live="polite"></p>
           {{end}}
           {{if eq .PageID "index"}}
-          <a href="/export.jsonl{{if .Query}}?q={{urlquery .Query}}{{end}}" class="btn app-brutal-btn app-export-btn app-sidebar-tooltip btn-sm w-100 mb-2 text-uppercase fw-bold" data-tooltip="{{call .T "common.export_jsonl"}}" aria-label="{{call .T "common.export_jsonl"}}">{{call .T "common.export_jsonl"}}</a>
+          <a href="/export.jsonl{{if .Query}}?q={{urlquery .Query}}{{end}}" class="btn app-brutal-btn app-export-btn app-sidebar-tooltip btn-sm w-100 mb-2 text-uppercase fw-bold" data-gghstats-role="export-jsonl-download" data-export-jsonl-url="/export.jsonl{{if .Query}}?q={{urlquery .Query}}{{end}}"{{if .ExportJSONLAuth}} data-requires-api-token="1"{{end}} data-tooltip="{{call .T "common.export_jsonl"}}" aria-label="{{call .T "common.export_jsonl"}}">{{call .T "common.export_jsonl"}}</a>
           {{end}}
           <button id="theme-toggle" type="button" class="btn app-brutal-btn app-theme-toggle app-sidebar-tooltip btn-sm w-100 mb-2" data-tooltip="{{call .T "common.theme"}}" aria-label="{{call .T "common.theme"}}">
             <span class="app-theme-icon" aria-hidden="true">◐</span>
@@ -106,12 +106,12 @@
         {{end}}
       </header>
 
-      <div class="flex-grow-1 p-4 app-brutal-content" data-gghstats-role="content">
+      <main class="flex-grow-1 p-4 app-brutal-content" data-gghstats-role="content" id="main-content">
         {{.Content}}
-      </div>
+      </main>
 
-      <footer class="app-brutal-footer border-top border-3 border-dark py-3 px-4 mt-auto" data-gghstats-role="footer">
-        <div class="app-brutal-console-footer" role="contentinfo" aria-label="System footer">
+      <footer class="app-brutal-footer border-top border-3 border-dark py-3 px-4 mt-auto" data-gghstats-role="footer" aria-label="System footer">
+        <div class="app-brutal-console-footer">
           <div class="app-brutal-console-prompt" aria-hidden="true"><span class="app-brutal-console-gt">&gt;</span></div>
           <div class="app-brutal-console-body flex-grow-1 min-w-0">
             <p class="app-brutal-console-manifest mb-2 mb-md-3">{{call .T "layout.footer_manifest"}}</p>

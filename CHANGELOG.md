@@ -7,6 +7,24 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.10] - 2026-11-22
+
+### Fixed
+
+- **Index clone ranks (#126):** equal `total_clones` share a competition rank so ordinals never invert when table order among ties differs from the name tie-breaker; `ORDER BY total_clones` is stable with a secondary `name` key. Rank ordinals follow the UI locale (`1st` / `1.º` / `#n`).
+- **Select caret + mobile KPI labels (#127):** stop overwriting Bootstrap's `form-select` caret with a full `background` shorthand (label and chevron stay on one line); tighten KPI letter-spacing on narrow viewports so labels like `REPOSITORIES` do not break mid-word.
+- **Settings 401 + H2H formatting (#128):** Settings auth page shows the admin-required message once and a clear "Enter admin token" CTA (modal still collects the token). H2H relative margin uses `%` instead of misleading `pts`; metrics comparison values use locale thousands separators.
+- **Neobrutalist / a11y polish (#129):** outline buttons and badge Copy match hard-edge controls; footer operational status uses green (`--brutal-ok`); sticky full-height sidebar; midnight search placeholder contrast; Featured descriptions strip `:emoji:` shortcodes; single `<h1>` on Featured/H2H with `<main>` landmark (no nested `contentinfo`).
+
+### Security
+
+- **`GET /export.jsonl` optional token:** when `GGHSTATS_API_TOKEN` is set, the index JSONL export requires matching `x-api-token` (same rule as `traffic.json`). The sidebar Export control prompts for the token like chart JSON download. Export builds and writes one repository at a time instead of materializing the full dump in memory.
+- **Trusted-proxy `X-Forwarded-For`:** with `GGHSTATS_TRUSTED_PROXIES` set, client IP walks the header right-to-left and skips trusted hops, so a forged leftmost prefix cannot bypass rate limit or IP whitelist.
+- **Reverse-proxy paths are rate-limited:** `GGHSTATS_REVERSE_PROXY_RULES` `local` prefixes stay IP-whitelist exempt (same-origin embeds) but share the per-IP rate limiter so the relay is not unbounded. `/metrics` remains scrape-friendly with no app auth — restrict at the edge or set `GGHSTATS_METRICS=false`.
+- **CSP production guidance:** document `GGHSTATS_CSP=enforce` for public deployments when `GGHSTATS_HEAD_HTML` is empty (enforce is ignored while HeadHTML is set).
+- **CI/supply-chain pins:** GitHub Actions pinned by commit SHA; GoReleaser `v2.20.3`, govulncheck `v1.10.0` (Go 1.27-compatible; older pins panic in SSA), Grype `v0.122.1` (no floating `@latest` / `:latest`); Dockerfile base images pinned by digest; Dependabot covers `github-actions` and `docker` in addition to `gomod`.
+- **Backup file mode:** SQLite backups and restore temps use `0600`; backup/db parent dirs `0700`.
+
 ## [1.6.9] - 2026-11-20
 
 ### Security
@@ -751,7 +769,8 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - Project naming and module path finalized as `gghstats` (binary, Docker image, `GGHSTATS_*` environment variables).
 - Toolchain and build base image aligned to Go **1.26.1**.
 
-[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.9...HEAD
+[Unreleased]: https://github.com/hrodrig/gghstats/compare/v1.6.10...HEAD
+[1.6.10]: https://github.com/hrodrig/gghstats/compare/v1.6.9...v1.6.10
 [1.6.9]: https://github.com/hrodrig/gghstats/compare/v1.6.8...v1.6.9
 [1.6.8]: https://github.com/hrodrig/gghstats/compare/v1.6.7...v1.6.8
 [1.6.7]: https://github.com/hrodrig/gghstats/compare/v1.6.6...v1.6.7

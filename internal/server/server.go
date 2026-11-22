@@ -230,7 +230,7 @@ func mountHTMLRoutes(mux *http.ServeMux, cfg Config, tmpl *template.Template) {
 	repoHandler := handleRepoPage(cfg, cfg.Store, tmpl)
 	indexHandler := handleIndex(cfg, cfg.Store, tmpl)
 	trafficJSON := optionalAPITokenMiddleware(cfg.APIToken, handleRepoTrafficJSONExport(cfg))
-	mux.HandleFunc("GET /export.jsonl", handleIndexJSONLExport(cfg))
+	mux.HandleFunc("GET /export.jsonl", optionalAPITokenMiddleware(cfg.APIToken, handleIndexJSONLExport(cfg)))
 	mux.HandleFunc("GET /settings", handleSettingsRoute(cfg, tmpl))
 	mux.HandleFunc("GET /h2h", handleH2HPage(cfg, cfg.Store, tmpl))
 	mux.HandleFunc("GET /featured", handleFeaturedPage(cfg, cfg.Store, tmpl))
@@ -270,7 +270,8 @@ func mountHTMLRoutes(mux *http.ServeMux, cfg Config, tmpl *template.Template) {
 
 func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 	var h http.Handler = mux
-	skip := PublicMiddlewareSkip(cfg.ReverseProxyRules)
+	rateSkip := PublicMiddlewareSkip(cfg.ReverseProxyRules)
+	whitelistSkip := WhitelistMiddlewareSkip(cfg.ReverseProxyRules)
 	if cfg.DisableMetrics {
 		h = logMiddleware(cfg.TrustedProxies, mux)
 	} else {
@@ -290,10 +291,10 @@ func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 		}
 	}
 	if cfg.Whitelist != nil {
-		h = cfg.Whitelist.Middleware(h, skip)
+		h = cfg.Whitelist.Middleware(h, whitelistSkip)
 	}
 	if cfg.RateLimiter != nil {
-		h = cfg.RateLimiter.Middleware(h, skip)
+		h = cfg.RateLimiter.Middleware(h, rateSkip)
 	}
 	h = securityHeadersMiddleware(cfg, h)
 	return h
@@ -348,7 +349,8 @@ func apiMiddleware(token string, next http.HandlerFunc) http.HandlerFunc {
 }
 
 // optionalAPITokenMiddleware requires x-api-token only when token is configured
-// (option 3 for chart JSON download). Empty token → public, still report-scoped in the handler.
+// (chart JSON download and index JSONL export). Empty token → public, still
+// report-scoped in the handler.
 func optionalAPITokenMiddleware(token string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if token != "" && !tokenMatches(r.Header.Get("x-api-token"), token) {
@@ -469,6 +471,9 @@ type layoutData struct {
 	SyncUIEnabled bool
 	// SyncScopeRepo when set scopes the sidebar sync to this owner/repo (repo detail pages).
 	SyncScopeRepo string
+	// ExportJSONLAuth marks the index JSONL export control as requiring x-api-token
+	// (when GGHSTATS_API_TOKEN is set); the browser download path prompts for the token.
+	ExportJSONLAuth bool
 	// SettingsUIEnabled controls whether the Settings link is available in this deployment.
 	SettingsUIEnabled bool
 	// SettingsTokenRequired marks Settings links that need the browser token session flow.
@@ -788,7 +793,7 @@ func handleIndex(cfg Config, db *store.Store, tmpl *template.Template) http.Hand
 			return
 		}
 		kpiStars, kpiForks, kpiClones, kpiCloneUniques, kpiViews, kpiViewUniques := sumIndexKPIs(repos)
-		rankedRepos := rankIndexReposByTotalClones(repos)
+		rankedRepos := rankIndexReposByTotalClones(repos, localeFromRequest(r, cfg))
 		total := len(repos)
 		start, end, reposPage := indexRepoRowsPageSlice(rankedRepos, page, perPage)
 		totalPages := indexTotalPages(total, perPage)
@@ -1073,6 +1078,7 @@ func renderLayoutStatus(w http.ResponseWriter, r *http.Request, tmpl *template.T
 	}
 	data.SettingsUIEnabled = cfg.APIToken != "" || cfg.LocalOnlySettings
 	data.SettingsTokenRequired = cfg.APIToken != ""
+	data.ExportJSONLAuth = cfg.APIToken != ""
 	if cfg.Store != nil {
 		if n, err := cfg.Store.FeaturedCount(); err == nil && n > 0 {
 			data.ShowFeatured = true

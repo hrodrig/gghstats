@@ -204,19 +204,18 @@ func TestHeadHTMLInLayout(t *testing.T) {
 	}
 }
 
-func TestPublicMiddlewareSkipDerivesProxyPrefixes(t *testing.T) {
+func TestPublicMiddlewareSkipOmitsProxyPrefixes(t *testing.T) {
 	rules := []ReverseProxyRule{
 		{Local: "/kiko", URL: "https://events.example.com"},
 		{Local: "/custom-proxy", URL: "https://other.example.com"},
-		{Local: "", URL: "https://empty.example.com"}, // should be skipped
 	}
 	skip := PublicMiddlewareSkip(rules)
 
-	if !skip.matches("/kiko/kiko.js") {
-		t.Error("/kiko/kiko.js should match (exempt)")
+	if skip.matches("/kiko/kiko.js") {
+		t.Error("/kiko/kiko.js must NOT be rate-limit exempt")
 	}
-	if !skip.matches("/custom-proxy/api") {
-		t.Error("/custom-proxy/api should match (exempt)")
+	if skip.matches("/custom-proxy/api") {
+		t.Error("/custom-proxy/api must NOT be rate-limit exempt")
 	}
 	if !skip.matches("/static/app.js") {
 		t.Error("/static/app.js should match (exempt)")
@@ -224,60 +223,89 @@ func TestPublicMiddlewareSkipDerivesProxyPrefixes(t *testing.T) {
 	if !skip.matches("/api/v1/badge/o/r") {
 		t.Error("/api/v1/badge/o/r should match (exempt)")
 	}
+	if !skip.matches(MetricsPath) {
+		t.Error("/metrics should match (exempt)")
+	}
 	if skip.matches("/api/repos") {
 		t.Error("/api/repos should NOT match (not exempt)")
 	}
-	if skip.matches("/") {
-		t.Error("/ should NOT match (not exempt)")
+}
+
+func TestWhitelistMiddlewareSkipDerivesProxyPrefixes(t *testing.T) {
+	rules := []ReverseProxyRule{
+		{Local: "/kiko", URL: "https://events.example.com"},
+		{Local: "/custom-proxy", URL: "https://other.example.com"},
+		{Local: "", URL: "https://empty.example.com"}, // ignored
+	}
+	skip := WhitelistMiddlewareSkip(rules)
+
+	if !skip.matches("/kiko/kiko.js") {
+		t.Error("/kiko/kiko.js should match (whitelist exempt)")
+	}
+	if !skip.matches("/custom-proxy/api") {
+		t.Error("/custom-proxy/api should match (whitelist exempt)")
+	}
+	if !skip.matches("/static/app.js") {
+		t.Error("/static/app.js should match (exempt)")
+	}
+	if skip.matches("/api/repos") {
+		t.Error("/api/repos should NOT match (not exempt)")
 	}
 }
 
-func TestReverseProxyCustomLocalExemptFromMiddleware(t *testing.T) {
+func TestReverseProxyRateLimitedButWhitelistExempt(t *testing.T) {
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "path=%s", r.URL.Path)
 	}))
 	defer backend.Close()
 
 	db := testStore(t)
+	rl := NewRateLimiter(RateLimitConfig{
+		Enabled:  true,
+		Requests: 1,
+		Period:   time.Hour,
+		Burst:    1,
+	})
+	t.Cleanup(rl.Shutdown)
+
 	handler := New(Config{
 		Store: db,
 		ReverseProxyRules: []ReverseProxyRule{
-			{
-				Local: "/analytics",
-				URL:   backend.URL,
-			},
+			{Local: "/analytics", URL: backend.URL},
 		},
-		// Enable rate limiter with tight limit so non-exempt paths get blocked.
-		RateLimiter: NewRateLimiter(RateLimitConfig{
-			Enabled:  true,
-			Requests: 1,
-			Period:   time.Hour, // no refill during test
-			Burst:    1,
-		}),
-		Whitelist: NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/8"}, ""),
+		RateLimiter: rl,
+		Whitelist:   NewWhitelist(WhitelistConfig{CIDRs: "10.0.0.0/8"}, ""),
+		// Avoid Prometheus /metrics registration noise in this focused test.
+		DisableMetrics: true,
 	})
 
-	// Exhaust burst on a non-exempt path (from a non-whitelisted IP).
-	req := httptest.NewRequest("GET", "/", nil)
+	// Non-whitelisted IP: proxy path bypasses whitelist but shares rate-limit bucket.
+	req := httptest.NewRequest("GET", "/analytics/script.js", nil)
 	req.RemoteAddr = "192.168.1.1:12345"
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
-	if w.Code != http.StatusTooManyRequests && w.Code != http.StatusForbidden {
-		t.Fatalf("expected rate-limit or whitelist block on /, got %d", w.Code)
+	if w.Code != http.StatusOK {
+		t.Fatalf("first proxy hit: status=%d body=%s", w.Code, w.Body.String())
+	}
+	if got := strings.TrimSpace(w.Body.String()); got != "path=/script.js" {
+		t.Fatalf("body=%q", got)
 	}
 
-	// The custom proxy path /analytics should still be reachable (exempt).
 	req = httptest.NewRequest("GET", "/analytics/script.js", nil)
 	req.RemoteAddr = "192.168.1.1:12345"
 	w = httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusTooManyRequests {
+		t.Fatalf("second proxy hit: status=%d, want 429 (rate limited)", w.Code)
+	}
 
-	body, _ := io.ReadAll(w.Result().Body)
-	w.Result().Body.Close()
-	got := strings.TrimSpace(string(body))
-	want := "path=/script.js"
-	if got != want {
-		t.Errorf("got %q, want %q", got, want)
+	// Whitelisted IP still cannot hit / (global whitelist) but proxy remains exempt.
+	req = httptest.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.168.1.1:12345"
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden && w.Code != http.StatusTooManyRequests {
+		t.Fatalf("non-whitelisted / : status=%d", w.Code)
 	}
 }
 

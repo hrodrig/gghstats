@@ -29,42 +29,37 @@ type indexJSONLExportRow struct {
 	Stars             []store.StarRow     `json:"stars"`
 }
 
-func buildIndexJSONLExportRows(db *store.Store, repos []store.RepoSummary) ([]indexJSONLExportRow, error) {
-	rankedRepos := rankIndexReposByTotalClones(repos)
-	rows := make([]indexJSONLExportRow, 0, len(rankedRepos))
-	for _, repo := range rankedRepos {
-		clones, err := db.ClonesByRange(repo.Name, allHistoryStart, allHistoryEnd)
-		if err != nil {
-			return nil, err
-		}
-		views, err := db.ViewsByRange(repo.Name, allHistoryStart, allHistoryEnd)
-		if err != nil {
-			return nil, err
-		}
-		referrers, err := db.ReferrersByRange(repo.Name, allHistoryStart, allHistoryEnd)
-		if err != nil {
-			return nil, err
-		}
-		paths, err := db.PathsByRange(repo.Name, allHistoryStart, allHistoryEnd)
-		if err != nil {
-			return nil, err
-		}
-		stars, err := db.StarsByRepo(repo.Name)
-		if err != nil {
-			return nil, err
-		}
-		rows = append(rows, indexJSONLExportRow{
-			Repo:              repo.RepoSummary,
-			CloneRank:         repo.CloneRank,
-			CloneSharePercent: repo.CloneSharePercent,
-			Clones:            nonNilDayRows(clones),
-			Views:             nonNilDayRows(views),
-			Referrers:         nonNilReferrerRows(referrers),
-			Paths:             nonNilPathRows(paths),
-			Stars:             nonNilStarRows(stars),
-		})
+func buildIndexJSONLExportRow(db *store.Store, repo indexRepoRow) (indexJSONLExportRow, error) {
+	clones, err := db.ClonesByRange(repo.Name, allHistoryStart, allHistoryEnd)
+	if err != nil {
+		return indexJSONLExportRow{}, err
 	}
-	return rows, nil
+	views, err := db.ViewsByRange(repo.Name, allHistoryStart, allHistoryEnd)
+	if err != nil {
+		return indexJSONLExportRow{}, err
+	}
+	referrers, err := db.ReferrersByRange(repo.Name, allHistoryStart, allHistoryEnd)
+	if err != nil {
+		return indexJSONLExportRow{}, err
+	}
+	paths, err := db.PathsByRange(repo.Name, allHistoryStart, allHistoryEnd)
+	if err != nil {
+		return indexJSONLExportRow{}, err
+	}
+	stars, err := db.StarsByRepo(repo.Name)
+	if err != nil {
+		return indexJSONLExportRow{}, err
+	}
+	return indexJSONLExportRow{
+		Repo:              repo.RepoSummary,
+		CloneRank:         repo.CloneRank,
+		CloneSharePercent: repo.CloneSharePercent,
+		Clones:            nonNilDayRows(clones),
+		Views:             nonNilDayRows(views),
+		Referrers:         nonNilReferrerRows(referrers),
+		Paths:             nonNilPathRows(paths),
+		Stars:             nonNilStarRows(stars),
+	}, nil
 }
 
 func handleIndexJSONLExport(cfg Config) http.HandlerFunc {
@@ -76,21 +71,25 @@ func handleIndexJSONLExport(cfg Config) http.HandlerFunc {
 			http.Error(w, "database error", http.StatusInternalServerError)
 			return
 		}
-		rows, err := buildIndexJSONLExportRows(db, repos)
-		if err != nil {
-			slog.Error("build JSONL export", "error", err)
-			http.Error(w, "database error", http.StatusInternalServerError)
-			return
-		}
+		rankedRepos := rankIndexReposByTotalClones(repos, localeFromRequest(r, cfg))
 
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, indexJSONLExportFilename(time.Now().UTC())))
 		w.Header().Set("Content-Type", "application/x-ndjson; charset=utf-8")
 		encoder := json.NewEncoder(w)
-		for _, row := range rows {
-			if err := encoder.Encode(row); err != nil {
-				slog.Error("write JSONL export", "error", err)
+		for _, repo := range rankedRepos {
+			row, err := buildIndexJSONLExportRow(db, repo)
+			if err != nil {
+				slog.Error("build JSONL export row", "repo", repo.Name, "error", err)
+				// Headers may already be sent; stop without rewriting status.
 				return
+			}
+			if err := encoder.Encode(row); err != nil {
+				slog.Error("write JSONL export", "repo", repo.Name, "error", err)
+				return
+			}
+			if f, ok := w.(http.Flusher); ok {
+				f.Flush()
 			}
 		}
 	}

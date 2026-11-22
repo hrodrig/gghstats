@@ -51,9 +51,10 @@ x-api-token: your-api-token
 
 **Public without token:** `GET /api/v1/healthz`, `GET /metrics` (unless disabled),
 badges when `GGHSTATS_BADGE_PUBLIC=true` (default), and HTML
-`GET /{owner}/{repo}/traffic.json` when `GGHSTATS_API_TOKEN` is **unset**
-(report-scoped like other HTML surfaces). When the token **is** set, that
-download requires `x-api-token` like other protected routes.
+`GET /{owner}/{repo}/traffic.json` / `GET /export.jsonl` when
+`GGHSTATS_API_TOKEN` is **unset** (report-scoped like other HTML surfaces).
+When the token **is** set, those downloads require `x-api-token` like other
+protected routes.
 
 ## Report visibility applies to every reporting route
 

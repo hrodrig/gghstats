@@ -153,14 +153,8 @@ func clientIP(r *http.Request, trusted *TrustedProxies) string {
 		return peer
 	}
 	if xff := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); xff != "" {
-		for _, hop := range strings.Split(xff, ",") {
-			ip := strings.TrimSpace(hop)
-			if ip == "" {
-				continue
-			}
-			if net.ParseIP(ip) != nil {
-				return ip
-			}
+		if ip := clientIPFromXForwardedFor(xff, trusted); ip != "" {
+			return ip
 		}
 		return peer
 	}
@@ -170,6 +164,29 @@ func clientIP(r *http.Request, trusted *TrustedProxies) string {
 		}
 	}
 	return peer
+}
+
+// clientIPFromXForwardedFor walks X-Forwarded-For right-to-left (nearest hop
+// first), skipping addresses that belong to trusted proxies. Proxies that
+// append leave the real client left of trusted hops; taking the leftmost hop
+// would honor a client-forged prefix.
+func clientIPFromXForwardedFor(xff string, trusted *TrustedProxies) string {
+	hops := strings.Split(xff, ",")
+	for i := len(hops) - 1; i >= 0; i-- {
+		ip := strings.TrimSpace(hops[i])
+		if ip == "" {
+			continue
+		}
+		parsed := net.ParseIP(ip)
+		if parsed == nil {
+			continue
+		}
+		if trusted.ContainsIP(parsed) {
+			continue
+		}
+		return ip
+	}
+	return ""
 }
 
 func peerIP(remoteAddr string) string {
