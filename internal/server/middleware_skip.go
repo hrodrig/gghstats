@@ -13,27 +13,35 @@ type MiddlewareSkip struct {
 }
 
 // PublicMiddlewareSkip returns paths that must stay reachable without rate limits
-// or whitelist checks (metrics scrape, probes, README badge embeds, static assets,
-// and reverse-proxy routes.
+// or whitelist checks: metrics scrape, probes, README badge embeds, and static assets.
 //
-// proxyRules are used to derive dynamic prefix exemptions — every active rule's
-// Local path is added as a prefix so custom proxy paths are not blocked by
-// rate-limit or whitelist middleware.
-func PublicMiddlewareSkip(proxyRules []ReverseProxyRule) MiddlewareSkip {
-	prefixes := []string{BadgePathPrefix, "/static/"}
-	for _, r := range proxyRules {
-		if r.Local != "" {
-			p := r.Local
-			if !strings.HasSuffix(p, "/") {
-				p += "/"
-			}
-			prefixes = append(prefixes, p)
-		}
-	}
+// Reverse-proxy rule prefixes are NOT included here. Rate limiting applies to those
+// paths so a public relay cannot be an unbounded DoS vector against the upstream.
+// Use WhitelistMiddlewareSkip when building the IP-whitelist skip list so proxy
+// embeds remain reachable under a global whitelist.
+func PublicMiddlewareSkip(_ []ReverseProxyRule) MiddlewareSkip {
 	return MiddlewareSkip{
 		Exact:    []string{MetricsPath, HealthzPath},
-		Prefixes: prefixes,
+		Prefixes: []string{BadgePathPrefix, "/static/"},
 	}
+}
+
+// WhitelistMiddlewareSkip is PublicMiddlewareSkip plus each reverse-proxy Local
+// prefix. Dashboard embeds (e.g. /kiko/) must stay reachable when a global IP
+// whitelist is enabled; rate limiting still applies via PublicMiddlewareSkip.
+func WhitelistMiddlewareSkip(proxyRules []ReverseProxyRule) MiddlewareSkip {
+	skip := PublicMiddlewareSkip(nil)
+	for _, r := range proxyRules {
+		if r.Local == "" {
+			continue
+		}
+		p := r.Local
+		if !strings.HasSuffix(p, "/") {
+			p += "/"
+		}
+		skip.Prefixes = append(skip.Prefixes, p)
+	}
+	return skip
 }
 
 func (s MiddlewareSkip) matches(path string) bool {

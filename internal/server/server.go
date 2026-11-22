@@ -270,7 +270,8 @@ func mountHTMLRoutes(mux *http.ServeMux, cfg Config, tmpl *template.Template) {
 
 func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 	var h http.Handler = mux
-	skip := PublicMiddlewareSkip(cfg.ReverseProxyRules)
+	rateSkip := PublicMiddlewareSkip(cfg.ReverseProxyRules)
+	whitelistSkip := WhitelistMiddlewareSkip(cfg.ReverseProxyRules)
 	if cfg.DisableMetrics {
 		h = logMiddleware(cfg.TrustedProxies, mux)
 	} else {
@@ -290,10 +291,10 @@ func finalizeHandler(cfg Config, mux *http.ServeMux) http.Handler {
 		}
 	}
 	if cfg.Whitelist != nil {
-		h = cfg.Whitelist.Middleware(h, skip)
+		h = cfg.Whitelist.Middleware(h, whitelistSkip)
 	}
 	if cfg.RateLimiter != nil {
-		h = cfg.RateLimiter.Middleware(h, skip)
+		h = cfg.RateLimiter.Middleware(h, rateSkip)
 	}
 	h = securityHeadersMiddleware(cfg, h)
 	return h

@@ -714,11 +714,13 @@ gghstats serve
 SMTP uses the same `GGHSTATS_ALERT_SINKS` array as other sinks (SPEC §8.5).
 ### Rate limiting
 
-gghstats applies **per-IP token-bucket rate limiting** to all HTTP routes except `/metrics` and `/api/v1/healthz`. When a client exceeds the limit the server returns `429 Too Many Requests` with a JSON body `{"error":"rate_limit_exceeded"}` and a `Retry-After: 60` header.
+gghstats applies **per-IP token-bucket rate limiting** to all HTTP routes except `/metrics`, `/api/v1/healthz`, `/api/v1/badge/*`, and `/static/*`. When a client exceeds the limit the server returns `429 Too Many Requests` with a JSON body `{"error":"rate_limit_exceeded"}` and a `Retry-After: 60` header.
 
 **Middleware order (outermost first):** IP whitelist → rate limiting → request logging → Prometheus HTTP metrics → route handlers.
 
-**Always exempt** (no whitelist check, no rate limit): `/metrics`, `/api/v1/healthz`, and **`/api/v1/badge/*`** (README embeds; GitHub and other proxies must fetch SVG without auth or throttling). **Reverse-proxy paths** configured via `GGHSTATS_REVERSE_PROXY_RULES` are also exempt (each rule's `local` prefix is automatically added to the skip list).
+**Always exempt** (no whitelist check, no rate limit): `/metrics`, `/api/v1/healthz`, **`/api/v1/badge/*`** (README embeds; GitHub and other proxies must fetch SVG without auth or throttling), and `/static/*`.
+
+**Reverse-proxy paths** (`GGHSTATS_REVERSE_PROXY_RULES`): exempt from the **IP whitelist** only (so same-origin embeds keep working under a global whitelist). They **are rate-limited** like other public routes — the relay must not be unbounded.
 
 **Defaults:** 120 requests per minute, burst of 20. For most dashboard browsing this is generous; adjust for high-traffic or protected deployments.
 
@@ -804,7 +806,7 @@ The output must include `multipathtcp=0`. On a patched Linux host, `cat /proc/ne
 
 gghstats supports optional IP-based access control via `GGHSTATS_WHITELIST`. When set, only requests from matching IPs or CIDR ranges are allowed; all others receive `403 Forbidden` with `{"error":"ip_not_whitelisted"}`.
 
-By default the whitelist applies to **all routes** except `/metrics`, `/api/v1/healthz`, and **`/api/v1/badge/*`** (README embeds). Scope it to specific paths with `GGHSTATS_WHITELIST_PATHS` (comma-separated prefixes, e.g. `/api/,/h2h`). Paths not listed remain publicly accessible. Badge URLs stay public even when `/api/` is whitelisted.
+By default the whitelist applies to **all routes** except `/metrics`, `/api/v1/healthz`, **`/api/v1/badge/*`**, `/static/*`, and each reverse-proxy `local` prefix. Scope it to specific paths with `GGHSTATS_WHITELIST_PATHS` (comma-separated prefixes, e.g. `/api/,/h2h,/export.jsonl,/settings`). Paths not listed remain publicly accessible. Badge URLs stay public even when `/api/` is whitelisted.
 
 When **`GGHSTATS_API_TOKEN`** is set, requests that include a matching **`x-api-token`** header bypass the IP whitelist on protected paths (the token is still validated by the API handler). This lets remote operators run **`POST /api/v1/sync`** from the dashboard without opening `/api/` to the whole internet.
 
