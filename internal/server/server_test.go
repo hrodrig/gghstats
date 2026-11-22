@@ -233,6 +233,12 @@ func TestIndexPageShell(t *testing.T) {
 	if !strings.Contains(body, `offcanvas-lg`) || !strings.Contains(body, "Repositories") {
 		t.Error("expected app shell layout (sidebar + title)")
 	}
+	if !strings.Contains(body, `<main class="flex-grow-1 p-4 app-brutal-content"`) {
+		t.Error("expected <main> landmark wrapping dashboard content (#129)")
+	}
+	if strings.Contains(body, `role="contentinfo"`) {
+		t.Error("footer must not nest a second contentinfo landmark (#129)")
+	}
 }
 
 func TestIndexPageKPIAndSort(t *testing.T) {
