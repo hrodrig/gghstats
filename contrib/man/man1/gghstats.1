@@ -237,6 +237,9 @@ Allow public badge SVG URLs (default: \fBtrue\fR).
 .TP
 .B GGHSTATS_METRICS
 Set to \fBfalse\fR to disable Prometheus \fB/metrics\fR.
+\fB/metrics\fR has no app-level auth; restrict it at the edge
+(firewall, private scrape network, or reverse-proxy path deny)
+or disable it.
 .TP
 .B GGHSTATS_COMPACT_NUMBERS
 When \fBtrue\fR, render large counts (stars, forks, views, clones) with compact
@@ -254,7 +257,8 @@ Time window for rate limiting as a Go duration (default: \fB1m\fR).
 .TP
 .B GGHSTATS_RATE_LIMIT_BURST
 Maximum burst of requests before smoothing (default: \fB20\fR).
-Exempt paths: \fB/metrics\fR, \fB/api/v1/healthz\fR, \fB/api/v1/badge/*\fR (README embeds).
+Exempt paths: \fB/metrics\fR, \fB/api/v1/healthz\fR, \fB/api/v1/badge/*\fR,
+\fB/static/*\fR. Reverse-proxy \fBlocal\fR prefixes are rate-limited.
 .TP
 .B GGHSTATS_TRUSTED_PROXIES
 Comma-separated proxy IPs and/or CIDRs allowed to supply
@@ -294,7 +298,8 @@ Arbitrary HTML injected just before \fB</head>\fR on every HTML page
 (e.g. analytics scripts, extra CSS). Default: empty.
 .TP
 .B GGHSTATS_REVERSE_PROXY_RULES
-JSON array of reverse-proxy rules. Each rule is an object with:
+JSON array of reverse-proxy rules (whitelist-exempt; still rate-limited).
+Each rule is an object with:
 .RS
 .TP
 .B local

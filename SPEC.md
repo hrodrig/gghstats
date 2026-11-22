@@ -49,7 +49,11 @@ This document describes **current** behavior. Changes that break clients must bu
 | `GET /export.jsonl` | `x-api-token` only if `GGHSTATS_API_TOKEN` set | Index JSONL dump (streamed per repo); report-scoped |
 | `/robots.txt`, `/sitemap.xml` | — | Omitted (404) when API-only |
 
-**Always exempt** from IP rate limit and IP whitelist: `/metrics`, `/api/v1/healthz`, `/api/v1/badge/*`, and each `local` prefix from `GGHSTATS_REVERSE_PROXY_RULES`.
+**Always exempt** from IP rate limit **and** IP whitelist: `/metrics`, `/api/v1/healthz`, `/api/v1/badge/*`, `/static/*`.
+
+**Whitelist-only exempt** (rate limit still applies): each `local` prefix from `GGHSTATS_REVERSE_PROXY_RULES`, so same-origin embeds stay reachable under a global whitelist without becoming an unbounded relay.
+
+**`GET /metrics`:** no app-level auth; operators must restrict it at the edge (firewall, private network scrape, or reverse-proxy path deny) or set `GGHSTATS_METRICS=false`.
 
 When `GGHSTATS_API_TOKEN` is set, a matching **`x-api-token`** header bypasses the IP whitelist on protected paths (token still validated by the API handler).
 
