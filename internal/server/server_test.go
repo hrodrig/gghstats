@@ -322,6 +322,19 @@ func TestIndexPageCloneRankAndShare(t *testing.T) {
 	if !strings.Contains(bodyAuth, `data-requires-api-token="1"`) {
 		t.Error("export must require token when APIToken set")
 	}
+
+	reqES := httptest.NewRequest("GET", "/?lang=es", nil)
+	recES := httptest.NewRecorder()
+	New(Config{Store: db, EnabledLocales: []string{"en", "es"}, DefaultLocale: "en"}).ServeHTTP(recES, reqES)
+	bodyES := recES.Body.String()
+	for _, want := range []string{"1.º · 80.00%", "2.º · 20.00%"} {
+		if !strings.Contains(bodyES, want) {
+			t.Errorf("Spanish UI expected localized ordinal %q", want)
+		}
+	}
+	if strings.Contains(bodyES, "1st ·") || strings.Contains(bodyES, "2nd ·") {
+		t.Error("Spanish UI must not show English ordinal suffixes")
+	}
 }
 
 func TestIndexJSONLExport(t *testing.T) {

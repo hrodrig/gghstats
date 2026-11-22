@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Index clone ranks (#126):** equal `total_clones` share a competition rank so ordinals never invert when table order among ties differs from the name tie-breaker; `ORDER BY total_clones` is stable with a secondary `name` key. Rank ordinals follow the UI locale (`1st` / `1.º` / `#n`).
+
 ### Security
 
 - **`GET /export.jsonl` optional token:** when `GGHSTATS_API_TOKEN` is set, the index JSONL export requires matching `x-api-token` (same rule as `traffic.json`). The sidebar Export control prompts for the token like chart JSON download. Export builds and writes one repository at a time instead of materializing the full dump in memory.
