@@ -31,6 +31,9 @@ func TestBackupToAndRestoreDBFile(t *testing.T) {
 	if err != nil || st.Size() == 0 {
 		t.Fatalf("backup missing or empty: %v", err)
 	}
+	if st.Mode().Perm() != 0o600 {
+		t.Fatalf("backup mode=%o, want 0600", st.Mode().Perm())
+	}
 
 	if err := RestoreDBFile(bakPath, restoredPath); err != nil {
 		t.Fatalf("RestoreDBFile: %v", err)
