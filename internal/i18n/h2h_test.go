@@ -118,11 +118,11 @@ func TestH2HErrorAndChartLabels(t *testing.T) {
 	if !strings.Contains(b.LeadsLabel("en", "o/r"), "o/r") {
 		t.Fatal("leads label")
 	}
-	if !strings.Contains(b.LeadMarginLabel("en", 12), "12") {
-		t.Fatal("lead margin")
+	if got := b.LeadMarginLabel("en", 12); !strings.Contains(got, "12") || !strings.Contains(got, "%") || strings.Contains(got, "pts") {
+		t.Fatalf("lead margin en = %q, want percent unit", got)
 	}
-	if !strings.Contains(b.LeadMarginLabel("es", 11), "ventaja") {
-		t.Fatal("lead margin es")
+	if got := b.LeadMarginLabel("es", 11); !strings.Contains(got, "ventaja") || !strings.Contains(got, "%") {
+		t.Fatalf("lead margin es = %q", got)
 	}
 	if b.LeadPtsLabel("en", 9) != b.LeadMarginLabel("en", 9) {
 		t.Fatal("LeadPtsLabel should alias LeadMarginLabel")

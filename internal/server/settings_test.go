@@ -44,8 +44,15 @@ func TestSettingsPageRequiresAPITokenAndIsRedacted(t *testing.T) {
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("missing token status = %d, want %d", w.Code, http.StatusUnauthorized)
 	}
-	if strings.Contains(w.Body.String(), "api-secret-must-not-render") || !strings.Contains(w.Body.String(), "Continue to settings") {
+	authBody := w.Body.String()
+	if strings.Contains(authBody, "api-secret-must-not-render") || !strings.Contains(authBody, "Enter admin token") {
 		t.Fatal("unauthenticated settings gate should be safe and actionable")
+	}
+	if n := strings.Count(authBody, "Admin token required"); n != 1 {
+		t.Fatalf("auth gate should show Admin token required once, got %d", n)
+	}
+	if !strings.Contains(authBody, "open the token dialog") {
+		t.Fatal("auth gate should explain the CTA opens the token dialog")
 	}
 
 	req = httptest.NewRequest(http.MethodGet, "/settings", nil)

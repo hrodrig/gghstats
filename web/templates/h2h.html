@@ -113,8 +113,8 @@
               {{range .Result.Rows}}
               <tr>
                 <td>{{.Label}} <span class="text-muted">({{.WeightPct}}%)</span></td>
-                <td class="text-end{{if .LeadsA}} fw-semibold{{end}}">{{.ValueA}}{{if or (eq .Key "momentum_7d") (eq .Key "momentum_30d")}}%{{end}}</td>
-                <td class="text-end{{if not .LeadsA}} fw-semibold{{end}}">{{.ValueB}}{{if or (eq .Key "momentum_7d") (eq .Key "momentum_30d")}}%{{end}}</td>
+                <td class="text-end{{if .LeadsA}} fw-semibold{{end}}">{{call $.Num .ValueA}}{{if or (eq .Key "momentum_7d") (eq .Key "momentum_30d")}}%{{end}}</td>
+                <td class="text-end{{if not .LeadsA}} fw-semibold{{end}}">{{call $.Num .ValueB}}{{if or (eq .Key "momentum_7d") (eq .Key "momentum_30d")}}%{{end}}</td>
               </tr>
               {{end}}
             </tbody>
