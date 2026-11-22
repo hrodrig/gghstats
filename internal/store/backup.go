@@ -8,6 +8,9 @@ import (
 	"strings"
 )
 
+// chmodBackup is os.Chmod in production; tests may stub it to exercise cleanup.
+var chmodBackup = os.Chmod
+
 // BackupTo writes a consistent SQLite snapshot to dest using VACUUM INTO.
 // Dest must not be the live database path; parent directories are created as needed.
 func (s *Store) BackupTo(dest string) error {
@@ -32,7 +35,7 @@ func (s *Store) BackupTo(dest string) error {
 		return fmt.Errorf("VACUUM INTO: %w", err)
 	}
 	// VACUUM INTO inherits umask; tighten so backups are not world-readable.
-	if err := os.Chmod(abs, 0o600); err != nil {
+	if err := chmodBackup(abs, 0o600); err != nil {
 		_ = os.Remove(abs)
 		return fmt.Errorf("chmod backup: %w", err)
 	}
